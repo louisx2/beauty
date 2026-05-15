@@ -8,6 +8,9 @@
   "assets": {
     "directory": "vscode/dist"
   },
+  "build": {
+    "command": "npm --prefix vscode install && npm --prefix vscode run build"
+  },
   "compatibility_flags": [
     "nodejs_compat"
   ]
