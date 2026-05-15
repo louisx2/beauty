@@ -97,30 +97,8 @@ async function resolveUser(sessionUser: { id: string; email?: string; user_metad
   }
 }
 
-// Primary session restoration on startup (Supabase v2 best practice)
-async function initializeAuth() {
-  try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    if (error) {
-      console.error('Error restoring session:', error);
-      useAuthStore.setState({ loading: false });
-      return;
-    }
-
-    if (session?.user) {
-      await resolveUser(session.user);
-    } else {
-      useAuthStore.setState({ loading: false });
-    }
-  } catch {
-    useAuthStore.setState({ loading: false });
-  }
-}
-
-initializeAuth();
-
-// Handle subsequent auth events (sign-in, sign-out, token refresh)
+// Handle auth events (sign-in, sign-out, token refresh)
+// Register listener BEFORE initializeAuth so TOKEN_REFRESHED events are caught
 supabase.auth.onAuthStateChange(async (event, session) => {
   if (event === 'INITIAL_SESSION') return;
 
@@ -130,3 +108,34 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     useAuthStore.setState({ user: null, isAuthenticated: false, loading: false });
   }
 });
+
+// Validate session with the server on startup
+// getUser() (unlike getSession()) makes a network call that validates the token
+// and triggers auto-refresh if the access token is expired
+async function initializeAuth() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      useAuthStore.setState({ loading: false });
+      return;
+    }
+
+    const { data: { user }, error } = await supabase.auth.getUser();
+
+    if (error || !user) {
+      // Session expired beyond recovery — clear stale tokens from storage.
+      // Without this, the expired JWT is sent with ALL requests (even public ones),
+      // causing Supabase to reject them instead of using the anon role.
+      await supabase.auth.signOut();
+      useAuthStore.setState({ user: null, isAuthenticated: false, loading: false });
+      return;
+    }
+
+    await resolveUser(user);
+  } catch {
+    useAuthStore.setState({ loading: false });
+  }
+}
+
+initializeAuth();
