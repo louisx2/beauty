@@ -82,10 +82,21 @@ const STATUS_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
   no_show: [],
 };
 
-const HOURS = Array.from({ length: 11 }, (_, i) => {
+const ALL_HOURS = Array.from({ length: 11 }, (_, i) => {
   const h = i + 8;
   return `${String(h).padStart(2, '0')}:00`;
 }).flatMap((h) => [h, h.replace(':00', ':30')]);
+
+function getAvailableHours(dateStr: string): string[] {
+  const today = new Date().toISOString().split('T')[0];
+  if (dateStr !== today) return ALL_HOURS;
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return ALL_HOURS.filter((h) => {
+    const [hh, mm] = h.split(':').map(Number);
+    return hh * 60 + mm > nowMinutes;
+  });
+}
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00');
@@ -453,7 +464,40 @@ export default function Appointments() {
                           <button
                             key={s}
                             className="appt-card__status-option"
-                            onClick={() => { updateStatus(appt.id, s); setShowStatusMenu(null); }}
+                            onClick={() => {
+                              updateStatus(appt.id, s);
+                              setShowStatusMenu(null);
+                              if (s === 'confirmed') {
+                                const phone = appt.clientPhone.replace(/[^0-9]/g, '');
+                                const dateLabel = formatDate(appt.date);
+                                const msg = `Hola ${appt.clientName} 👋\n\nTu cita ha sido *confirmada* ✅\n\n📅 *Fecha:* ${dateLabel}\n🕐 *Hora:* ${appt.time}\n💆 *Servicio:* ${appt.service}\n👩‍⚕️ *Especialista:* ${appt.employee}\n\nTe esperamos en Anadsll Beauty Esthetic. ¡Gracias! 🌸`;
+                                const waUrl = `https://wa.me/1${phone}?text=${encodeURIComponent(msg)}`;
+                                toast(
+                                  (t) => (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                      <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>
+                                        ✅ Cita confirmada
+                                      </span>
+                                      <a
+                                        href={waUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={() => toast.dismiss(t.id)}
+                                        style={{
+                                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                                          background: '#25D366', color: 'white', padding: '6px 14px',
+                                          borderRadius: 8, fontSize: '0.82rem', fontWeight: 600,
+                                          textDecoration: 'none',
+                                        }}
+                                      >
+                                        <MessageCircle size={14} /> Enviar confirmación por WhatsApp
+                                      </a>
+                                    </div>
+                                  ),
+                                  { duration: 8000 }
+                                );
+                              }
+                            }}
                           >
                             {STATUS_CONFIG[s].icon}
                             {STATUS_CONFIG[s].label}
@@ -605,7 +649,7 @@ export default function Appointments() {
                 <div className="modal__field">
                   <label><Clock size={14} /> Hora</label>
                   <select value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })}>
-                    {HOURS.map((h) => <option key={h} value={h}>{h}</option>)}
+                    {getAvailableHours(form.date).map((h) => <option key={h} value={h}>{h}</option>)}
                   </select>
                 </div>
                 <div className="modal__field">

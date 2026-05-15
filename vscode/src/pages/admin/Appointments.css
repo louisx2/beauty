@@ -335,7 +335,7 @@
   border: 1px solid rgba(255,255,255,0.06);
   border-left: 5px solid transparent; /* Status color bar */
   border-radius: 16px;
-  overflow: hidden;
+  overflow: visible;
   transition: all 0.25s ease;
 }
 

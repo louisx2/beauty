@@ -87,6 +87,7 @@ interface ServiceState {
 
   sellPackage: (cp: Omit<ClientPackage, 'id'>) => Promise<void>;
   useSession: (clientPackageId: string) => Promise<void>;
+  updateClientPackage: (id: string, data: { usedSessions?: number; notes?: string }) => Promise<void>;
   deleteClientPackage: (id: string) => Promise<void>;
 }
 
@@ -215,6 +216,18 @@ export const useServiceStore = create<ServiceState>()((set, get) => ({
       .eq('id', id).select('*, clients(name), session_packages(name, services(name))').single();
     if (!error && data) {
       set((st) => ({ clientPackages: st.clientPackages.map((c) => c.id === id ? mapClientPkg(data) : c) }));
+    }
+  },
+
+  updateClientPackage: async (id, data) => {
+    const db: any = {};
+    if (data.usedSessions !== undefined) db.used_sessions = data.usedSessions;
+    if (data.notes !== undefined) db.notes = data.notes;
+    const { data: row, error } = await supabase.from('client_packages')
+      .update(db).eq('id', id)
+      .select('*, clients(name), session_packages(name, services(name))').single();
+    if (!error && row) {
+      set((st) => ({ clientPackages: st.clientPackages.map((c) => c.id === id ? mapClientPkg(row) : c) }));
     }
   },
 

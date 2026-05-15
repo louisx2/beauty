@@ -2,7 +2,6 @@ import { useEffect, useMemo } from 'react';
 import { useAppointmentStore } from '../../store/appointmentStore';
 import { useClientStore } from '../../store/clientStore';
 import { useServiceStore } from '../../store/serviceStore';
-import { useInventoryStore } from '../../store/inventoryStore';
 import { useBillingStore } from '../../store/billingStore';
 import {
   CalendarDays,
@@ -32,16 +31,14 @@ export default function Dashboard() {
   const { appointments, fetchAppointments } = useAppointmentStore();
   const { clients, fetchClients } = useClientStore();
   const { clientPackages, fetchAll: fetchServices } = useServiceStore();
-  const { products, fetchProducts } = useInventoryStore();
   const { invoices, fetchAll: fetchBilling } = useBillingStore();
 
   useEffect(() => {
     fetchAppointments();
     fetchClients();
     fetchServices();
-    fetchProducts();
     fetchBilling();
-  }, [fetchAppointments, fetchClients, fetchServices, fetchProducts, fetchBilling]);
+  }, [fetchAppointments, fetchClients, fetchServices, fetchBilling]);
 
   const today = getToday();
   const thisMonth = new Date().toISOString().slice(0, 7);
@@ -109,19 +106,14 @@ export default function Dashboard() {
     }));
   }, [appointments, thisMonth]);
 
-  // Alerts
+  // Alerts (only session packages — inventory not managed)
   const alerts = useMemo(() => {
     const items: { type: string; message: string; icon: React.ReactNode }[] = [];
-    // Low stock
-    products.filter(p => p.stock <= p.minStock && p.active).forEach((p) => {
-      items.push({ type: 'stock', message: `${p.name} — Solo quedan ${p.stock} unidades`, icon: <AlertTriangle size={16} /> });
-    });
-    // Last session packages
     clientPackages.filter(cp => cp.totalSessions - cp.usedSessions === 1).forEach((cp) => {
       items.push({ type: 'session', message: `${cp.clientName} — Le queda 1 sesión de ${cp.packageName}`, icon: <Package size={16} /> });
     });
     return items.slice(0, 5);
-  }, [products, clientPackages]);
+  }, [clientPackages]);
 
   return (
     <div className="dashboard">

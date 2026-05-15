@@ -252,6 +252,37 @@
   transform: translateY(-1px);
 }
 
+.client-pkg__schedule-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: rgba(74,222,128,0.1);
+  border: 1px solid rgba(74,222,128,0.25);
+  border-radius: 10px;
+  color: #4ade80;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.client-pkg__schedule-btn:hover {
+  background: rgba(74,222,128,0.18);
+  transform: translateY(-1px);
+}
+
+.client-pkg__notes-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem !important;
+  color: rgba(255,255,255,0.35) !important;
+  font-style: italic;
+  margin-top: 2px;
+}
+
 /* ── Package Types Grid ── */
 .spa-pkgs__types-grid {
   display: grid;
