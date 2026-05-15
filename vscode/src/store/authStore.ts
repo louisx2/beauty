@@ -61,52 +61,51 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 }));
 
-async function resolveUser(sessionUser: { id: string; email?: string; user_metadata?: Record<string, string> }) {
-  const email = sessionUser.email || '';
-  const fallbackName = sessionUser.user_metadata?.name || email.split('@')[0] || 'Admin';
+// onAuthStateChange holds the Supabase storage lock while it fires.
+// Any Supabase data query inside the callback (even async) calls getSession()
+// internally, which tries to re-acquire the same lock → deadlock for 5s.
+// Fix: set auth state SYNCHRONOUSLY inside the callback (no await, no data queries),
+// then do the staff lookup OUTSIDE the lock via setTimeout(..., 0).
+supabase.auth.onAuthStateChange((_event, session) => {
+  if (session?.user) {
+    const u = session.user;
+    const email = u.email || '';
+    const fallbackName = u.user_metadata?.['name'] || email.split('@')[0] || 'Admin';
+    // Set authenticated state immediately — releases lock right away
+    useAuthStore.setState({
+      user: { id: u.id, email, name: fallbackName, role: 'admin' },
+      isAuthenticated: true,
+      loading: false,
+    });
+    // Enrich with real name/role from staff table AFTER lock is released
+    setTimeout(() => enrichUserFromStaff(u.id, email), 0);
+  } else {
+    useAuthStore.setState({ user: null, isAuthenticated: false, loading: false });
+  }
+});
 
-  const basicUser: User = {
-    id: sessionUser.id,
-    email,
-    name: fallbackName,
-    role: 'admin',
-  };
-  useAuthStore.setState({ user: basicUser, isAuthenticated: true, loading: false });
-
+// Look up real name and role from the staff table (runs outside the auth lock)
+async function enrichUserFromStaff(userId: string, email: string) {
   try {
-    const { data: staffData } = await supabase
+    const { data } = await supabase
       .from('staff')
       .select('name, role')
       .ilike('email', email)
       .maybeSingle();
 
-    if (staffData) {
+    if (data) {
       const current = useAuthStore.getState().user;
-      if (current) {
+      if (current && current.id === userId) {
         useAuthStore.setState({
           user: {
             ...current,
-            name: staffData.name || current.name,
-            role: (staffData.role as User['role']) || 'admin',
+            name: data.name || current.name,
+            role: (data.role as User['role']) || 'admin',
           },
         });
       }
     }
   } catch {
-    // Keep basic user if staff lookup fails
+    // Keep fallback name/role if staff lookup fails
   }
 }
-
-// Handle ALL auth events: INITIAL_SESSION (page load/reload), SIGNED_IN,
-// SIGNED_OUT, TOKEN_REFRESHED, etc.
-// Supabase fires INITIAL_SESSION on startup with the stored session (or null),
-// and TOKEN_REFRESHED whenever it auto-renews the access token.
-// Handling all events here means the session is always restored on reload
-// and the store stays in sync with Supabase's internal state.
-supabase.auth.onAuthStateChange(async (_event, session) => {
-  if (session?.user) {
-    await resolveUser(session.user);
-  } else {
-    useAuthStore.setState({ user: null, isAuthenticated: false, loading: false });
-  }
-});
