@@ -6,7 +6,8 @@
     "enabled": true
   },
   "assets": {
-    "directory": "vscode/dist"
+    "directory": "vscode/dist",
+    "not_found_handling": "single-page-application"
   },
   "build": {
     "command": "npm --prefix vscode install && npm --prefix vscode run build"
