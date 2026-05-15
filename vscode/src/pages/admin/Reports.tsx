@@ -244,7 +244,7 @@ export default function Reports() {
       <div className="reports__section">
         <h2><UserCog size={20} /> Servicios por Especialista — Este Mes</h2>
         {servicesBySpecialist.length === 0 ? (
-          <div style={{ padding: 24, textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '0.9rem' }}>
+          <div className="reports__specialist-empty">
             Sin servicios completados este mes
           </div>
         ) : (
@@ -264,22 +264,18 @@ export default function Reports() {
                   </div>
                   <ChevronDown
                     size={16}
-                    style={{
-                      color: 'rgba(255,255,255,0.4)',
-                      transform: expandedSpec === sp.name ? 'rotate(180deg)' : 'none',
-                      transition: 'transform 0.2s',
-                    }}
+                    className={`reports__specialist-chevron${expandedSpec === sp.name ? ' reports__specialist-chevron--open' : ''}`}
                   />
                 </button>
                 {expandedSpec === sp.name && (
                   <div className="reports__specialist-detail">
-                    <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    <p className="reports__spec-label">
                       Servicios realizados
                     </p>
                     {sp.topServices.map((s) => (
                       <div className="reports__specialist-service" key={s}>{s}</div>
                     ))}
-                    <div style={{ marginTop: 12 }}>
+                    <div className="reports__specialist-rows">
                       {appointments
                         .filter((a) => a.date.startsWith(thisMonth) && a.status === 'completed' && a.employee === sp.name)
                         .slice(0, 10)

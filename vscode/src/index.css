@@ -216,6 +216,38 @@
 [data-theme="light"] .appts__day-stats .appts__mini-stat { color: var(--muted); }
 [data-theme="light"] .client-pkg__use-btn { background: rgba(178,150,125,0.12); border-color: rgba(178,150,125,0.25); }
 
+/* Reports — bar chart */
+[data-theme="light"] .reports__bar-chart { background: white; border-color: rgba(74,52,42,0.08); }
+[data-theme="light"] .reports__bar-value { color: var(--muted); }
+[data-theme="light"] .reports__bar-label { color: rgba(74,52,42,0.4); }
+
+/* Reports — specialist cards */
+[data-theme="light"] .reports__specialist-card { background: white; border-color: rgba(74,52,42,0.08); }
+[data-theme="light"] .reports__specialist-header:hover { background: #F9F6F1; }
+[data-theme="light"] .reports__specialist-info strong { color: var(--espresso); }
+[data-theme="light"] .reports__specialist-info span { color: var(--muted); }
+[data-theme="light"] .reports__specialist-detail { border-color: rgba(74,52,42,0.06); }
+[data-theme="light"] .reports__specialist-service { background: #F5F1EA; border-color: rgba(74,52,42,0.08); color: var(--espresso); }
+[data-theme="light"] .reports__specialist-row { color: var(--muted); border-color: rgba(74,52,42,0.04); }
+[data-theme="light"] .reports__specialist-svc { color: var(--rose-dark); }
+[data-theme="light"] .reports__specialist-row span:first-child { color: rgba(74,52,42,0.4); }
+[data-theme="light"] .reports__specialist-empty { color: rgba(74,52,42,0.35); }
+[data-theme="light"] .reports__specialist-chevron { color: rgba(74,52,42,0.35); }
+[data-theme="light"] .reports__spec-label { color: rgba(74,52,42,0.45); }
+
+/* Reports — notification panel */
+[data-theme="light"] .admin__notif-panel { background: white; border-color: rgba(74,52,42,0.1); box-shadow: 0 16px 48px rgba(74,52,42,0.15); }
+[data-theme="light"] .admin__notif-header { color: rgba(74,52,42,0.4); border-color: rgba(74,52,42,0.06); }
+[data-theme="light"] .admin__notif-item { border-color: rgba(74,52,42,0.04); }
+[data-theme="light"] .admin__notif-item:hover { background: #F9F6F1; }
+[data-theme="light"] .admin__notif-text strong { color: var(--espresso); }
+[data-theme="light"] .admin__notif-text span { color: var(--muted); }
+[data-theme="light"] .admin__notif-empty { color: var(--muted); }
+
+/* Session packages — new buttons */
+[data-theme="light"] .client-pkg__notes-badge { color: var(--muted) !important; }
+[data-theme="light"] .reports__dgii-btn:hover { background: #F5F1EA; }
+
 /* Scrollbar light */
 [data-theme="light"] .admin__sidebar::-webkit-scrollbar-thumb,
 [data-theme="light"] .modal::-webkit-scrollbar-thumb,

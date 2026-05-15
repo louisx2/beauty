@@ -304,6 +304,36 @@
   font-weight: 500;
 }
 
+.reports__specialist-empty {
+  padding: 24px;
+  text-align: center;
+  color: rgba(255,255,255,0.3);
+  font-size: 0.9rem;
+}
+
+.reports__specialist-chevron {
+  color: rgba(255,255,255,0.4);
+  transition: transform 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+.reports__specialist-chevron--open {
+  transform: rotate(180deg);
+}
+
+.reports__spec-label {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding-top: 12px;
+}
+
+.reports__specialist-rows {
+  margin-top: 12px;
+}
+
 @media (max-width: 1024px) {
   .reports__row { grid-template-columns: 1fr; }
   .reports__cards { grid-template-columns: repeat(2, 1fr); }
