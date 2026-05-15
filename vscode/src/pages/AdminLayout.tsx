@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { useAppointmentStore } from '../store/appointmentStore';
@@ -20,6 +20,7 @@ import {
   Clock,
   AlertCircle,
   CheckCircle2,
+  Scissors,
 } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import './AdminLayout.css';
@@ -67,11 +68,22 @@ export default function AdminLayout() {
   const { theme, toggleTheme } = useThemeStore();
   const { appointments, fetchAppointments } = useAppointmentStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+
+  // Redirect specialists away from admin-only pages
+  useEffect(() => {
+    if (user?.role === 'specialist') {
+      const adminOnlyPaths = ['/admin', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/empleadas', '/admin/ajustes', '/admin/reportes'];
+      if (adminOnlyPaths.includes(location.pathname)) {
+        navigate('/admin/mi-turno', { replace: true });
+      }
+    }
+  }, [user?.role, location.pathname, navigate]);
 
   // Close notification panel when clicking outside
   useEffect(() => {
@@ -119,7 +131,9 @@ export default function AdminLayout() {
             <span className="admin__brand-icon">N</span>
             <div>
               <span className="admin__brand-name">Anadsll</span>
-              <span className="admin__brand-sub">Sistema Admin</span>
+              <span className="admin__brand-sub">
+              {user?.role === 'specialist' ? 'Panel Especialista' : 'Sistema Admin'}
+            </span>
             </div>
           </div>
           <button
@@ -132,39 +146,58 @@ export default function AdminLayout() {
         </div>
 
         <nav className="admin__nav">
-          {navSections.map((section) => {
-            if (user?.role === 'specialist' && section.label !== 'Principal') {
-              return null;
-            }
-            // Only admin can see settings
-            if (section.label === 'Configuración' && user?.role !== 'admin') {
-              return null;
-            }
-
-            // Only admin can see Análisis section
-            if (section.label === 'Análisis' && user?.role !== 'admin') {
-              return null;
-            }
-
-            return (
-              <div className="admin__nav-section" key={section.label}>
-                <span className="admin__nav-label">{section.label}</span>
-                {section.items.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) =>
-                      `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`
-                    }
-                    onClick={() => setSidebarOpen(false)}
-                  >
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </NavLink>
-                ))}
+          {user?.role === 'specialist' ? (
+            /* ── Specialist nav ── */
+            <>
+              <div className="admin__nav-section">
+                <span className="admin__nav-label">Mi trabajo</span>
+                <NavLink
+                  to="/admin/mi-turno"
+                  className={({ isActive }) =>
+                    `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`
+                  }
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <Scissors size={20} />
+                  <span>Mi Turno</span>
+                </NavLink>
+                <NavLink
+                  to="/admin/citas"
+                  className={({ isActive }) =>
+                    `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`
+                  }
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <CalendarDays size={20} />
+                  <span>Mis Citas</span>
+                </NavLink>
               </div>
-            );
-          })}
+            </>
+          ) : (
+            /* ── Admin / Receptionist nav ── */
+            navSections.map((section) => {
+              if (section.label === 'Configuración' && user?.role !== 'admin') return null;
+              if (section.label === 'Análisis' && user?.role !== 'admin') return null;
+              return (
+                <div className="admin__nav-section" key={section.label}>
+                  <span className="admin__nav-label">{section.label}</span>
+                  {section.items.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      className={({ isActive }) =>
+                        `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`
+                      }
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </NavLink>
+                  ))}
+                </div>
+              );
+            })
+          )}
         </nav>
 
         <div className="admin__sidebar-footer">
@@ -259,8 +292,8 @@ export default function AdminLayout() {
               <div className="admin__user-info">
                 <span className="admin__user-name">{user?.name}</span>
                 <span className="admin__user-role">
-                  {user?.role === 'admin' ? 'Administradora' : 
-                   user?.role === 'receptionist' ? 'Recepcionista' : 'Empleada'}
+                  {user?.role === 'admin' ? 'Administradora' :
+                   user?.role === 'receptionist' ? 'Recepcionista' : 'Especialista'}
                 </span>
               </div>
             </div>

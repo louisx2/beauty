@@ -16,6 +16,7 @@ const SessionPackages = lazy(() => import('./pages/admin/SessionPackages'));
 const Staff = lazy(() => import('./pages/admin/Staff'));
 const Settings = lazy(() => import('./pages/admin/Settings'));
 const Reports = lazy(() => import('./pages/admin/Reports'));
+const SpecialistView = lazy(() => import('./pages/specialist/SpecialistView'));
 
 function AdminFallback() {
   return (
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="empleadas" element={<Suspense fallback={<AdminFallback />}><Staff /></Suspense>} />
           <Route path="ajustes" element={<Suspense fallback={<AdminFallback />}><Settings /></Suspense>} />
           <Route path="reportes" element={<Suspense fallback={<AdminFallback />}><Reports /></Suspense>} />
+          <Route path="mi-turno" element={<Suspense fallback={<AdminFallback />}><SpecialistView /></Suspense>} />
         </Route>
 
         {/* Catch-all */}
