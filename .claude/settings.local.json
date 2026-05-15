@@ -6,7 +6,10 @@
       "PowerShell(Get-Process -Name node -ErrorAction SilentlyContinue)",
       "PowerShell(Stop-Process -Force -Confirm:$false)",
       "Bash(npx tsc *)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }

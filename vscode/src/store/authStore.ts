@@ -97,45 +97,16 @@ async function resolveUser(sessionUser: { id: string; email?: string; user_metad
   }
 }
 
-// Handle auth events (sign-in, sign-out, token refresh)
-// Register listener BEFORE initializeAuth so TOKEN_REFRESHED events are caught
-supabase.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'INITIAL_SESSION') return;
-
+// Handle ALL auth events: INITIAL_SESSION (page load/reload), SIGNED_IN,
+// SIGNED_OUT, TOKEN_REFRESHED, etc.
+// Supabase fires INITIAL_SESSION on startup with the stored session (or null),
+// and TOKEN_REFRESHED whenever it auto-renews the access token.
+// Handling all events here means the session is always restored on reload
+// and the store stays in sync with Supabase's internal state.
+supabase.auth.onAuthStateChange(async (_event, session) => {
   if (session?.user) {
     await resolveUser(session.user);
   } else {
     useAuthStore.setState({ user: null, isAuthenticated: false, loading: false });
   }
 });
-
-// Validate session with the server on startup
-// getUser() (unlike getSession()) makes a network call that validates the token
-// and triggers auto-refresh if the access token is expired
-async function initializeAuth() {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (!session) {
-      useAuthStore.setState({ loading: false });
-      return;
-    }
-
-    const { data: { user }, error } = await supabase.auth.getUser();
-
-    if (error || !user) {
-      // Session expired beyond recovery — clear stale tokens from storage.
-      // Without this, the expired JWT is sent with ALL requests (even public ones),
-      // causing Supabase to reject them instead of using the anon role.
-      await supabase.auth.signOut();
-      useAuthStore.setState({ user: null, isAuthenticated: false, loading: false });
-      return;
-    }
-
-    await resolveUser(user);
-  } catch {
-    useAuthStore.setState({ loading: false });
-  }
-}
-
-initializeAuth();
