@@ -1,0 +1,173 @@
+.footer {
+  position: relative;
+}
+
+.footer__top {
+  background: var(--charcoal);
+  padding: 80px 24px 40px;
+}
+
+.footer__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+  gap: 40px;
+}
+
+/* Brand */
+.footer__logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.footer__logo-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--rose), var(--lavender));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: white;
+}
+
+.footer__logo-name {
+  display: block;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: white;
+  line-height: 1.1;
+}
+
+.footer__logo-sub {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.footer__tagline {
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+
+.footer__social {
+  display: flex;
+  gap: 10px;
+}
+
+.footer__social-link {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.7);
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.footer__social-link:hover {
+  background: linear-gradient(135deg, var(--rose), var(--lavender));
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Columns */
+.footer__col h4 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 20px;
+}
+
+.footer__col a {
+  display: block;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.55);
+  text-decoration: none;
+  padding: 5px 0;
+  transition: color 0.3s ease;
+}
+
+.footer__col a:hover {
+  color: var(--rose-light);
+}
+
+.footer__contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.55);
+  padding: 5px 0;
+}
+
+.footer__contact-item svg {
+  color: var(--rose);
+  flex-shrink: 0;
+}
+
+.footer__map {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid rgba(255,255,255,0.08);
+}
+
+/* Bottom */
+.footer__bottom {
+  background: #231c28;
+  padding: 20px 24px;
+  text-align: center;
+}
+
+.footer__bottom p {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.4);
+}
+
+/* WhatsApp FAB */
+.whatsapp-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #25d366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 24px rgba(37, 211, 102, 0.4);
+  z-index: 999;
+  transition: all 0.3s ease;
+  animation: pulse-ring 2s infinite;
+}
+
+.whatsapp-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 32px rgba(37, 211, 102, 0.6);
+}
+
+@media (max-width: 1024px) {
+  .footer__inner { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 640px) {
+  .footer__inner { grid-template-columns: 1fr; gap: 30px; }
+  .footer__top { padding: 60px 20px 30px; }
+}

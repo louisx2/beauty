@@ -1,0 +1,303 @@
+/* ═══════════════════════════════════════════════
+   MyAppointments — Client-facing appointment tracker
+   ═══════════════════════════════════════════════ */
+
+.my-appts {
+  padding: 100px 24px;
+  min-height: 60vh;
+}
+
+.my-appts__inner {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.my-appts__title {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.my-appts__subtitle {
+  font-size: 1.05rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 36px;
+}
+
+/* Search */
+.my-appts__search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 20px;
+  border-radius: 999px;
+  max-width: 560px;
+  margin: 0 auto 40px;
+  box-shadow: 0 8px 30px rgba(125, 90, 68, 0.08);
+}
+
+.my-appts__search-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  color: var(--muted);
+}
+
+.my-appts__search-input input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  color: var(--espresso);
+  outline: none;
+}
+
+.my-appts__search-input input::placeholder {
+  color: var(--muted);
+}
+
+.my-appts__search .btn-primary {
+  padding: 12px 28px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* Results */
+.my-appts__results {
+  text-align: left;
+}
+
+.my-appts__empty {
+  text-align: center;
+  padding: 60px 20px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.my-appts__empty svg {
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.my-appts__empty h3 {
+  font-size: 1.4rem;
+  margin-bottom: 8px;
+}
+
+.my-appts__empty p {
+  color: var(--muted);
+  max-width: 400px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* Welcome */
+.my-appts__welcome {
+  background: linear-gradient(135deg, rgba(125, 90, 68, 0.08), rgba(178, 150, 125, 0.12));
+  border-radius: 20px;
+  padding: 24px 28px;
+  margin-bottom: 28px;
+  border: 1px solid rgba(178, 150, 125, 0.2);
+}
+
+.my-appts__welcome h3 {
+  font-size: 1.3rem;
+  margin-bottom: 4px;
+}
+
+.my-appts__welcome p {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Section titles */
+.my-appts__section {
+  margin-bottom: 32px;
+}
+
+.my-appts__section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--espresso);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(178, 150, 125, 0.2);
+}
+
+.my-appts__section-title svg {
+  color: var(--camel-dark);
+}
+
+/* Card list */
+.my-appts__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Appointment Card */
+.my-appt-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-left: 6px solid #e2e8f0; /* Default neutral border */
+  border-radius: 16px;
+  transition: all 0.25s ease;
+}
+
+/* Status Colors */
+.my-appt-card--pending { border-left-color: #f59e0b; }
+.my-appt-card--confirmed { border-left-color: #10b981; }
+.my-appt-card--in_progress { border-left-color: #6366f1; }
+.my-appt-card--completed { border-left-color: #64748b; }
+.my-appt-card--cancelled { border-left-color: #ef4444; }
+.my-appt-card--no_show { border-left-color: #dc2626; }
+
+.my-appt-card:hover {
+  box-shadow: 0 4px 20px rgba(125, 90, 68, 0.08);
+  transform: translateY(-1px);
+}
+
+.my-appt-card--past {
+  opacity: 0.7;
+}
+
+.my-appt-card--past:hover {
+  opacity: 0.85;
+}
+
+/* Date column */
+.my-appt-card__date-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 50px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, var(--cocoa), var(--espresso));
+  border-radius: 12px;
+  color: white;
+}
+
+.my-appt-card__date-col--past {
+  background: linear-gradient(135deg, var(--muted), #aaa);
+}
+
+.my-appt-card__day {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.my-appt-card__month {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+/* Info */
+.my-appt-card__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.my-appt-card__info strong {
+  font-size: 1rem;
+  color: var(--espresso);
+}
+
+.my-appt-card__info span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.my-appt-card__full-date {
+  font-size: 0.78rem !important;
+  color: var(--camel-dark) !important;
+  text-transform: capitalize;
+}
+
+/* Right */
+.my-appt-card__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.my-appt-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.my-appt-card__cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.06);
+  color: #dc2626;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.my-appt-card__cancel:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.my-appt-card__cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.my-appt-card__no-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .my-appts { padding: 60px 16px; }
+  .my-appts__search {
+    flex-direction: column;
+    border-radius: 20px;
+    padding: 16px;
+  }
+  .my-appts__search .btn-primary { width: 100%; justify-content: center; }
+  .my-appt-card { flex-direction: column; align-items: stretch; text-align: left; }
+  .my-appt-card__date-col { flex-direction: row; gap: 8px; }
+  .my-appt-card__right { flex-direction: row; flex-wrap: wrap; align-items: center; }
+}

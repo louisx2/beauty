@@ -1,0 +1,315 @@
+/* ── Admin Layout ── */
+.admin {
+  display: flex;
+  min-height: 100vh;
+  background: #2A1F1A;
+}
+
+/* ── Sidebar ── */
+.admin__sidebar {
+  width: 260px;
+  background: linear-gradient(180deg, #352820 0%, #2A1F1A 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.admin__sidebar::-webkit-scrollbar { width: 3px; }
+.admin__sidebar::-webkit-scrollbar-thumb { background: rgba(178,150,125,0.3); border-radius: 99px; }
+
+.admin__sidebar-header {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin__sidebar-close {
+  display: none;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.admin__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin__brand-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--rose), var(--lavender));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: white;
+}
+
+.admin__brand-name {
+  display: block;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: white;
+  line-height: 1.1;
+}
+
+.admin__brand-sub {
+  display: block;
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ── Navigation ── */
+.admin__nav {
+  flex: 1;
+  padding: 16px 12px;
+}
+
+.admin__nav-section {
+  margin-bottom: 24px;
+}
+
+.admin__nav-label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(255,255,255,0.25);
+  padding: 0 12px;
+  margin-bottom: 8px;
+}
+
+.admin__nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: rgba(255,255,255,0.5);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin-bottom: 2px;
+}
+
+.admin__nav-link:hover {
+  color: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.04);
+}
+
+.admin__nav-link--active {
+  color: white;
+  background: linear-gradient(135deg, rgba(178,150,125,0.25), rgba(125,90,68,0.18));
+  box-shadow: inset 0 0 0 1px rgba(178,150,125,0.2);
+}
+
+.admin__nav-link--active svg {
+  color: var(--camel);
+}
+
+/* ── Sidebar Footer ── */
+.admin__sidebar-footer {
+  padding: 16px 12px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.admin__logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin__logout:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
+}
+
+/* ── Overlay ── */
+.admin__overlay {
+  display: none;
+}
+
+/* ── Main Content ── */
+.admin__main {
+  flex: 1;
+  margin-left: 260px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.admin__header {
+  height: 64px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(42, 31, 26, 0.85);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.admin__header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin__menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  padding: 6px;
+}
+
+.admin__header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin__notification {
+  position: relative;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.admin__notification:hover {
+  background: rgba(255,255,255,0.05);
+  color: white;
+}
+
+.admin__notification-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: var(--camel);
+  border-radius: 50%;
+  border: 2px solid #2A1F1A;
+}
+
+.admin__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.admin__user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--rose), var(--lavender));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: white;
+}
+
+.admin__user-name {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: white;
+  line-height: 1.2;
+}
+
+.admin__user-role {
+  display: block;
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.35);
+}
+
+/* ── Content ── */
+.admin__content {
+  flex: 1;
+  padding: 28px;
+  overflow-y: auto;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .admin__sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+    box-shadow: none;
+  }
+
+  .admin__sidebar--open {
+    transform: translateX(0);
+    box-shadow: 16px 0 48px rgba(0,0,0,0.5);
+  }
+
+  .admin__sidebar-close { display: block; }
+
+  .admin__overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+  }
+
+  .admin__main {
+    margin-left: 0;
+  }
+
+  .admin__menu-toggle {
+    display: block;
+  }
+
+  .admin__content {
+    padding: 20px 16px;
+  }
+
+  .admin__user-info { display: none; }
+}

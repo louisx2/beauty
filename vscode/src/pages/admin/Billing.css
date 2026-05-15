@@ -1,0 +1,411 @@
+/* ── Billing Page ── */
+.billing__stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.billing__filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.billing__status-filter {
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  color: rgba(255,255,255,0.7);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.billing__status-filter option { background: #352820; }
+
+/* ── Table ── */
+.billing__table-wrap {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 20px;
+  overflow-x: auto;
+}
+
+.billing__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.billing__table th {
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.35);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  white-space: nowrap;
+}
+
+.billing__table td {
+  padding: 14px 16px;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.7);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  white-space: nowrap;
+}
+
+.billing__table td strong {
+  color: white;
+}
+
+.billing__table tbody tr {
+  transition: background 0.15s;
+}
+
+.billing__table tbody tr:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.billing__row--cancelled td {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.billing__ncf-badge {
+  display: block;
+  font-size: 0.78rem;
+  font-family: 'Courier New', monospace;
+  color: var(--lavender);
+  font-weight: 600;
+}
+
+.billing__ncf-type {
+  display: block;
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.3);
+  margin-top: 2px;
+}
+
+.billing__itbis-col {
+  color: #fbbf24 !important;
+  font-size: 0.82rem !important;
+}
+
+.billing__date-col {
+  color: rgba(255,255,255,0.4) !important;
+  font-size: 0.78rem !important;
+}
+
+.billing__pay-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.5);
+}
+
+.billing__row-actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Invoice View Modal ── */
+.billing__invoice-modal {
+  max-width: 700px;
+}
+
+.billing__invoice-view {
+  padding: 24px 28px;
+}
+
+.billing__inv-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.billing__inv-header h3 {
+  font-family: 'Cormorant Garamond', serif;
+  color: white;
+  font-size: 1.3rem;
+  margin-bottom: 4px;
+}
+
+.billing__inv-header p {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.4);
+}
+
+.billing__inv-meta {
+  text-align: right;
+}
+
+.billing__inv-meta div {
+  margin-bottom: 4px;
+}
+
+.billing__inv-meta span {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.4);
+  margin-right: 6px;
+}
+
+.billing__inv-meta strong {
+  font-size: 0.82rem;
+  color: white;
+}
+
+.billing__inv-client {
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 20px;
+}
+
+.billing__inv-client strong { color: white; }
+
+.billing__inv-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.billing__inv-items th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.35);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.billing__inv-items td {
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.7);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.billing__inv-items tfoot td {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.5);
+  border: none;
+  text-align: right;
+}
+
+.billing__inv-itbis-row td {
+  color: #fbbf24 !important;
+}
+
+.billing__inv-total-row td {
+  font-size: 1rem !important;
+  color: white !important;
+  padding-top: 10px !important;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.billing__inv-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ── Create Invoice Modal ── */
+.billing__create-modal {
+  max-width: 800px;
+}
+
+.billing__items-section {
+  margin: 8px 0;
+}
+
+.billing__items-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.billing__items-header h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.9rem;
+  color: white;
+}
+
+.billing__add-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border: 1px dashed rgba(232,165,184,0.3);
+  border-radius: 10px;
+  background: none;
+  color: var(--rose);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.billing__add-item-btn:hover {
+  background: rgba(232,165,184,0.05);
+}
+
+.billing__no-items {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px;
+  border: 2px dashed rgba(255,255,255,0.06);
+  border-radius: 16px;
+  color: rgba(255,255,255,0.2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.billing__no-items:hover {
+  border-color: rgba(232,165,184,0.2);
+  color: rgba(255,255,255,0.4);
+}
+
+.billing__no-items p { font-size: 0.85rem; }
+
+.billing__items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.billing__item-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 14px;
+  flex-wrap: wrap;
+}
+
+.billing__item-row .modal__field {
+  gap: 4px;
+}
+
+.billing__item-row .modal__field label {
+  display: none;
+}
+
+.billing__item-tax {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding-bottom: 6px;
+}
+
+.billing__item-total {
+  min-width: 80px;
+  text-align: right;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: white;
+  padding-bottom: 6px;
+}
+
+/* Totals */
+.billing__totals {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 280px;
+  margin-left: auto;
+}
+
+.billing__totals div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.5);
+}
+
+.billing__totals-itbis {
+  color: #fbbf24 !important;
+}
+
+.billing__totals-grand {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 8px;
+  margin-top: 4px;
+  font-size: 1rem !important;
+}
+
+.billing__totals-grand strong {
+  color: white;
+  font-size: 1.1rem;
+}
+
+/* Payment Options */
+.billing__pay-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.billing__pay-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.5);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.billing__pay-option:hover {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.8);
+}
+
+.billing__pay-option--active {
+  background: linear-gradient(135deg, rgba(201,125,151,0.15), rgba(154,130,204,0.1));
+  border-color: rgba(232,165,184,0.3);
+  color: white;
+}
+
+@media (max-width: 1024px) {
+  .billing__stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .billing__stats { grid-template-columns: 1fr; }
+  .billing__table-wrap { font-size: 0.8rem; }
+  .billing__item-row { flex-direction: column; align-items: stretch; }
+  .billing__create-modal { max-width: 100%; }
+}

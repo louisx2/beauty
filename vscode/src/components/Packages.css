@@ -1,0 +1,168 @@
+.packages {
+  padding: 100px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.packages__bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--blush) 0%, var(--pearl) 100%);
+  z-index: 0;
+}
+
+.packages__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.packages__header {
+  text-align: center;
+  margin-bottom: 64px;
+}
+
+.packages__title {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.packages__subtitle {
+  font-size: 1.05rem;
+  color: var(--muted);
+  max-width: 560px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+.packages__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+/* Card */
+.package-card {
+  background: white;
+  border-radius: 28px;
+  padding: 36px 28px;
+  position: relative;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+  transition: all 0.4s ease;
+  border: 2px solid transparent;
+}
+
+.package-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(201, 125, 151, 0.12);
+}
+
+.package-card--popular {
+  border-color: var(--rose);
+  box-shadow: 0 8px 40px rgba(201, 125, 151, 0.18);
+  transform: scale(1.04);
+}
+
+.package-card--popular:hover {
+  transform: scale(1.04) translateY(-4px);
+}
+
+.package-card__badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 18px;
+  background: linear-gradient(135deg, var(--rose-dark), var(--lavender-dark));
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.package-card__name {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.package-card__sessions {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.package-card__sessions-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 3.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--rose-dark), var(--lavender-dark));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1;
+}
+
+.package-card__sessions-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+}
+
+.package-card__price {
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--charcoal);
+  margin-top: 16px;
+}
+
+.package-card__per-session {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+.package-card__features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.package-card__features li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: var(--charcoal);
+}
+
+.package-card__features li svg {
+  color: var(--rose-dark);
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .packages__grid { grid-template-columns: 1fr 1fr; }
+  .package-card--popular { transform: scale(1); }
+  .package-card--popular:hover { transform: translateY(-4px); }
+}
+
+@media (max-width: 640px) {
+  .packages__grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
+  .packages { padding: 60px 20px; }
+}
