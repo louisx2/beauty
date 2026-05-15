@@ -518,4 +518,6 @@ export default function Booking() {
           </button>
         </form>
       </div>
-    </sect
+    </section>
+  );
+}

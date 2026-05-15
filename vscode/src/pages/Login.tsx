@@ -58,10 +58,12 @@ export default function Login() {
         aria-label="Cambiar tema"
         style={{
           position: 'absolute', top: '20px', right: '20px', zIndex: 10,
-          background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)',
+          background: theme === 'light' ? 'rgba(61,46,36,0.1)' : 'rgba(255,255,255,0.12)',
+          border: theme === 'light' ? '1px solid rgba(61,46,36,0.2)' : '1px solid rgba(255,255,255,0.2)',
           borderRadius: '50%', width: '40px', height: '40px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'rgba(255,255,255,0.8)', cursor: 'pointer', transition: 'all 0.2s',
+          color: theme === 'light' ? 'rgba(61,46,36,0.7)' : 'rgba(255,255,255,0.8)',
+          cursor: 'pointer', transition: 'all 0.2s',
         }}
       >
         {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -115,4 +117,33 @@ export default function Login() {
               <button
                 type="button"
                 className="login__password-toggle"
-          
+                onClick={() => setShowPass(!showPass)}
+                aria-label="Toggle password"
+              >
+                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="login__submit"
+            disabled={loading}
+            id="login-submit"
+          >
+            {loading ? (
+              <span className="login__spinner" />
+            ) : (
+              'Iniciar Sesión'
+            )}
+          </button>
+        </form>
+
+        <div className="login__demo">
+          <p>Credenciales de prueba:</p>
+          <code>admin@anadsll.com / admin123</code>
+        </div>
+      </div>
+    </div>
+  );
+}

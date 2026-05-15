@@ -321,4 +321,63 @@ export default function MyAppointments() {
                           </div>
                         );
                       })}
-                    </div
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Modal de confirmación de cancelación */}
+      {confirmCancelId && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, padding: '24px',
+        }}>
+          <div style={{
+            background: 'var(--bg-primary, #fff)', borderRadius: '20px',
+            padding: '32px 28px', maxWidth: '380px', width: '100%',
+            boxShadow: '0 24px 60px rgba(0,0,0,0.25)',
+            border: '1px solid var(--camel-light, #e5d5c5)',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>⚠️</div>
+            <h3 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.4rem', marginBottom: '10px', color: 'var(--espresso, #3D2E24)' }}>
+              ¿Cancelar esta cita?
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--muted, #888)', marginBottom: '24px', lineHeight: 1.5 }}>
+              Esta acción no se puede deshacer. Si cambias de opinión, tendrás que agendar una nueva cita.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                onClick={() => setConfirmCancelId(null)}
+                style={{
+                  flex: 1, padding: '12px 20px', borderRadius: '12px',
+                  border: '2px solid var(--camel-light, #e5d5c5)', background: 'transparent',
+                  color: 'var(--espresso, #3D2E24)', fontFamily: 'Outfit, sans-serif',
+                  fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem',
+                }}
+              >
+                No, conservar
+              </button>
+              <button
+                onClick={confirmCancel}
+                style={{
+                  flex: 1, padding: '12px 20px', borderRadius: '12px',
+                  border: 'none', background: '#ef4444',
+                  color: 'white', fontFamily: 'Outfit, sans-serif',
+                  fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem',
+                }}
+              >
+                Sí, cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

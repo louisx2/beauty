@@ -101,7 +101,6 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 }));
 
-<<<<<<< HEAD
 // onAuthStateChange holds the Supabase storage lock while it fires.
 // Any Supabase data query inside the callback (even async) calls getSession()
 // internally, which tries to re-acquire the same lock → deadlock for 5s.
@@ -120,20 +119,10 @@ supabase.auth.onAuthStateChange((_event, session) => {
     });
     // Enrich with real name/role from staff table AFTER lock is released
     setTimeout(() => enrichUserFromStaff(u.id, email), 0);
-=======
-// Restore session on page load and keep in sync with Supabase's internal state.
-// INITIAL_SESSION fires on mount with the stored token (or null).
-// TOKEN_REFRESHED fires when Supabase auto-renews the access token.
-supabase.auth.onAuthStateChange(async (_event, session) => {
-  if (session?.user) {
-    const user = await buildUser(session.user);
-    useAuthStore.setState({ user, isAuthenticated: true, loading: false });
->>>>>>> 18df88d03c02e3b340889c79d076a75ed3a4506e
   } else {
     useAuthStore.setState({ user: null, isAuthenticated: false, loading: false });
   }
 });
-<<<<<<< HEAD
 
 // Look up real name and role from the staff table (runs outside the auth lock)
 async function enrichUserFromStaff(userId: string, email: string) {
@@ -160,5 +149,3 @@ async function enrichUserFromStaff(userId: string, email: string) {
     // Keep fallback name/role if staff lookup fails
   }
 }
-=======
->>>>>>> 18df88d03c02e3b340889c79d076a75ed3a4506e
