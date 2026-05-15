@@ -178,6 +178,20 @@ export type Database = {
         Insert: Omit<Database['public']['Tables']['business_settings']['Row'], 'id'> & { id?: string };
         Update: Partial<Database['public']['Tables']['business_settings']['Insert']>;
       };
+      settings: {
+        Row: {
+          id: number;
+          deposit_amount: number;
+          bank_name: string;
+          account_number: string;
+          account_name: string;
+          whatsapp_number: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['settings']['Row']>;
+        Update: Partial<Database['public']['Tables']['settings']['Row']>;
+      };
     };
   };
 };

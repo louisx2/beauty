@@ -36,18 +36,14 @@ export default function Settings() {
     e.preventDefault();
     setLoading(true);
     setSuccessMsg('');
-    
-    const success = await updateSettings(form);
-    if (success) {
+
+    const ok = await updateSettings(form);
+    if (ok) {
       setSuccessMsg('Configuración guardada correctamente.');
       setTimeout(() => setSuccessMsg(''), 3000);
     }
     setLoading(false);
   };
-
-  if (!settings) {
-    return <div style={{ padding: '24px', color: 'var(--muted)' }}>Cargando configuración...</div>;
-  }
 
   return (
     <div className="admin-page">

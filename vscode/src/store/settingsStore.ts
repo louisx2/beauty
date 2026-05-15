@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { toast } from 'react-hot-toast';
 
 export interface Settings {
-  id: number;
   deposit_amount: number;
   bank_name: string;
   account_number: string;
@@ -10,15 +10,23 @@ export interface Settings {
   whatsapp_number: string;
 }
 
+const DEFAULTS: Settings = {
+  deposit_amount: 500,
+  bank_name: 'Banco Popular',
+  account_number: '123456789',
+  account_name: 'Anadsll Beauty Esthetic',
+  whatsapp_number: '18293224014',
+};
+
 interface SettingsState {
-  settings: Settings | null;
+  settings: Settings;
   loading: boolean;
   fetchSettings: () => Promise<void>;
-  updateSettings: (newSettings: Partial<Settings>) => Promise<boolean>;
+  updateSettings: (patch: Partial<Settings>) => Promise<boolean>;
 }
 
-export const useSettingsStore = create<SettingsState>()((set) => ({
-  settings: null,
+export const useSettingsStore = create<SettingsState>()((set, get) => ({
+  settings: DEFAULTS,
   loading: false,
 
   fetchSettings: async () => {
@@ -26,52 +34,47 @@ export const useSettingsStore = create<SettingsState>()((set) => ({
     try {
       const { data, error } = await supabase
         .from('settings')
-        .select('*')
+        .select('deposit_amount, bank_name, account_number, account_name, whatsapp_number')
         .eq('id', 1)
-        .single();
-      
+        .maybeSingle();
+
       if (!error && data) {
-        set({ settings: data });
-      } else {
-        // Fallback default settings if table is empty or doesn't exist yet
-        set({ 
-          settings: {
-            id: 1,
-            deposit_amount: 500,
-            bank_name: 'Banco Popular',
-            account_number: '123456789',
-            account_name: 'Anadsll Beauty Esthetic',
-            whatsapp_number: '18293224014'
-          } 
-        });
+        set({ settings: { ...DEFAULTS, ...data } });
       }
+      // If table doesn't exist yet, silently keep defaults
     } catch {
-      console.error('Error fetching settings');
+      // Keep defaults
     } finally {
       set({ loading: false });
     }
   },
 
-  updateSettings: async (newSettings) => {
-    set({ loading: true });
+  updateSettings: async (patch) => {
+    const previous = get().settings;
+    const next = { ...previous, ...patch };
+
+    // Optimistic update — apply immediately, rollback on error
+    set({ settings: next });
+
     try {
       const { error } = await supabase
         .from('settings')
-        .update(newSettings)
-        .eq('id', 1);
-        
-      if (!error) {
-        set((state) => ({
-          settings: state.settings ? { ...state.settings, ...newSettings } : null
-        }));
-        return true;
+        .upsert({ id: 1, ...next }, { onConflict: 'id' });
+
+      if (error) {
+        set({ settings: previous });
+        toast.error('Error al guardar configuración');
+        console.error('[settings] upsert error:', error);
+        return false;
       }
-      return false;
+
+      toast.success('Configuración guardada');
+      return true;
     } catch (err) {
-      console.error(err);
+      set({ settings: previous });
+      toast.error('Error de conexión al guardar');
+      console.error('[settings] network error:', err);
       return false;
-    } finally {
-      set({ loading: false });
     }
-  }
+  },
 }));
