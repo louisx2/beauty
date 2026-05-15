@@ -81,7 +81,7 @@
   font-family: 'Outfit', sans-serif;
   font-size: 0.9rem;
   color: var(--charcoal);
-  background: rgba(255,255,255,0.7);
+  background: rgba(255, 255, 255, 0.7);
   transition: all 0.3s ease;
   outline: none;
 }
@@ -108,9 +108,18 @@
     grid-template-columns: 1fr;
     gap: 40px;
   }
-  .booking__form { padding: 24px; }
-  .booking { padding: 60px 20px; }
-  .booking__row { grid-template-columns: 1fr; }
+
+  .booking__form {
+    padding: 24px;
+  }
+
+  .booking {
+    padding: 60px 20px;
+  }
+
+  .booking__row {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Dynamic Booking Styles */
@@ -171,7 +180,7 @@
   padding: 60px 40px;
   border-radius: 30px;
   border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
   grid-column: 1 / -1;
   max-width: 600px;
   margin: 0 auto;

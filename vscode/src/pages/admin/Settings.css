@@ -1,123 +1,98 @@
-.settings__grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-}
+/* Settings page — form inputs */
 
-.settings__card {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 20px;
-  padding: 28px;
-}
-
-.settings__card h3 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1rem;
-  font-weight: 600;
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.settings__card h3 svg { color: var(--rose); }
-
-.settings__card-desc {
-  font-size: 0.82rem;
-  color: rgba(255,255,255,0.35);
-  margin-bottom: 16px;
-  margin-top: -12px;
-}
-
-.settings__fields {
+.settings-section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-}
-
-.settings__hint {
-  font-size: 0.72rem;
-  color: rgba(255,255,255,0.3);
-  margin-top: 4px;
-}
-
-/* NCF List */
-.settings__ncf-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.settings__ncf-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.04);
-  border-radius: 14px;
   gap: 16px;
 }
 
-.settings__ncf-type strong {
-  display: block;
-  font-family: 'Courier New', monospace;
-  font-size: 0.95rem;
-  color: var(--lavender);
-}
-
-.settings__ncf-type span {
-  font-size: 0.7rem;
-  color: rgba(255,255,255,0.3);
-}
-
-.settings__ncf-info {
-  display: flex;
-  gap: 20px;
-}
-
-.settings__ncf-info div {
-  text-align: center;
-}
-
-.settings__ncf-info span {
-  display: block;
-  font-size: 0.65rem;
-  color: rgba(255,255,255,0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 2px;
-}
-
-.settings__ncf-info strong {
-  font-size: 0.88rem;
-  color: white;
-}
-
-.settings__ncf-low {
-  color: #fbbf24 !important;
-}
-
-/* Payment toggles */
-.settings__payments {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.settings__payment-item {
+.settings-section h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--espresso);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: rgba(255,255,255,0.02);
-  border-radius: 12px;
-  font-size: 0.88rem;
-  color: rgba(255,255,255,0.7);
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
-@media (max-width: 768px) {
-  .settings__grid { grid-template-columns: 1fr; }
+.settings-section p {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--espresso);
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.settings-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.settings-input-wrap svg {
+  position: absolute;
+  left: 14px;
+  color: var(--camel);
+  pointer-events: none;
+}
+
+.settings-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-secondary, #f8f4f0);
+  border: 2px solid var(--camel-light, #e5d5c5);
+  border-radius: 12px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  color: var(--espresso, #3D2E24);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.settings-input.has-icon {
+  padding-left: 42px;
+}
+
+.settings-input::placeholder {
+  color: var(--muted, #aaa);
+}
+
+.settings-input:focus {
+  border-color: var(--camel, #B2967D);
+  box-shadow: 0 0 0 4px rgba(178, 150, 125, 0.15);
+  background: var(--bg-primary, #fff);
+}
+
+.settings-divider {
+  border: none;
+  border-top: 1px solid var(--camel-light, #e5d5c5);
+  margin: 8px 0;
+}
+
+.settings-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  color: #059669;
+  font-size: 0.88rem;
+  font-weight: 500;
 }

@@ -153,18 +153,36 @@
   background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.7);
-  border-left: 6px solid #e2e8f0; /* Default neutral border */
+  border-left: 6px solid #e2e8f0;
+  /* Default neutral border */
   border-radius: 16px;
   transition: all 0.25s ease;
 }
 
 /* Status Colors */
-.my-appt-card--pending { border-left-color: #f59e0b; }
-.my-appt-card--confirmed { border-left-color: #10b981; }
-.my-appt-card--in_progress { border-left-color: #6366f1; }
-.my-appt-card--completed { border-left-color: #64748b; }
-.my-appt-card--cancelled { border-left-color: #ef4444; }
-.my-appt-card--no_show { border-left-color: #dc2626; }
+.my-appt-card--pending {
+  border-left-color: #f59e0b;
+}
+
+.my-appt-card--confirmed {
+  border-left-color: #10b981;
+}
+
+.my-appt-card--in_progress {
+  border-left-color: #6366f1;
+}
+
+.my-appt-card--completed {
+  border-left-color: #64748b;
+}
+
+.my-appt-card--cancelled {
+  border-left-color: #ef4444;
+}
+
+.my-appt-card--no_show {
+  border-left-color: #dc2626;
+}
 
 .my-appt-card:hover {
   box-shadow: 0 4px 20px rgba(125, 90, 68, 0.08);
@@ -290,14 +308,35 @@
 
 /* Responsive */
 @media (max-width: 600px) {
-  .my-appts { padding: 60px 16px; }
+  .my-appts {
+    padding: 60px 16px;
+  }
+
   .my-appts__search {
     flex-direction: column;
     border-radius: 20px;
     padding: 16px;
   }
-  .my-appts__search .btn-primary { width: 100%; justify-content: center; }
-  .my-appt-card { flex-direction: column; align-items: stretch; text-align: left; }
-  .my-appt-card__date-col { flex-direction: row; gap: 8px; }
-  .my-appt-card__right { flex-direction: row; flex-wrap: wrap; align-items: center; }
+
+  .my-appts__search .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .my-appt-card {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .my-appt-card__date-col {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .my-appt-card__right {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
 }

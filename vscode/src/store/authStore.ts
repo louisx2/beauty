@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 
+export type UserRole = 'admin' | 'receptionist' | 'specialist';
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'receptionist' | 'specialist';
+  role: UserRole;
 }
 
 interface AuthState {
@@ -15,36 +17,75 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  clearError: () => void;
 }
 
-export const useAuthStore = create<AuthState>()((set, get) => ({
+async function buildUser(sessionUser: {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, unknown>;
+}): Promise<User> {
+  const email = sessionUser.email ?? '';
+  const fallbackName =
+    (sessionUser.user_metadata?.name as string) ||
+    email.split('@')[0] ||
+    'Admin';
+
+  const base: User = { id: sessionUser.id, email, name: fallbackName, role: 'admin' };
+
+  try {
+    const { data } = await supabase
+      .from('staff')
+      .select('name, role')
+      .ilike('email', email)
+      .maybeSingle();
+
+    if (data) {
+      return {
+        ...base,
+        name: data.name || base.name,
+        role: (data.role as UserRole) || 'admin',
+      };
+    }
+  } catch {
+    // Staff lookup failed — keep base user with admin role
+  }
+
+  return base;
+}
+
+export const useAuthStore = create<AuthState>()((set) => ({
   user: null,
-  loading: true, // Start loading as true while we check session
+  loading: true,
   error: null,
   isAuthenticated: false,
 
-  login: async (email: string, password: string) => {
-    set({ loading: true, error: null });
+  clearError: () => set({ error: null }),
+
+  login: async (email, password) => {
+    set({ error: null });
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
       if (error) {
-        set({ loading: false, error: error.message });
+        const msg =
+          error.message === 'Invalid login credentials'
+            ? 'Credenciales incorrectas. Verifica tu email y contraseña.'
+            : error.message;
+        set({ error: msg });
         return false;
       }
-      // onAuthStateChange will handle setting user/isAuthenticated
-      // Wait for it to fire (max 5s)
-      await new Promise<void>((resolve) => {
-        const check = setInterval(() => {
-          if (get().isAuthenticated || !get().loading) {
-            clearInterval(check);
-            resolve();
-          }
-        }, 100);
-        setTimeout(() => { clearInterval(check); resolve(); }, 5000);
-      });
-      return get().isAuthenticated;
-    } catch (err) {
-      set({ loading: false, error: 'Error de conexión' });
+
+      if (!data.session?.user) {
+        set({ error: 'No se recibió sesión del servidor.' });
+        return false;
+      }
+
+      const user = await buildUser(data.session.user);
+      set({ user, isAuthenticated: true });
+      return true;
+    } catch {
+      set({ error: 'Error de conexión. Verifica tu internet e intenta de nuevo.' });
       return false;
     }
   },
@@ -52,15 +93,15 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   logout: async () => {
     try {
       await supabase.auth.signOut();
-    } catch (err) {
-      console.error("Error signing out:", err);
+    } catch {
+      // Ignore signOut errors — always clear local state
     } finally {
-      // Clear state regardless of whether signOut succeeded (to avoid being stuck)
-      set({ user: null, isAuthenticated: false, loading: false });
+      set({ user: null, isAuthenticated: false, loading: false, error: null });
     }
   },
 }));
 
+<<<<<<< HEAD
 // onAuthStateChange holds the Supabase storage lock while it fires.
 // Any Supabase data query inside the callback (even async) calls getSession()
 // internally, which tries to re-acquire the same lock → deadlock for 5s.
@@ -79,10 +120,20 @@ supabase.auth.onAuthStateChange((_event, session) => {
     });
     // Enrich with real name/role from staff table AFTER lock is released
     setTimeout(() => enrichUserFromStaff(u.id, email), 0);
+=======
+// Restore session on page load and keep in sync with Supabase's internal state.
+// INITIAL_SESSION fires on mount with the stored token (or null).
+// TOKEN_REFRESHED fires when Supabase auto-renews the access token.
+supabase.auth.onAuthStateChange(async (_event, session) => {
+  if (session?.user) {
+    const user = await buildUser(session.user);
+    useAuthStore.setState({ user, isAuthenticated: true, loading: false });
+>>>>>>> 18df88d03c02e3b340889c79d076a75ed3a4506e
   } else {
     useAuthStore.setState({ user: null, isAuthenticated: false, loading: false });
   }
 });
+<<<<<<< HEAD
 
 // Look up real name and role from the staff table (runs outside the auth lock)
 async function enrichUserFromStaff(userId: string, email: string) {
@@ -109,3 +160,5 @@ async function enrichUserFromStaff(userId: string, email: string) {
     // Keep fallback name/role if staff lookup fails
   }
 }
+=======
+>>>>>>> 18df88d03c02e3b340889c79d076a75ed3a4506e

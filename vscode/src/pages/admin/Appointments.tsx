@@ -249,16 +249,25 @@ export default function Appointments() {
     try {
       const payload = { ...form, clientName: form.clientName.trim(), clientPhone: form.clientPhone.trim() };
       if (editingId) {
-        await updateAppointment(editingId, payload);
-        toast.success('Cita actualizada correctamente');
+        const ok = await updateAppointment(editingId, payload);
+        if (ok) {
+          toast.success('Cita actualizada correctamente');
+          setShowModal(false);
+        } else {
+          toast.error('No se pudo actualizar la cita. Intenta de nuevo.');
+        }
       } else {
-        await addAppointment(payload);
-        toast.success('Cita creada correctamente');
+        const created = await addAppointment(payload);
+        if (created) {
+          toast.success('Cita creada correctamente');
+          setShowModal(false);
+        } else {
+          toast.error('No se pudo crear la cita. Intenta de nuevo.');
+        }
       }
-      setShowModal(false);
     } catch (error) {
       console.error(error);
-      toast.error('Ocurrió un error al guardar');
+      toast.error('Ocurrió un error inesperado');
     } finally {
       setSubmitting(false);
     }
@@ -626,7 +635,16 @@ export default function Appointments() {
                   <button
                     type="button"
                     className="modal__delete-btn"
-                    onClick={() => { deleteAppointment(editingId); setShowModal(false); }}
+                    onClick={async () => {
+                      if (!window.confirm('¿Eliminar esta cita permanentemente?')) return;
+                      const ok = await deleteAppointment(editingId);
+                      if (ok) {
+                        toast.success('Cita eliminada');
+                        setShowModal(false);
+                      } else {
+                        toast.error('No se pudo eliminar. Intenta de nuevo.');
+                      }
+                    }}
                   >
                     Eliminar Cita
                   </button>

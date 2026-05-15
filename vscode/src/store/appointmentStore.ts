@@ -26,22 +26,21 @@ export interface Appointment {
   createdAt: string;
 }
 
-// Map DB row to app shape
-function mapRow(r: any): Appointment {
+function mapRow(r: Record<string, unknown>): Appointment {
   return {
-    id: r.id,
-    client_id: r.client_id,
-    clientName: r.client_name,
-    clientPhone: r.client_phone,
-    service: r.service,
-    employee: r.employee,
-    date: r.date,
-    time: r.time?.slice(0, 5) || r.time, // "09:00:00" -> "09:00"
-    duration: r.duration,
+    id: r.id as string,
+    client_id: (r.client_id as string) ?? null,
+    clientName: r.client_name as string,
+    clientPhone: r.client_phone as string,
+    service: r.service as string,
+    employee: r.employee as string,
+    date: r.date as string,
+    time: ((r.time as string) ?? '').slice(0, 5),
+    duration: r.duration as number,
     status: r.status as AppointmentStatus,
-    notes: r.notes,
-    source: r.source,
-    createdAt: r.created_at,
+    notes: (r.notes as string) ?? null,
+    source: r.source as string,
+    createdAt: r.created_at as string,
   };
 }
 
@@ -49,10 +48,10 @@ interface AppointmentState {
   appointments: Appointment[];
   loading: boolean;
   fetchAppointments: () => Promise<void>;
-  addAppointment: (appt: Omit<Appointment, 'id' | 'createdAt' | 'client_id'>) => Promise<void>;
-  updateAppointment: (id: string, data: Partial<Appointment>) => Promise<void>;
-  updateStatus: (id: string, status: AppointmentStatus) => Promise<void>;
-  deleteAppointment: (id: string) => Promise<void>;
+  addAppointment: (appt: Omit<Appointment, 'id' | 'createdAt' | 'client_id'>) => Promise<Appointment | null>;
+  updateAppointment: (id: string, data: Partial<Appointment>) => Promise<boolean>;
+  updateStatus: (id: string, status: AppointmentStatus) => Promise<boolean>;
+  deleteAppointment: (id: string) => Promise<boolean>;
   autoMarkNoShow: () => Promise<number>;
   getByDate: (date: string) => Appointment[];
   getByDateRange: (start: string, end: string) => Appointment[];
@@ -70,135 +69,177 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
         .select('*')
         .order('date', { ascending: true })
         .order('time', { ascending: true });
-      if (!error && data) {
-        set({ appointments: data.map(mapRow), loading: false });
+
+      if (error) {
+        toast.error('Error al cargar citas');
+        console.error('[appointments] fetch error:', error);
       } else {
-        if (error) toast.error('Error al cargar citas');
-        set({ loading: false });
+        set({ appointments: (data ?? []).map(mapRow) });
       }
     } catch (err) {
-      toast.error('Error de conexión');
+      toast.error('Error de conexión al cargar citas');
+      console.error('[appointments] network error:', err);
+    } finally {
       set({ loading: false });
     }
   },
 
   addAppointment: async (appt) => {
-    const { data, error } = await supabase
-      .from('appointments')
-      .insert({
-        client_name: appt.clientName,
-        client_phone: appt.clientPhone,
-        service: appt.service,
-        employee: appt.employee,
-        date: appt.date,
-        time: appt.time,
-        duration: appt.duration,
-        status: appt.status,
-        notes: appt.notes || '',
-        source: appt.source,
-      })
-      .select()
-      .single();
-    if (error) {
-      toast.error('Error al crear la cita');
-      console.error(error);
-    } else if (data) {
-      set((s) => ({ appointments: [...s.appointments, mapRow(data)] }));
-      toast.success('Cita creada exitosamente');
+    try {
+      const { data, error } = await supabase
+        .from('appointments')
+        .insert({
+          client_name: appt.clientName,
+          client_phone: appt.clientPhone,
+          service: appt.service,
+          employee: appt.employee,
+          date: appt.date,
+          time: appt.time,
+          duration: appt.duration,
+          status: appt.status,
+          notes: appt.notes ?? '',
+          source: appt.source,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[appointments] insert error:', error);
+        return null;
+      }
+
+      const mapped = mapRow(data as Record<string, unknown>);
+      set((s) => ({ appointments: [...s.appointments, mapped] }));
+      return mapped;
+    } catch (err) {
+      console.error('[appointments] insert network error:', err);
+      return null;
     }
   },
 
   updateAppointment: async (id, updates) => {
-    const dbUpdates: any = {};
-    if (updates.clientName !== undefined) dbUpdates.client_name = updates.clientName;
-    if (updates.clientPhone !== undefined) dbUpdates.client_phone = updates.clientPhone;
-    if (updates.service !== undefined) dbUpdates.service = updates.service;
-    if (updates.employee !== undefined) dbUpdates.employee = updates.employee;
-    if (updates.date !== undefined) dbUpdates.date = updates.date;
-    if (updates.time !== undefined) dbUpdates.time = updates.time;
-    if (updates.duration !== undefined) dbUpdates.duration = updates.duration;
-    if (updates.status !== undefined) dbUpdates.status = updates.status;
-    if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
-    if (updates.source !== undefined) dbUpdates.source = updates.source;
+    const db: Record<string, unknown> = {};
+    if (updates.clientName !== undefined) db.client_name = updates.clientName;
+    if (updates.clientPhone !== undefined) db.client_phone = updates.clientPhone;
+    if (updates.service !== undefined) db.service = updates.service;
+    if (updates.employee !== undefined) db.employee = updates.employee;
+    if (updates.date !== undefined) db.date = updates.date;
+    if (updates.time !== undefined) db.time = updates.time;
+    if (updates.duration !== undefined) db.duration = updates.duration;
+    if (updates.status !== undefined) db.status = updates.status;
+    if (updates.notes !== undefined) db.notes = updates.notes;
+    if (updates.source !== undefined) db.source = updates.source;
 
-    const { data, error } = await supabase
-      .from('appointments')
-      .update(dbUpdates)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) {
-      toast.error('Error al actualizar la cita');
-      console.error(error);
-    } else if (data) {
+    try {
+      const { data, error } = await supabase
+        .from('appointments')
+        .update(db)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[appointments] update error:', error);
+        return false;
+      }
+
       set((s) => ({
-        appointments: s.appointments.map((a) => (a.id === id ? mapRow(data) : a)),
+        appointments: s.appointments.map((a) =>
+          a.id === id ? mapRow(data as Record<string, unknown>) : a
+        ),
       }));
-      toast.success('Cita actualizada');
+      return true;
+    } catch (err) {
+      console.error('[appointments] update network error:', err);
+      return false;
     }
   },
 
   updateStatus: async (id, status) => {
-    const { data, error } = await supabase
-      .from('appointments')
-      .update({ status })
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) {
-      toast.error('Error al actualizar el estado');
-      console.error(error);
-    } else if (data) {
-      set((s) => ({
-        appointments: s.appointments.map((a) => (a.id === id ? mapRow(data) : a)),
-      }));
-      toast.success('Estado actualizado');
+    // Optimistic update
+    set((s) => ({
+      appointments: s.appointments.map((a) => (a.id === id ? { ...a, status } : a)),
+    }));
+
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) {
+        // Rollback — re-fetch to restore correct state
+        console.error('[appointments] status update error:', error);
+        await get().fetchAppointments();
+        toast.error('Error al actualizar el estado');
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      console.error('[appointments] status update network error:', err);
+      await get().fetchAppointments();
+      toast.error('Error de conexión');
+      return false;
     }
   },
 
   deleteAppointment: async (id) => {
-    const { error } = await supabase.from('appointments').delete().eq('id', id);
-    if (error) {
-      toast.error('Error al eliminar la cita');
-      console.error(error);
-    } else {
-      set((s) => ({ appointments: s.appointments.filter((a) => a.id !== id) }));
-      toast.success('Cita eliminada');
+    const backup = get().appointments;
+    set((s) => ({ appointments: s.appointments.filter((a) => a.id !== id) }));
+
+    try {
+      const { error } = await supabase.from('appointments').delete().eq('id', id);
+
+      if (error) {
+        set({ appointments: backup });
+        console.error('[appointments] delete error:', error);
+        toast.error('Error al eliminar la cita');
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      set({ appointments: backup });
+      console.error('[appointments] delete network error:', err);
+      toast.error('Error de conexión al eliminar');
+      return false;
     }
   },
 
   autoMarkNoShow: async () => {
     const now = new Date();
-    const state = get();
-    let count = 0;
-    const ids: string[] = [];
+    const pendingIds: string[] = [];
 
-    state.appointments.forEach((a) => {
-      if (a.status !== 'pending' && a.status !== 'confirmed') return;
-      const [hours, minutes] = a.time.split(':').map(Number);
-      const apptEnd = new Date(`${a.date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`);
+    for (const a of get().appointments) {
+      if (a.status !== 'pending' && a.status !== 'confirmed') continue;
+      const [h, m] = a.time.split(':').map(Number);
+      const apptEnd = new Date(`${a.date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
       apptEnd.setMinutes(apptEnd.getMinutes() + a.duration + 30);
-      if (now > apptEnd) {
-        ids.push(a.id);
-        count++;
-      }
-    });
+      if (now > apptEnd) pendingIds.push(a.id);
+    }
 
-    if (ids.length > 0) {
+    if (pendingIds.length === 0) return 0;
+
+    try {
       await supabase
         .from('appointments')
         .update({ status: 'no_show' })
-        .in('id', ids);
+        .in('id', pendingIds);
 
       set((s) => ({
         appointments: s.appointments.map((a) =>
-          ids.includes(a.id) ? { ...a, status: 'no_show' as AppointmentStatus } : a
+          pendingIds.includes(a.id) ? { ...a, status: 'no_show' as AppointmentStatus } : a
         ),
       }));
+    } catch (err) {
+      console.error('[appointments] autoMarkNoShow error:', err);
     }
-    return count;
+
+    return pendingIds.length;
   },
 
   getByDate: (date) => get().appointments.filter((a) => a.date === date),
-  getByDateRange: (start, end) => get().appointments.filter((a) => a.date >= start && a.date <= end),
+  getByDateRange: (start, end) =>
+    get().appointments.filter((a) => a.date >= start && a.date <= end),
 }));

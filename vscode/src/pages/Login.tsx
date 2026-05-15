@@ -1,26 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
+import { useThemeStore } from '../store/themeStore';
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Sun, Moon } from 'lucide-react';
 import './Login.css';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
   const login = useAuthStore((s) => s.login);
+  const clearError = useAuthStore((s) => s.clearError);
+  const storeError = useAuthStore((s) => s.error);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const authLoading = useAuthStore((s) => s.loading);
+  const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
 
-  // If already logged in, redirect to citas (only after auth finishes loading)
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
       navigate('/admin/citas', { replace: true });
     }
   }, [authLoading, isAuthenticated, navigate]);
+
+  // Clear error when user starts typing again
+  const handleEmailChange = (v: string) => { clearError(); setEmail(v); };
+  const handlePassChange = (v: string) => { clearError(); setPassword(v); };
 
   if (authLoading) {
     return (
@@ -32,15 +39,9 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
-
-    const success = await login(email, password);
-    if (success) {
-      navigate('/admin/citas');
-    } else {
-      setError('Credenciales incorrectas. Verifica tu email y contraseña.');
-    }
+    const ok = await login(email, password);
+    if (ok) navigate('/admin/citas');
     setLoading(false);
   };
 
@@ -50,6 +51,21 @@ export default function Login() {
         <div className="blob" style={{ width: 600, height: 600, background: '#B2967D', top: '-20%', right: '-15%' }} />
         <div className="blob" style={{ width: 500, height: 500, background: '#7D5A44', bottom: '-15%', left: '-10%' }} />
       </div>
+
+      {/* Theme toggle — top right corner */}
+      <button
+        onClick={toggleTheme}
+        aria-label="Cambiar tema"
+        style={{
+          position: 'absolute', top: '20px', right: '20px', zIndex: 10,
+          background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)',
+          borderRadius: '50%', width: '40px', height: '40px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'rgba(255,255,255,0.8)', cursor: 'pointer', transition: 'all 0.2s',
+        }}
+      >
+        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
 
       <div className="login__card glass">
         <div className="login__header">
@@ -61,10 +77,10 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleSubmit} className="login__form" id="login-form">
-          {error && (
+          {storeError && (
             <div className="login__error">
               <AlertCircle size={16} />
-              {error}
+              {storeError}
             </div>
           )}
 
@@ -77,7 +93,7 @@ export default function Login() {
               id="login-email"
               placeholder="admin@anadsll.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => handleEmailChange(e.target.value)}
               required
               autoFocus
             />
@@ -93,39 +109,10 @@ export default function Login() {
                 id="login-password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => handlePassChange(e.target.value)}
                 required
               />
               <button
                 type="button"
                 className="login__password-toggle"
-                onClick={() => setShowPass(!showPass)}
-                aria-label="Toggle password"
-              >
-                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="login__submit"
-            disabled={loading}
-            id="login-submit"
-          >
-            {loading ? (
-              <span className="login__spinner" />
-            ) : (
-              'Iniciar Sesión'
-            )}
-          </button>
-        </form>
-
-        <div className="login__demo">
-          <p>Credenciales de prueba:</p>
-          <code>admin@anadsll.com / admin123</code>
-        </div>
-      </div>
-    </div>
-  );
-}
+          
