@@ -4,7 +4,7 @@ import { useServiceStore } from '../../store/serviceStore';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
 import {
-  Plus, Search, User, Phone, Mail, Edit2, Trash2, X,
+  Plus, Search, User, UserPlus, Phone, Mail, Edit2, Trash2, X,
   Clock, Shield, Sparkles, CheckCircle2, XCircle, AlertCircle,
   Percent, Calendar, TrendingUp, Filter, Key, Lock, Unlock, UserCog,
 } from 'lucide-react';
@@ -432,14 +432,9 @@ export default function Staff() {
           </p>
         </div>
         <div className="staff-page__header-actions">
-          {!userManagementEnabled && (
-            <button className="staff-page__sql-btn" onClick={() => setShowSqlHelp(true)}>
-              <Shield size={16} /> Configurar Acceso DB
-            </button>
-          )}
           {user?.role === 'admin' && (
             <button className="staff-page__add-btn" onClick={openCreate} id="btn-new-staff">
-              <Plus size={18} /> Nueva Empleada
+              <UserPlus size={18} /> Agregar
             </button>
           )}
         </div>

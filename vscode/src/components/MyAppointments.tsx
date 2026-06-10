@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {
   Phone, Search, Calendar, Clock, User, Sparkles,
-  XCircle, CheckCircle2, AlertCircle, MessageCircle,
+  XCircle, CheckCircle2, AlertCircle, MessageCircle, History,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
+import { format12h } from '../lib/timeFormat';
 import './MyAppointments.css';
 
 interface AppointmentRow {

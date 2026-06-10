@@ -57,11 +57,23 @@ interface AppointmentState {
   autoMarkNoShow: () => Promise<number>;
   getByDate: (date: string) => Appointment[];
   getByDateRange: (start: string, end: string) => Appointment[];
+  initRealtime: () => void;
+  cleanupRealtime: () => void;
+  _channel: any | null;
+
+  completedApptForNextSession: Appointment | null;
+  promptNextSession: (appt: Appointment) => void;
+  clearNextSessionPrompt: () => void;
 }
 
 export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
   appointments: [],
   loading: false,
+  _channel: null,
+  completedApptForNextSession: null,
+
+  promptNextSession: (appt) => set({ completedApptForNextSession: appt }),
+  clearNextSessionPrompt: () => set({ completedApptForNextSession: null }),
 
   fetchAppointments: async () => {
     set({ loading: true });
@@ -69,8 +81,8 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
       const { data, error } = await supabase
         .from('appointments')
         .select('*')
-        .order('date', { ascending: true })
-        .order('time', { ascending: true });
+        .order('date', { ascending: false })
+        .order('time', { ascending: false });
 
       if (error) {
         toast.error('Error al cargar citas');
@@ -184,6 +196,14 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
         return false;
       }
 
+      if (status === 'completed') {
+        const appt = get().appointments.find(a => a.id === id);
+        // Prompt for next session if it's a package or if we just want to offer it
+        if (appt && (appt.service.toLowerCase().includes('paquete') || appt.notes?.toLowerCase().includes('paquete'))) {
+          get().promptNextSession(appt);
+        }
+      }
+
       return true;
     } catch (err) {
       console.error('[appointments] status update network error:', err);
@@ -251,4 +271,40 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
   getByDate: (date) => get().appointments.filter((a) => a.date === date),
   getByDateRange: (start, end) =>
     get().appointments.filter((a) => a.date >= start && a.date <= end),
+
+  initRealtime: () => {
+    if (get()._channel) return; // already initialized
+    
+    const channel = supabase.channel('custom-all-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        (payload) => {
+          const current = get().appointments;
+          if (payload.eventType === 'INSERT') {
+            const newAppt = mapRow(payload.new as Record<string, unknown>);
+            if (!current.some(a => a.id === newAppt.id)) {
+              set({ appointments: [...current, newAppt] });
+              // Simple audio notification or toast could be added here
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = mapRow(payload.new as Record<string, unknown>);
+            set({ appointments: current.map(a => a.id === updated.id ? updated : a) });
+          } else if (payload.eventType === 'DELETE') {
+            set({ appointments: current.filter(a => a.id !== payload.old.id) });
+          }
+        }
+      )
+      .subscribe();
+      
+    set({ _channel: channel });
+  },
+
+  cleanupRealtime: () => {
+    const ch = get()._channel;
+    if (ch) {
+      supabase.removeChannel(ch);
+      set({ _channel: null });
+    }
+  }
 }));

@@ -8,8 +8,10 @@ import {
   CalendarDays, Plus, Phone, Clock, CheckCircle2, AlertCircle,
   XCircle, Search, MessageCircle, ChevronDown, RefreshCw,
   Users, Scissors, Sparkles, CalendarCheck, UserCheck,
-  Timer, Bell, ArrowRight,
+  Timer, Bell, ArrowRight, UserPlus, RefreshCcw,
 } from 'lucide-react';
+import { format12h } from '../../lib/timeFormat';
+import { notifyStatusChange } from '../../lib/whatsapp';
 import toast from 'react-hot-toast';
 import './ReceptionistDashboard.css';
 
@@ -54,7 +56,7 @@ function waReminder(appt: Appointment): string {
   const dateLabel = new Date(appt.date + 'T12:00:00').toLocaleDateString('es-DO', {
     weekday: 'long', day: 'numeric', month: 'long',
   });
-  const msg = `Hola ${appt.clientName} 👋\n\nLe recordamos su cita en *Anadsll Beauty Esthetic*.\n\n📅 *Fecha:* ${dateLabel}\n🕐 *Hora:* ${appt.time}\n💆 *Servicio:* ${appt.service}\n\nPor favor confírmenos su asistencia respondiendo a este mensaje. ¡Gracias! 🌸`;
+  const msg = `Hola ${appt.clientName} 👋\n\nLe recordamos su cita en *Anadsll Beauty Esthetic*.\n\n📅 *Fecha:* ${dateLabel}\n🕐 *Hora:* ${format12h(appt.time)}\n💆 *Servicio:* ${appt.service}\n\nPor favor confírmenos su asistencia respondiendo a este mensaje. ¡Gracias! 🌸`;
   return `https://wa.me/${norm}?text=${encodeURIComponent(msg)}`;
 }
 
@@ -183,11 +185,12 @@ export default function ReceptionistDashboard() {
   /* ── Status change ── */
   const handleStatus = useCallback(async (id: string, status: AppointmentStatus) => {
     setStatusOpen(null);
-    await updateStatus(id, status);
-    if (status === 'confirmed') toast.success('Cita confirmada ✅');
-    else if (status === 'no_show') toast('Marcada como no asistió');
-    else if (status === 'cancelled') toast('Cita cancelada');
-  }, [updateStatus]);
+    const ok = await updateStatus(id, status);
+    if (ok) {
+      const appt = appointments.find(a => a.id === id);
+      if (appt) notifyStatusChange(appt, status);
+    }
+  }, [updateStatus, appointments]);
 
   /* ── Book form ── */
   const serviceOptions = useMemo(() =>
@@ -348,7 +351,7 @@ export default function ReceptionistDashboard() {
                 rel="noreferrer"
                 className="rec__wa-chip"
               >
-                <MessageCircle size={12} /> {a.clientName.split(' ')[0]} {a.time}
+                <MessageCircle size={12} /> {a.clientName.split(' ')[0]} {format12h(a.time)}
               </a>
             ))}
           </div>
@@ -380,7 +383,7 @@ export default function ReceptionistDashboard() {
                       <Sparkles size={13} /> {a.service}
                     </div>
                     <div className="rec__sala-time">
-                      <Clock size={12} /> Inicio {a.time} · {a.duration} min
+                      <Clock size={12} /> Inicio {format12h(a.time)} · {a.duration} min
                     </div>
                     {a.clientPhone && (
                       <a href={`tel:${a.clientPhone}`} className="rec__sala-phone">
@@ -416,7 +419,7 @@ export default function ReceptionistDashboard() {
                     className={`rec__proxima-row ${a.mins <= 10 ? 'rec__proxima-row--now' : ''}`}
                   >
                     <div className="rec__proxima-time">
-                      <strong>{a.time}</strong>
+                      <strong>{format12h(a.time)}</strong>
                       <span className={`rec__proxima-mins ${a.mins <= 0 ? 'rec__proxima-mins--late' : ''}`}>
                         {a.mins <= 0
                           ? `¡hace ${Math.abs(a.mins)} min!`
@@ -484,7 +487,7 @@ export default function ReceptionistDashboard() {
                       key={a.id}
                       className={`rec__appt rec__appt--${a.status}`}
                     >
-                      <div className="rec__appt-time">{a.time}</div>
+                      <div className="rec__appt-time">{format12h(a.time)}</div>
 
                       <div className={`rec__appt-bar rec__appt-bar--${a.status}`} />
 
@@ -592,7 +595,7 @@ export default function ReceptionistDashboard() {
                     <div className="rec__upcoming-date">{dl}</div>
                     <div className="rec__upcoming-info">
                       <strong>{a.clientName}</strong>
-                      <span>{a.time} · {a.service.slice(0, 22)}</span>
+                      <span>{format12h(a.time)} · {a.service.slice(0, 22)}</span>
                     </div>
                     <span className={`rec__badge rec__badge--${a.status} rec__badge--sm`}>
                       {STATUS_LABELS[a.status]}

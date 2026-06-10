@@ -202,21 +202,21 @@ export default function Booking() {
       if (error || !appt) {
         console.error('[booking] insert error:', error);
         setBookingError(
-          'Hubo un problema al guardar tu solicitud. Por favor intenta de nuevo o contáctanos por WhatsApp.'
+          'Hubo un problema al guardar tu solicitud. Por favor intenta de nuevo o contactanos por WhatsApp.'
         );
         return;
       }
 
       const waMsg =
         `Hola, acabo de reservar una cita:\n\n` +
-        `👤 Nombre: ${form.name}\n` +
-        `📞 Teléfono: ${form.phone}\n` +
-        `💆 Servicio: ${selectedService.name}\n` +
-        `👩‍⚕️ Con: ${selectedStaff.name}\n` +
-        `📅 Fecha: ${form.date}\n` +
-        `🕐 Hora: ${form.time}\n` +
-        `📝 Notas: ${form.notes.trim() || 'Ninguna'}\n\n` +
-        `Adjunto el comprobante de depósito para confirmar mi cita.`;
+        `Nombre: ${form.name}\n` +
+        `Telefono: ${form.phone}\n` +
+        `Servicio: ${selectedService.name}\n` +
+        `Con: ${selectedStaff.name}\n` +
+        `Fecha: ${form.date}\n` +
+        `Hora: ${form.time}\n` +
+        `Notas: ${form.notes.trim() || 'Ninguna'}\n\n` +
+        `Adjunto el comprobante de deposito para confirmar mi cita.`;
       setWhatsappMsg(waMsg);
       setSuccess(true);
       // WhatsApp NOT opened automatically — client clicks the button manually
@@ -245,7 +245,7 @@ export default function Booking() {
             <div className="booking__success-icon">
               <CheckCircle2 size={48} />
             </div>
-            <h2>¡Tu cita está pre-reservada!</h2>
+            <h2>¡Tu cita esta pre-reservada!</h2>
             <div className="booking__success-box">
               <p>
                 Tu solicitud fue guardada con estado <strong>Pendiente</strong>.
@@ -278,7 +278,7 @@ export default function Booking() {
                         onClick={() =>
                           copyToClipboard(settings?.account_number || '123456789', 'account')
                         }
-                        title="Copiar número de cuenta"
+                        title="Copiar numero de cuenta"
                       >
                         {copiedField === 'account' ? (
                           <CheckCircle2 size={16} className="text-green" />
@@ -302,7 +302,7 @@ export default function Booking() {
                 <AlertCircle size={16} />
                 <p>
                   <strong>
-                    Envía tu comprobante por WhatsApp para que recepción confirme tu reserva.
+                    Envia tu comprobante por WhatsApp para que recepcion confirme tu reserva.
                   </strong>
                 </p>
               </div>
@@ -349,11 +349,11 @@ export default function Booking() {
           <div className="booking__benefits">
             <div className="booking__benefit">
               <Calendar size={20} />
-              <span>Agenda según disponibilidad real</span>
+              <span>Agenda segun disponibilidad real</span>
             </div>
             <div className="booking__benefit">
               <MessageCircle size={20} />
-              <span>Confirmación por WhatsApp</span>
+              <span>Confirmacion por WhatsApp</span>
             </div>
             <div className="booking__benefit">
               <Clock size={20} />
@@ -387,7 +387,7 @@ export default function Booking() {
             </div>
             <div className="booking__field">
               <label htmlFor="booking-phone">
-                <Phone size={16} /> Teléfono
+                <Phone size={16} /> Telefono
               </label>
               <input
                 type="tel"
@@ -471,14 +471,14 @@ export default function Booking() {
 
               {isDayOff ? (
                 <div className="booking__alert">
-                  <AlertCircle size={16} /> {selectedStaff.name} no trabaja este día.
+                  <AlertCircle size={16} /> {selectedStaff.name} no trabaja este dia.
                 </div>
               ) : loadingSlots ? (
                 <div className="booking__loading">Buscando horarios disponibles...</div>
               ) : availableSlots.length === 0 ? (
                 <div className="booking__alert">
                   <AlertCircle size={16} /> No hay horarios libres para esta fecha. Prueba otro
-                  día.
+                  dia.
                 </div>
               ) : (
                 <div className="booking__slots">

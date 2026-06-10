@@ -7,6 +7,8 @@ import {
 import { useStaffStore } from '../../store/staffStore';
 import { useServiceStore } from '../../store/serviceStore';
 import { useAuthStore } from '../../store/authStore';
+import { useClientStore } from '../../store/clientStore';
+import ClientAutocomplete from '../../components/ClientAutocomplete';
 import {
   Plus,
   Search,
@@ -29,11 +31,15 @@ import {
   Edit2,
   CalendarClock,
   Trash2,
+  Save,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { format12h } from '../../lib/timeFormat';
+import { notifyStatusChange } from '../../lib/whatsapp';
+import SaveClientModal from '../../components/SaveClientModal';
 import './Appointments.css';
 
-// ── Formatters & Validators ──────────────────────────────────
+//  Formatters & validators 
 function capitalizeName(val: string) {
   return val.replace(/\b\w/g, (c) => c.toUpperCase());
 }
@@ -54,9 +60,9 @@ function validateAppt(form: typeof emptyForm): ApptErrors {
   const e: ApptErrors = {};
   if (!form.clientName.trim()) e.clientName = 'El nombre es requerido';
   if (!form.clientPhone.trim()) {
-    e.clientPhone = 'El teléfono es requerido';
+    e.clientPhone = 'El telfono es requerido';
   } else if (form.clientPhone.replace(/\D/g, '').length < 10) {
-    e.clientPhone = 'Teléfono inválido (10 dígitos)';
+    e.clientPhone = 'Telfono invlido (10 dgitos)';
   }
   if (!form.service) e.service = 'Selecciona un servicio';
   if (!form.employee) e.employee = 'Selecciona una empleada';
@@ -70,7 +76,7 @@ const STATUS_CONFIG: Record<AppointmentStatus, { label: string; class: string; i
   in_progress: { label: 'En Proceso', class: 'badge--blue', icon: <PlayCircle size={14} /> },
   completed: { label: 'Completada', class: 'badge--emerald', icon: <CheckCircle2 size={14} /> },
   cancelled: { label: 'Cancelada', class: 'badge--red', icon: <XCircle size={14} /> },
-  no_show: { label: 'No Asistió', class: 'badge--gray', icon: <Ban size={14} /> },
+  no_show: { label: 'No Asistio', class: 'badge--gray', icon: <Ban size={14} /> },
 };
 
 const STATUS_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
@@ -151,19 +157,21 @@ export default function Appointments() {
   } = useAppointmentStore();
   const { staff, fetchStaff } = useStaffStore();
   const { services, fetchAll: fetchServices } = useServiceStore();
+  const { clients, fetchClients } = useClientStore();
   const { user } = useAuthStore();
 
   useEffect(() => {
     fetchAppointments().then(() => autoMarkNoShow());
     fetchStaff();
     fetchServices();
-  }, [fetchAppointments, autoMarkNoShow, fetchStaff, fetchServices]);
+    fetchClients();
+  }, [fetchAppointments, autoMarkNoShow, fetchStaff, fetchServices, fetchClients]);
 
-  const activeEmployees = useMemo(() => staff.filter((m) => m.active).map((m) => m.name), [staff]);
+  const activeEmployees = useMemo(() => staff.filter((m) => m.active && m.role === 'specialist').map((m) => m.name), [staff]);
   const activeServices = useMemo(() => services.filter((s) => s.active).map((s) => s.name), [services]);
 
   const [selectedDate, setSelectedDate] = useState(getToday());
-  const [view, setView] = useState<'day' | 'week'>('day');
+  const [view, setView] = useState<'day' | 'week' | 'all'>('day');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterEmployee, setFilterEmployee] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -173,6 +181,7 @@ export default function Appointments() {
   const [apptErrors, setApptErrors] = useState<ApptErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState<string | null>(null);
+  const [savingClientFor, setSavingClientFor] = useState<Appointment | null>(null);
 
   // Filtered appointments
   const filteredAppointments = useMemo(() => {
@@ -185,18 +194,21 @@ export default function Appointments() {
 
     if (view === 'day') {
       list = baseList.filter((a) => a.date === selectedDate);
-    } else {
+    } else if (view === 'week') {
       const weekDates = getWeekDates(selectedDate);
       list = baseList.filter((a) => weekDates.includes(a.date));
+    } else {
+      list = baseList;
     }
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
+      const qDigits = q.replace(/\D/g, '');
       list = list.filter(
         (a) =>
           a.clientName.toLowerCase().includes(q) ||
           a.service.toLowerCase().includes(q) ||
-          a.clientPhone.includes(q)
+          (qDigits && a.clientPhone.replace(/\D/g, '').includes(qDigits))
       );
     }
     if (filterEmployee) {
@@ -278,7 +290,7 @@ export default function Appointments() {
       }
     } catch (error) {
       console.error(error);
-      toast.error('Ocurrió un error inesperado');
+      toast.error('Ocurrio un error inesperado');
     } finally {
       setSubmitting(false);
     }
@@ -286,7 +298,7 @@ export default function Appointments() {
 
   const handleWhatsApp = (appt: Appointment) => {
     const phone = appt.clientPhone.replace(/[^0-9]/g, '');
-    const msg = `Hola ${appt.clientName}, le recordamos su cita:\n\n📅 Fecha: ${formatDate(appt.date)}\n🕐 Hora: ${appt.time}\n💆 Servicio: ${appt.service}\n\n¡La esperamos en Anadsll Beauty Esthetic!`;
+    const msg = `Hola ${appt.clientName}, le recordamos su cita:\n\n Fecha: ${formatDate(appt.date)}\n Hora: ${format12h(appt.time)}\n Servicio: ${appt.service}\n\nLa esperamos en Anadsll Beauty Esthetic!`;
     window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -318,8 +330,8 @@ export default function Appointments() {
       {/* Header */}
       <div className="appts__header">
         <div>
-          <h1 className="appts__title">Gestión de Citas</h1>
-          <p className="appts__subtitle">Agenda y administra todas las citas del salón</p>
+          <h1 className="appts__title">Gestion de Citas</h1>
+          <p className="appts__subtitle">Agenda y administra todas las citas del salon</p>
         </div>
         <button className="appts__add-btn" onClick={openCreate} id="btn-new-appointment">
           <Plus size={18} /> Nueva Cita
@@ -329,19 +341,26 @@ export default function Appointments() {
       {/* Date Navigation + View Toggle */}
       <div className="appts__controls">
         <div className="appts__date-nav">
-          <button onClick={() => setSelectedDate(addDays(selectedDate, view === 'day' ? -1 : -7))} className="appts__nav-btn">
-            <ChevronLeft size={18} />
-          </button>
-          <button onClick={() => setSelectedDate(getToday())} className="appts__today-btn">Hoy</button>
-          <button onClick={() => setSelectedDate(addDays(selectedDate, view === 'day' ? 1 : 7))} className="appts__nav-btn">
-            <ChevronRight size={18} />
-          </button>
-          <span className="appts__current-date">{formatDate(selectedDate)}</span>
+          {view !== 'all' ? (
+            <>
+              <button onClick={() => setSelectedDate(addDays(selectedDate, view === 'day' ? -1 : -7))} className="appts__nav-btn">
+                <ChevronLeft size={18} />
+              </button>
+              <button onClick={() => setSelectedDate(getToday())} className="appts__today-btn">Hoy</button>
+              <button onClick={() => setSelectedDate(addDays(selectedDate, view === 'day' ? 1 : 7))} className="appts__nav-btn">
+                <ChevronRight size={18} />
+              </button>
+              <span className="appts__current-date">{formatDate(selectedDate)}</span>
+            </>
+          ) : (
+            <span className="appts__current-date" style={{ marginLeft: 0 }}>Todas las Fechas</span>
+          )}
         </div>
 
         <div className="appts__view-toggle">
-          <button className={`appts__view-btn ${view === 'day' ? 'appts__view-btn--active' : ''}`} onClick={() => setView('day')}>Día</button>
+          <button className={`appts__view-btn ${view === 'day' ? 'appts__view-btn--active' : ''}`} onClick={() => setView('day')}>Da</button>
           <button className={`appts__view-btn ${view === 'week' ? 'appts__view-btn--active' : ''}`} onClick={() => setView('week')}>Semana</button>
+          <button className={`appts__view-btn ${view === 'all' ? 'appts__view-btn--active' : ''}`} onClick={() => setView('all')}>Todo</button>
         </div>
       </div>
 
@@ -419,7 +438,7 @@ export default function Appointments() {
               <button
                 key={d}
                 className={`appts__week-day ${d === selectedDate ? 'appts__week-day--selected' : ''} ${isToday ? 'appts__week-day--today' : ''}`}
-                onClick={() => { setSelectedDate(d); setView('day'); }}
+                onClick={() => setSelectedDate(d)}
               >
                 <span className="appts__week-day-name">{dt.toLocaleDateString('es-DO', { weekday: 'short' })}</span>
                 <span className="appts__week-day-num">{dt.getDate()}</span>
@@ -435,13 +454,13 @@ export default function Appointments() {
         {filteredAppointments.length === 0 ? (
           <div className="appts__empty">
             <Calendar size={40} />
-            <p>No hay citas {view === 'day' ? 'para este día' : 'esta semana'}</p>
+            <p>No hay citas {view === 'day' ? 'para este da' : view === 'week' ? 'esta semana' : 'registradas'}</p>
           </div>
         ) : (
           filteredAppointments.map((appt) => (
             <div className={`appt-card appt-card--${appt.status}`} key={appt.id}>
               <div className="appt-card__time-col">
-                <span className="appt-card__time">{appt.time}</span>
+                <span className="appt-card__time">{format12h(appt.time)}</span>
                 <span className="appt-card__duration"><Clock size={12} /> {appt.duration} min</span>
               </div>
 
@@ -467,42 +486,18 @@ export default function Appointments() {
                             onClick={() => {
                               updateStatus(appt.id, s);
                               setShowStatusMenu(null);
-                              if (s === 'confirmed') {
-                                const phone = appt.clientPhone.replace(/[^0-9]/g, '');
-                                const dateLabel = formatDate(appt.date);
-                                const msg = `Hola ${appt.clientName} 👋\n\nTu cita ha sido *confirmada* ✅\n\n📅 *Fecha:* ${dateLabel}\n🕐 *Hora:* ${appt.time}\n💆 *Servicio:* ${appt.service}\n👩‍⚕️ *Especialista:* ${appt.employee}\n\nTe esperamos en Anadsll Beauty Esthetic. ¡Gracias! 🌸`;
-                                const waUrl = `https://wa.me/1${phone}?text=${encodeURIComponent(msg)}`;
-                                toast(
-                                  (t) => (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                      <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>
-                                        ✅ Cita confirmada
-                                      </span>
-                                      <a
-                                        href={waUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        onClick={() => toast.dismiss(t.id)}
-                                        style={{
-                                          display: 'inline-flex', alignItems: 'center', gap: 6,
-                                          background: '#25D366', color: 'white', padding: '6px 14px',
-                                          borderRadius: 8, fontSize: '0.82rem', fontWeight: 600,
-                                          textDecoration: 'none',
-                                        }}
-                                      >
-                                        <MessageCircle size={14} /> Enviar confirmación por WhatsApp
-                                      </a>
-                                    </div>
-                                  ),
-                                  { duration: 8000 }
-                                );
-                              }
+                              notifyStatusChange(appt, s);
                             }}
                           >
                             {STATUS_CONFIG[s].icon}
                             {STATUS_CONFIG[s].label}
                           </button>
                         ))}
+                        {!appt.client_id && (
+                          <button className="status-menu__item" onClick={() => { setSavingClientFor(appt); setShowStatusMenu(null); }} style={{ color: '#60a5fa', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 8, marginTop: 8 }}>
+                            <Save size={16} /> Guardar Clienta
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -511,7 +506,7 @@ export default function Appointments() {
                 <div className="appt-card__details">
                   <span><Sparkles size={13} /> {appt.service}</span>
                   <span><User size={13} /> {appt.employee}</span>
-                  {view === 'week' && <span><Calendar size={13} /> {new Date(appt.date + 'T12:00:00').toLocaleDateString('es-DO', { weekday: 'short', day: 'numeric' })}</span>}
+                  {(view === 'week' || view === 'all') && <span><Calendar size={13} /> {new Date(appt.date + 'T12:00:00').toLocaleDateString('es-DO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>}
                 </div>
 
                 {appt.notes && (
@@ -542,14 +537,14 @@ export default function Appointments() {
                     <button
                       className="appt-card__action-btn appt-card__action-btn--success"
                       onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'in_progress'); }}
-                      title="Llegó / Iniciar"
+                      title="Llego / Iniciar"
                     >
                       <CheckCircle2 size={16} />
                     </button>
                     <button
-                      className="appt-card__action-btn appt-card__action-btn--danger"
-                      onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'no_show'); }}
-                      title="No Asistió"
+                      className="appt-card__action-btn appt-card__action-btn--dianger"
+                      onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'no_show'); notifyStatusChange(appt, 'no_show'); }}
+                      title="No Asistio"
                     >
                       <Ban size={16} />
                     </button>
@@ -566,7 +561,7 @@ export default function Appointments() {
                     </button>
                     <button
                       className="appt-card__action-btn appt-card__action-btn--cancel"
-                      onClick={(e) => { e.stopPropagation(); handleCancel(appt); }}
+                      onClick={(e) => { e.stopPropagation(); handleCancel(appt); notifyStatusChange(appt, 'cancelled'); }}
                       title="Cancelar Cita"
                     >
                       <XCircle size={16} />
@@ -599,17 +594,23 @@ export default function Appointments() {
               <div className="modal__row">
                 <div className="modal__field">
                   <label><User size={14} /> Nombre de la Clienta *</label>
-                  <input
-                    type="text"
-                    placeholder="Nombre completo"
+                  <ClientAutocomplete
+                    clients={clients}
                     value={form.clientName}
-                    className={apptErrors.clientName ? 'input--error' : ''}
-                    onChange={(e) => { setForm({ ...form, clientName: capitalizeName(e.target.value) }); setApptErrors({ ...apptErrors, clientName: undefined }); }}
+                    onChange={(text) => {
+                      setForm({ ...form, clientName: capitalizeName(text), client_id: null });
+                      setApptErrors({ ...apptErrors, clientName: undefined });
+                    }}
+                    onSelect={(c) => {
+                      setForm({ ...form, clientName: c.name, clientPhone: c.phone, client_id: c.id });
+                      setApptErrors({ ...apptErrors, clientName: undefined, clientPhone: undefined });
+                    }}
+                    required
                   />
                   {apptErrors.clientName && <span className="field-error"><AlertCircle size={12} /> {apptErrors.clientName}</span>}
                 </div>
                 <div className="modal__field">
-                  <label><Phone size={14} /> Teléfono *</label>
+                  <label><Phone size={14} /> Telfono *</label>
                   <input
                     type="tel"
                     placeholder="829-000-0000"
@@ -649,11 +650,11 @@ export default function Appointments() {
                 <div className="modal__field">
                   <label><Clock size={14} /> Hora</label>
                   <select value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })}>
-                    {getAvailableHours(form.date).map((h) => <option key={h} value={h}>{h}</option>)}
+                    {getAvailableHours(form.date).map((h) => <option key={h} value={h}>{format12h(h)}</option>)}
                   </select>
                 </div>
                 <div className="modal__field">
-                  <label><Clock size={14} /> Duración</label>
+                  <label><Clock size={14} /> Duracin</label>
                   <select value={form.duration} onChange={(e) => setForm({ ...form, duration: Number(e.target.value) })}>
                     <option value={30}>30 min</option>
                     <option value={45}>45 min</option>
@@ -667,7 +668,7 @@ export default function Appointments() {
               <div className="modal__field">
                 <label><FileText size={14} /> Notas</label>
                 <textarea
-                  placeholder="Observaciones, alergias, sesión #..."
+                  placeholder="Observaciones, alergias, sesin #..."
                   rows={3}
                   value={form.notes || ''}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -680,7 +681,7 @@ export default function Appointments() {
                     type="button"
                     className="modal__delete-btn"
                     onClick={async () => {
-                      if (!window.confirm('¿Eliminar esta cita permanentemente?')) return;
+                      if (!window.confirm('Eliminar esta cita permanentemente?')) return;
                       const ok = await deleteAppointment(editingId);
                       if (ok) {
                         toast.success('Cita eliminada');
@@ -702,6 +703,10 @@ export default function Appointments() {
             </form>
           </div>
         </div>
+      )}
+
+      {savingClientFor && (
+        <SaveClientModal appointment={savingClientFor} onClose={() => setSavingClientFor(null)} />
       )}
     </div>
   );

@@ -8,6 +8,8 @@ export interface Settings {
   account_number: string;
   account_name: string;
   whatsapp_number: string;
+  package_deposit_type: 'fixed' | 'percentage';
+  package_deposit_value: number;
 }
 
 const DEFAULTS: Settings = {
@@ -16,6 +18,8 @@ const DEFAULTS: Settings = {
   account_number: '123456789',
   account_name: 'Anadsll Beauty Esthetic',
   whatsapp_number: '18293224014',
+  package_deposit_type: 'fixed',
+  package_deposit_value: 500,
 };
 
 interface SettingsState {
@@ -34,7 +38,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     try {
       const { data, error } = await supabase
         .from('settings')
-        .select('deposit_amount, bank_name, account_number, account_name, whatsapp_number')
+        .select('deposit_amount, bank_name, account_number, account_name, whatsapp_number, package_deposit_type, package_deposit_value')
         .eq('id', 1)
         .maybeSingle();
 

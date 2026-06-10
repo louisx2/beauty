@@ -16,6 +16,7 @@ import {
   CheckCircle2, XCircle, AlertCircle, Eye, Printer, MessageCircle,
   CreditCard, Banknote, ArrowLeftRight,
 } from 'lucide-react';
+import ClientAutocomplete from '../../components/ClientAutocomplete';
 import './Billing.css';
 
 function fmtPrice(p: number) { return `RD$ ${p.toLocaleString('es-DO')}`; }
@@ -48,6 +49,7 @@ export default function Billing() {
 
   // Create form state
   const [clientId, setClientId] = useState('');
+  const [clientName, setClientName] = useState('');
   const [ncfType, setNcfType] = useState<NcfType>('B02');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [items, setItems] = useState<InvoiceItem[]>([]);
@@ -134,6 +136,7 @@ export default function Billing() {
 
     setShowCreateModal(false);
     setClientId('');
+    setClientName('');
     setItems([]);
     setInvoiceNotes('');
   };
@@ -329,10 +332,13 @@ export default function Billing() {
               <div className="modal__row">
                 <div className="modal__field">
                   <label>Clienta</label>
-                  <select required value={clientId} onChange={(e) => setClientId(e.target.value)}>
-                    <option value="">Seleccionar clienta</option>
-                    {clients.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.cedula || 'Sin cédula'}</option>)}
-                  </select>
+                  <ClientAutocomplete
+                    clients={clients}
+                    value={clientName}
+                    onChange={(text) => { setClientName(text); setClientId(''); }}
+                    onSelect={(c) => { setClientName(c.name); setClientId(c.id); }}
+                    required
+                  />
                 </div>
                 <div className="modal__field">
                   <label>Tipo de NCF</label>

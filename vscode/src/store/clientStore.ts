@@ -20,7 +20,7 @@ interface ClientState {
   loading: boolean;
   error: string | null;
   fetchClients: () => Promise<void>;
-  addClient: (c: Omit<Client, 'id' | 'created_at'>) => Promise<void>;
+  addClient: (c: Omit<Client, 'id' | 'created_at'>) => Promise<Client | null>;
   updateClient: (id: string, data: Partial<Client>) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
 }
@@ -53,10 +53,13 @@ export const useClientStore = create<ClientState>()((set, get) => ({
     if (error) {
       console.error("Error al crear clienta:", error);
       toast.error('Error al crear clienta');
+      return null;
     } else if (data) {
       set((s) => ({ clients: [data, ...s.clients] }));
       toast.success('Clienta creada exitosamente');
+      return data;
     }
+    return null;
   },
 
   updateClient: async (id, updates) => {

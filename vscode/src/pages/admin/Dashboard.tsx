@@ -1,231 +1,278 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useAuthStore } from '../../store/authStore';
 import { useAppointmentStore } from '../../store/appointmentStore';
+import { useStaffStore } from '../../store/staffStore';
+import { useBillingStore } from '../../store/billingStore';
 import { useClientStore } from '../../store/clientStore';
 import { useServiceStore } from '../../store/serviceStore';
-import { useBillingStore } from '../../store/billingStore';
+import SaveClientModal from '../../components/SaveClientModal';
 import {
-  CalendarDays,
-  DollarSign,
-  Users,
-  Package,
-  TrendingUp,
-  Clock,
-  AlertTriangle,
+  Calendar, DollarSign, Users, Package, Clock, Sparkles, AlertCircle, 
+  CheckCircle2, Bell, MessageCircle, BarChart3, Star, MoreVertical
 } from 'lucide-react';
+import { format12h } from '../../lib/timeFormat';
+import toast from 'react-hot-toast';
 import './Dashboard.css';
 
-function fmtPrice(p: number) { return `RD$ ${p.toLocaleString('es-DO')}`; }
-
-function getToday() { return new Date().toISOString().split('T')[0]; }
-
-const statusMap: Record<string, { label: string; className: string }> = {
-  confirmed: { label: 'Confirmada', className: 'badge--green' },
-  pending: { label: 'Pendiente', className: 'badge--amber' },
-  completed: { label: 'Completada', className: 'badge--blue' },
-  cancelled: { label: 'Cancelada', className: 'badge--red' },
-  no_show: { label: 'No asistió', className: 'badge--gray' },
-  in_progress: { label: 'En curso', className: 'badge--blue' },
-};
-
 export default function Dashboard() {
-  const { appointments, fetchAppointments } = useAppointmentStore();
+  const { user } = useAuthStore();
+  const { appointments, fetchAppointments, updateStatus: updateAppointmentStatus } = useAppointmentStore();
+  const { invoices, fetchAll: fetchInvoices } = useBillingStore();
   const { clients, fetchClients } = useClientStore();
-  const { clientPackages, fetchAll: fetchServices } = useServiceStore();
-  const { invoices, fetchAll: fetchBilling } = useBillingStore();
+  const { clientPackages, fetchAll: fetchServicesAndPackages } = useServiceStore();
+
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [savingClientFor, setSavingClientFor] = useState<any>(null);
 
   useEffect(() => {
     fetchAppointments();
+    fetchInvoices();
     fetchClients();
-    fetchServices();
-    fetchBilling();
-  }, [fetchAppointments, fetchClients, fetchServices, fetchBilling]);
+    fetchServicesAndPackages();
+  }, [fetchAppointments, fetchInvoices, fetchClients, fetchServicesAndPackages]);
 
-  const today = getToday();
-  const thisMonth = new Date().toISOString().slice(0, 7);
+  // Handle clicking outside to close menus
+  useEffect(() => {
+    const handleClick = () => setOpenMenu(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
 
-  // Today's appointments
-  const todayAppts = useMemo(
-    () => appointments.filter((a) => a.date === today).sort((a, b) => a.time.localeCompare(b.time)),
-    [appointments, today]
-  );
+  const todayStr = new Date().toISOString().split('T')[0];
+  const thisMonth = todayStr.substring(0, 7);
 
-  // This month's revenue
-  const monthRevenue = useMemo(() => {
-    return invoices
-      .filter((i) => i.createdAt.startsWith(thisMonth) && i.status === 'paid')
-      .reduce((a, i) => a + i.total, 0);
-  }, [invoices, thisMonth]);
+  // Helper greeting based on time
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Buenos días';
+    if (hour < 18) return 'Buenas tardes';
+    return 'Buenas noches';
+  }, []);
 
-  // Stats
-  const stats = useMemo(() => [
-    {
-      label: 'Citas Hoy',
-      value: String(todayAppts.length),
-      change: `${todayAppts.filter(a => a.status === 'confirmed').length} confirmadas`,
-      up: todayAppts.length > 0,
-      icon: <CalendarDays size={22} />,
-      color: 'rose',
-    },
-    {
-      label: 'Ingresos del Mes',
-      value: fmtPrice(monthRevenue),
-      change: `${invoices.filter(i => i.createdAt.startsWith(thisMonth) && i.status === 'paid').length} facturas`,
-      up: monthRevenue > 0,
-      icon: <DollarSign size={22} />,
-      color: 'green',
-    },
-    {
-      label: 'Clientas Activas',
-      value: String(clients.length),
-      change: 'registradas',
-      up: true,
-      icon: <Users size={22} />,
-      color: 'lavender',
-    },
-    {
-      label: 'Paquetes Activos',
-      value: String(clientPackages.filter(cp => cp.usedSessions < cp.totalSessions).length),
-      change: `${clientPackages.filter(cp => cp.totalSessions - cp.usedSessions === 1).length} por vencer`,
-      up: false,
-      icon: <Package size={22} />,
-      color: 'amber',
-    },
-  ], [todayAppts, monthRevenue, invoices, clients, clientPackages, thisMonth]);
+  // Stats Data
+  const stats = useMemo(() => {
+    const todays = appointments.filter(a => a.date === todayStr);
+    const mInvoices = invoices.filter(i => i.createdAt.startsWith(thisMonth) && i.status !== 'cancelled');
+    return {
+      citasHoy: todays.length,
+      ingresosMes: mInvoices.reduce((acc, inv) => acc + inv.total, 0),
+      clientasActivas: clients.filter(c => c.active).length,
+      paquetesActivos: clientPackages.filter(p => p.status === 'active').length,
+      serviciosMes: appointments.filter(a => a.date.startsWith(thisMonth)).length,
+      todaysAppts: todays.sort((a, b) => a.time.localeCompare(b.time)),
+      pendingAppts: appointments.filter(a => a.date >= todayStr && a.status === 'pending').sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)).slice(0, 5)
+    };
+  }, [appointments, invoices, clients, clientPackages, todayStr, thisMonth]);
 
-  // Top services (by appointment count this month)
+  // Calculate top services
   const topServices = useMemo(() => {
-    const monthAppts = appointments.filter((a) => a.date.startsWith(thisMonth));
     const counts: Record<string, number> = {};
-    monthAppts.forEach((a) => { counts[a.service] = (counts[a.service] || 0) + 1; });
-    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    const max = sorted[0]?.[1] || 1;
-    return sorted.map(([name, count]) => ({
-      name,
-      count,
-      percent: Math.round((count / max) * 100),
-    }));
+    const recent = appointments.filter(a => a.date.startsWith(thisMonth));
+    recent.forEach(a => { counts[a.service] = (counts[a.service] || 0) + 1; });
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+    const max = sorted.length > 0 ? sorted[0][1] : 1;
+    return sorted.map(([name, count]) => ({ name, count, percent: (count / max) * 100 }));
   }, [appointments, thisMonth]);
 
-  // Alerts (only session packages — inventory not managed)
-  const alerts = useMemo(() => {
-    const items: { type: string; message: string; icon: React.ReactNode }[] = [];
-    clientPackages.filter(cp => cp.totalSessions - cp.usedSessions === 1).forEach((cp) => {
-      items.push({ type: 'session', message: `${cp.clientName} — Le queda 1 sesión de ${cp.packageName}`, icon: <Package size={16} /> });
-    });
-    return items.slice(0, 5);
+  // Alerts
+  const expiringPackages = useMemo(() => {
+    return clientPackages
+      .filter(p => p.status === 'active' && p.totalSessions - p.usedSessions <= 2)
+      .slice(0, 3);
   }, [clientPackages]);
+
+  // Actions formatting
+  const handleWhatsApp = (phoneRaw: string, message: string) => {
+    const phone = phoneRaw.replace(/[^0-9]/g, '');
+    window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
 
   return (
     <div className="dashboard">
-      <div className="dashboard__top">
-        <div>
-          <h1 className="dashboard__title">Dashboard</h1>
-          <p className="dashboard__subtitle">
-            Bienvenida de vuelta — Resumen del día de hoy, {new Date().toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
+      
+      {/* ── Hero Banner ── */}
+      <div className="dash-hero">
+        <h1 className="dash-hero__title">{greeting}, {user?.name.split(' ')[0]} 👋</h1>
+        <p className="dash-hero__subtitle">
+          {stats.citasHoy > 0 
+            ? `Tienes ${stats.citasHoy} citas programadas para hoy.` 
+            : 'No hay citas programadas para hoy.'}
+        </p>
+      </div>
+
+      {/* ── Bento Stats ── */}
+      <div className="dash-bento">
+        {/* Card 1 */}
+        <div className="bento-card bento-card--rose">
+          <div className="bento-card__sparkline" />
+          <div className="bento-card__header">
+            <div className="bento-card__icon"><Calendar /></div>
+            <div className="bento-card__badge bento-card__badge--neutral">Hoy</div>
+          </div>
+          <div className="bento-card__value">{stats.citasHoy}</div>
+          <div className="bento-card__label">Citas Programadas</div>
         </div>
+        
+        {/* Card 2 */}
+        <div className="bento-card bento-card--green">
+          <div className="bento-card__sparkline" />
+          <div className="bento-card__header">
+            <div className="bento-card__icon"><DollarSign /></div>
+            <div className="bento-card__badge bento-card__badge--up">+12%</div>
+          </div>
+          <div className="bento-card__value">RD$ {stats.ingresosMes.toLocaleString('es-DO')}</div>
+          <div className="bento-card__label">Ingresos Brutos (Mes)</div>
+        </div>
+
+        {/* Card 3 */}
+        <div className="bento-card bento-card--lavender">
+          <div className="bento-card__sparkline" />
+          <div className="bento-card__header">
+            <div className="bento-card__icon"><Users /></div>
+            <div className="bento-card__badge bento-card__badge--neutral">Total</div>
+          </div>
+          <div className="bento-card__value">{stats.clientasActivas}</div>
+          <div className="bento-card__label">Clientas Activas</div>
+        </div>
+
+        {/* Card 4 */}
+        <div className="bento-card bento-card--amber">
+          <div className="bento-card__sparkline" />
+          <div className="bento-card__header">
+            <div className="bento-card__icon"><Package /></div>
+            <div className="bento-card__badge bento-card__badge--neutral">Vigentes</div>
+          </div>
+          <div className="bento-card__value">{stats.paquetesActivos}</div>
+          <div className="bento-card__label">Paquetes Activos</div>
+        </div>
+
+
       </div>
 
-      {/* Stats Cards */}
-      <div className="dashboard__stats">
-        {stats.map((s, i) => (
-          <div className={`stat-card stat-card--${s.color}`} key={i}>
-            <div className="stat-card__header">
-              <div className="stat-card__icon">{s.icon}</div>
-              <span className={`stat-card__change ${s.up ? 'stat-card__change--up' : 'stat-card__change--down'}`}>
-                {s.change}
-              </span>
+      {/* ── Main Layout ── */}
+      <div className="dash-main-grid">
+        
+        {/* Left Column (Action Center + Top Services) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          {/* Action Center */}
+          <div className="dash-panel">
+            <div className="dash-panel__header">
+              <h2 className="dash-panel__title"><Bell size={20} style={{ color: '#fbbf24' }} /> Centro de Acción</h2>
             </div>
-            <div className="stat-card__value">{s.value}</div>
-            <div className="stat-card__label">{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="dashboard__grid">
-        {/* Today's Appointments */}
-        <div className="dash-card">
-          <div className="dash-card__header">
-            <h3><CalendarDays size={18} /> Citas de Hoy</h3>
-            <span className="dash-card__count">{todayAppts.length} citas</span>
-          </div>
-          <div className="dash-card__body">
-            <div className="appointments-list">
-              {todayAppts.length === 0 ? (
-                <div style={{ padding: 24, textAlign: 'center', color: 'rgba(255,255,255,0.3)' }}>
-                  No hay citas para hoy
-                </div>
-              ) : (
-                todayAppts.map((a) => (
-                  <div className={`appointment-row appointment-row--${a.status}`} key={a.id}>
-                    <div className="appointment-row__time">
-                      <Clock size={14} />
-                      {a.time}
-                    </div>
-                    <div className="appointment-row__info">
-                      <strong>{a.clientName}</strong>
-                      <span>{a.service}</span>
-                    </div>
-                    <span className="appointment-row__employee">{a.employee}</span>
-                    <span className={`badge ${statusMap[a.status]?.className || 'badge--gray'}`}>
-                      {statusMap[a.status]?.label || a.status}
-                    </span>
+            <div className="dash-panel__body" style={{ padding: '20px' }}>
+              <div className="action-list">
+                {stats.pendingAppts.length === 0 && expiringPackages.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>
+                    <CheckCircle2 size={30} style={{ margin: '0 auto 8px', color: '#4ade80', opacity: 0.5 }} />
+                    <p>Todo al día. Excelente trabajo.</p>
                   </div>
-                ))
-              )}
+                )}
+
+                {/* Pending Appointments Alerts */}
+                {stats.pendingAppts.map(a => (
+                  <div key={a.id} className="action-card action-card--urgent">
+                    <div className="action-card__header">
+                      <span className="action-card__type"><AlertCircle size={12} /> Por Confirmar</span>
+                    </div>
+                    <p className="action-card__desc">
+                      Cita de <strong>{a.clientName}</strong> para el {a.date === todayStr ? 'hoy' : new Date(a.date+'T12:00:00').toLocaleDateString('es-DO', {day:'numeric', month:'short'})} a las {format12h(a.time)}.
+                    </p>
+                    <div className="action-card__actions" style={{ flexWrap: 'wrap' }}>
+                      <button className="action-btn action-btn--primary" onClick={() => { updateAppointmentStatus(a.id, 'confirmed'); toast.success('Cita confirmada'); }}>Confirmar</button>
+                      <button className="action-btn action-btn--wa" onClick={() => handleWhatsApp(a.clientPhone, `Hola ${a.clientName}, nos gustaría confirmar su cita para el ${a.date === todayStr ? 'hoy' : a.date}...`)}>WhatsApp</button>
+                      <button className="action-btn action-btn--secondary" onClick={() => { updateAppointmentStatus(a.id, 'cancelled'); toast.success('Cita cancelada'); }} style={{ color: '#f87171' }}>Cancelar</button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Expiring Packages Alerts */}
+                {expiringPackages.map(p => (
+                  <div key={p.id} className="action-card action-card--alert">
+                    <div className="action-card__header">
+                      <span className="action-card__type"><Star size={12} /> Paquete por expirar</span>
+                    </div>
+                    <p className="action-card__desc">
+                      El paquete de <strong>{p.clientName}</strong> ({p.packageName}) le quedan {p.totalSessions - p.usedSessions} sesiones.
+                    </p>
+                    <div className="action-card__actions">
+                      <button className="action-btn action-btn--secondary">Ver Cliente</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+
+
+
         </div>
 
-        {/* Right Column */}
-        <div className="dashboard__right">
-          {/* Top Services */}
-          <div className="dash-card">
-            <div className="dash-card__header">
-              <h3><TrendingUp size={18} /> Top Servicios del Mes</h3>
-            </div>
-            <div className="dash-card__body">
-              {topServices.length === 0 ? (
-                <div style={{ padding: 16, textAlign: 'center', color: 'rgba(255,255,255,0.3)' }}>Sin datos este mes</div>
-              ) : (
-                topServices.map((s, i) => (
-                  <div className="top-service" key={i}>
-                    <div className="top-service__info">
-                      <span className="top-service__rank">#{i + 1}</span>
-                      <div>
-                        <strong>{s.name}</strong>
-                        <span>{s.count} servicios</span>
+        {/* Right Column (Timeline) */}
+        <div className="dash-panel">
+          <div className="dash-panel__header">
+            <h2 className="dash-panel__title"><Clock size={20} /> Agenda de Hoy</h2>
+            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+              {new Date().toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </span>
+          </div>
+          <div className="dash-panel__body">
+            {stats.todaysAppts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.4)' }}>
+                <Calendar size={40} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
+                <p>No hay citas programadas para hoy.</p>
+              </div>
+            ) : (
+              <div className="dash-timeline">
+                {stats.todaysAppts.map(a => (
+                  <div key={a.id} className={`timeline-item timeline-item--${a.status}`}>
+                    <div className="timeline-item__time">{format12h(a.time)}</div>
+                    <div className="timeline-item__node"></div>
+                    <div className="timeline-item__card">
+                      <div className="timeline-item__card-header">
+                        <div>
+                          <div className="timeline-item__client">{a.clientName}</div>
+                          <div className="timeline-item__service">{a.service}</div>
+                        </div>
+                        {/* Actions Menu */}
+                        <div style={{ position: 'relative' }}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setOpenMenu(openMenu === a.id ? null : a.id); }}
+                            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: 4 }}
+                          >
+                            <MoreVertical size={16} />
+                          </button>
+                          {openMenu === a.id && (
+                            <div style={{ position: 'absolute', right: 0, top: '100%', zIndex: 50, background: '#2a2a2a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: 4, width: 140, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
+                              {a.status === 'pending' && <button onClick={() => { updateAppointmentStatus(a.id, 'confirmed'); setOpenMenu(null); toast.success('Confirmada'); }} style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', borderRadius: 4, fontSize: '0.85rem' }}>Confirmar</button>}
+                              {a.status === 'confirmed' && <button onClick={() => { updateAppointmentStatus(a.id, 'in_progress'); setOpenMenu(null); toast.success('En curso'); }} style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', borderRadius: 4, fontSize: '0.85rem' }}>Iniciar</button>}
+                              {a.status === 'in_progress' && <button onClick={() => { updateAppointmentStatus(a.id, 'completed'); setOpenMenu(null); toast.success('Completada'); }} style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left', background: 'transparent', border: 'none', color: '#4ade80', cursor: 'pointer', borderRadius: 4, fontSize: '0.85rem' }}>Completar</button>}
+                              <button onClick={() => { handleWhatsApp(a.clientPhone, `Hola ${a.clientName}, le recordamos su cita a las ${format12h(a.time)} para ${a.service}.`); setOpenMenu(null); }} style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', borderRadius: 4, fontSize: '0.85rem' }}>Recordar (WA)</button>
+                              <button onClick={() => { updateAppointmentStatus(a.id, 'cancelled'); setOpenMenu(null); toast.error('Cancelada'); }} style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left', background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', borderRadius: 4, fontSize: '0.85rem' }}>Cancelar</button>
+                              {!a.client_id && (
+                                <button onClick={() => { setSavingClientFor(a); setOpenMenu(null); }} style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left', background: 'rgba(59,130,246,0.2)', border: 'none', color: '#60a5fa', cursor: 'pointer', borderRadius: 4, fontSize: '0.85rem', marginTop: 4, borderTop: '1px solid rgba(255,255,255,0.05)' }}>💾 Guardar Clienta</button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="timeline-item__meta">
+                        <span><Users size={12} /> {a.employee}</span>
+                        <span><Clock size={12} /> {a.duration} min</span>
                       </div>
                     </div>
-                    <div className="top-service__bar">
-                      <div className="top-service__bar-fill" style={{ width: `${s.percent}%` }} />
-                    </div>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Alerts */}
-          <div className="dash-card">
-            <div className="dash-card__header">
-              <h3><AlertTriangle size={18} /> Alertas</h3>
-            </div>
-            <div className="dash-card__body">
-              {alerts.length === 0 ? (
-                <div style={{ padding: 16, textAlign: 'center', color: 'rgba(255,255,255,0.3)' }}>Sin alertas 🎉</div>
-              ) : (
-                alerts.map((a, i) => (
-                  <div className={`alert-item alert-item--${a.type}`} key={i}>
-                    {a.icon}
-                    <span>{a.message}</span>
-                  </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+        
       </div>
+
+      {savingClientFor && (
+        <SaveClientModal appointment={savingClientFor} onClose={() => setSavingClientFor(null)} />
+      )}
     </div>
   );
 }

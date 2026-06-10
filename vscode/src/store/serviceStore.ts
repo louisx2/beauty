@@ -37,6 +37,19 @@ export interface ClientPackage {
   usedSessions: number;
   purchasedAt: string;
   notes: string;
+  totalPrice: number;
+  amountPaid: number;
+  status: 'active' | 'completed' | 'cancelled';
+}
+
+export interface PackagePayment {
+  id: string;
+  clientId: string;
+  packageId: string;
+  amount: number;
+  paymentMethod: 'cash' | 'card' | 'transfer';
+  notes: string;
+  createdAt: string;
 }
 
 function mapService(r: any): Service {
@@ -67,6 +80,21 @@ function mapClientPkg(r: any): ClientPackage {
     usedSessions: r.used_sessions,
     purchasedAt: r.purchased_at,
     notes: r.notes || '',
+    totalPrice: Number(r.total_price || 0),
+    amountPaid: Number(r.amount_paid || 0),
+    status: r.status || 'active',
+  };
+}
+
+function mapPayment(r: any): PackagePayment {
+  return {
+    id: r.id,
+    clientId: r.client_id,
+    packageId: r.package_id,
+    amount: Number(r.amount),
+    paymentMethod: r.payment_method,
+    notes: r.notes || '',
+    createdAt: r.created_at,
   };
 }
 
@@ -74,6 +102,7 @@ interface ServiceState {
   services: Service[];
   packages: SessionPackage[];
   clientPackages: ClientPackage[];
+  payments: PackagePayment[];
   loading: boolean;
 
   fetchAll: () => Promise<void>;
@@ -85,16 +114,20 @@ interface ServiceState {
   updatePackage: (id: string, data: Partial<SessionPackage>) => Promise<void>;
   deletePackage: (id: string) => Promise<void>;
 
-  sellPackage: (cp: Omit<ClientPackage, 'id'>) => Promise<void>;
+  sellPackage: (cp: Omit<ClientPackage, 'id' | 'status'>) => Promise<ClientPackage | null>;
   useSession: (clientPackageId: string) => Promise<void>;
-  updateClientPackage: (id: string, data: { usedSessions?: number; notes?: string }) => Promise<void>;
+  updateClientPackage: (id: string, data: { usedSessions?: number; notes?: string; status?: string }) => Promise<void>;
   deleteClientPackage: (id: string) => Promise<void>;
+
+  addPayment: (p: Omit<PackagePayment, 'id' | 'createdAt'>) => Promise<boolean>;
+  fetchPayments: (packageId: string) => Promise<PackagePayment[]>;
 }
 
 export const useServiceStore = create<ServiceState>()((set, get) => ({
   services: [],
   packages: [],
   clientPackages: [],
+  payments: [],
   loading: false,
 
   fetchAll: async () => {
@@ -203,8 +236,14 @@ export const useServiceStore = create<ServiceState>()((set, get) => ({
     const { data, error } = await supabase.from('client_packages').insert({
       client_id: cp.clientId, package_id: cp.packageId,
       total_sessions: cp.totalSessions, used_sessions: 0, notes: cp.notes,
+      total_price: cp.totalPrice, amount_paid: cp.amountPaid, status: 'active',
     }).select('*, clients(name), session_packages(name, services(name))').single();
-    if (!error && data) set((st) => ({ clientPackages: [mapClientPkg(data), ...st.clientPackages] }));
+    if (!error && data) {
+      const newCp = mapClientPkg(data);
+      set((st) => ({ clientPackages: [newCp, ...st.clientPackages] }));
+      return newCp;
+    }
+    return null;
   },
 
   useSession: async (id) => {
@@ -223,6 +262,7 @@ export const useServiceStore = create<ServiceState>()((set, get) => ({
     const db: any = {};
     if (data.usedSessions !== undefined) db.used_sessions = data.usedSessions;
     if (data.notes !== undefined) db.notes = data.notes;
+    if (data.status !== undefined) db.status = data.status;
     const { data: row, error } = await supabase.from('client_packages')
       .update(db).eq('id', id)
       .select('*, clients(name), session_packages(name, services(name))').single();
@@ -234,5 +274,52 @@ export const useServiceStore = create<ServiceState>()((set, get) => ({
   deleteClientPackage: async (id) => {
     const { error } = await supabase.from('client_packages').delete().eq('id', id);
     if (!error) set((st) => ({ clientPackages: st.clientPackages.filter((c) => c.id !== id) }));
+  },
+
+  addPayment: async (p) => {
+    const { data, error } = await supabase.from('payments').insert({
+      client_id: p.clientId,
+      package_id: p.packageId,
+      amount: p.amount,
+      payment_method: p.paymentMethod,
+      notes: p.notes,
+    }).select().single();
+
+    if (error) {
+      console.error(error);
+      toast.error('Error al registrar abono');
+      return false;
+    }
+
+    // Actualizar client_package amount_paid local y remoto
+    const cp = get().clientPackages.find(c => c.id === p.packageId);
+    if (cp) {
+      const newAmountPaid = cp.amountPaid + p.amount;
+      let newStatus = cp.status;
+      // if (newAmountPaid >= cp.totalPrice && cp.usedSessions >= cp.totalSessions) {
+      //   newStatus = 'completed';
+      // }
+      await supabase.from('client_packages').update({ amount_paid: newAmountPaid }).eq('id', p.packageId);
+      set(st => ({
+        clientPackages: st.clientPackages.map(c => c.id === p.packageId ? { ...c, amountPaid: newAmountPaid, status: newStatus } : c),
+        payments: [mapPayment(data), ...st.payments],
+      }));
+    }
+    toast.success('Abono registrado');
+    return true;
+  },
+
+  fetchPayments: async (packageId) => {
+    const { data, error } = await supabase.from('payments').select('*').eq('package_id', packageId).order('created_at', { ascending: false });
+    if (!error && data) {
+      const mapped = data.map(mapPayment);
+      set(st => {
+        // merge sin duplicados
+        const others = st.payments.filter(p => p.packageId !== packageId);
+        return { payments: [...mapped, ...others] };
+      });
+      return mapped;
+    }
+    return [];
   },
 }));

@@ -3,8 +3,11 @@ import { useAppointmentStore, type Appointment } from '../../store/appointmentSt
 import { useAuthStore } from '../../store/authStore';
 import {
   Play, CheckCircle2, Clock, Phone, CalendarDays,
-  Sparkles, User, RefreshCw, X, AlertCircle, Timer,
+  Sparkles, User, RefreshCw, X, AlertCircle, Timer, FileText,
+  History,
 } from 'lucide-react';
+import { format12h } from '../../lib/timeFormat';
+import { notifyStatusChange } from '../../lib/whatsapp';
 import toast from 'react-hot-toast';
 import './SpecialistView.css';
 
@@ -150,7 +153,10 @@ export default function SpecialistView() {
     setLoadingId(null);
     setCompletingId(null);
     setNoteText('');
-    if (ok) toast.success('✅ Servicio marcado como completado');
+    if (ok) {
+      toast.success('✅ Servicio marcado como completado');
+      notifyStatusChange(appt, 'completed');
+    }
     else toast.error('Error al completar el servicio');
   }
 
@@ -390,7 +396,7 @@ export default function SpecialistView() {
                     isDone  ? 'spec-list-item--done'   : '',
                   ].join(' ')}
                 >
-                  <div className="spec-list-item__time">{a.time}</div>
+                  <div className="spec-list-item__time">{format12h(a.time)}</div>
 
                   <div className={`spec-list-item__dot spec-list-item__dot--${a.status}`} />
 
@@ -452,7 +458,7 @@ export default function SpecialistView() {
                 <div key={a.id} className="spec-list-item">
                   <div className="spec-list-item__time">
                     <span>{dateLabel}</span>
-                    <span className="spec-list-item__time-sub">{a.time}</span>
+                    <span className="spec-list-item__time-sub">{format12h(a.time)}</span>
                   </div>
                   <div className={`spec-list-item__dot spec-list-item__dot--${a.status}`} />
                   <div className="spec-list-item__info">

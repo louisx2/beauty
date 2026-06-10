@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useServiceStore, type SessionPackage, type ClientPackage } from '../../store/serviceStore';
 import { useAuthStore } from '../../store/authStore';
 import { useClientStore } from '../../store/clientStore';
@@ -7,8 +7,10 @@ import { useStaffStore } from '../../store/staffStore';
 import {
   Plus, X, Package, Users, CheckCircle2, AlertTriangle,
   DollarSign, Search, Edit2, AlertCircle, CalendarPlus, FileText,
+  CreditCard, MoreVertical, Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ClientAutocomplete from '../../components/ClientAutocomplete';
 import './SessionPackages.css';
 
 function fmtPrice(p: number) { return `RD$ ${p.toLocaleString('es-DO')}`; }
@@ -33,6 +35,7 @@ export default function SessionPackages() {
   const {
     packages, clientPackages, fetchAll, addPackage, updatePackage, deletePackage,
     sellPackage, useSession, updateClientPackage, deleteClientPackage,
+    addPayment, fetchPayments, payments,
   } = useServiceStore();
   const { services } = useServiceStore();
   const { clients, fetchClients } = useClientStore();
@@ -48,6 +51,16 @@ export default function SessionPackages() {
   const [showModalEdit, setShowModalEdit] = useState(false);
   const [showModalSchedule, setShowModalSchedule] = useState(false);
   const [search, setSearch] = useState('');
+  
+  // Menu Dropdown
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    const closeMenu = () => setOpenMenu(null);
+    document.addEventListener('click', closeMenu);
+    return () => document.removeEventListener('click', closeMenu);
+  }, []);
 
   // Package type form
   const [pkgForm, setPkgForm] = useState({ name: '', serviceId: '', active: true });
@@ -57,7 +70,7 @@ export default function SessionPackages() {
   const [pkgErrors, setPkgErrors] = useState<{ name?: string; serviceId?: string; sessions?: string; price?: string }>({});
 
   // Sell form
-  const [sellForm, setSellForm] = useState({ clientId: '', packageId: '', notes: '' });
+  const [sellForm, setSellForm] = useState({ clientId: '', clientName: '', packageId: '', notes: '', amountPaid: 0 });
 
   // Edit client package form
   const [editingCp, setEditingCp] = useState<ClientPackage | null>(null);
@@ -68,6 +81,11 @@ export default function SessionPackages() {
   const [scheduleCp, setScheduleCp] = useState<ClientPackage | null>(null);
   const [schedForm, setSchedForm] = useState({ staffId: '', date: todayStr(), time: '09:00', notes: '' });
   const [schedSubmitting, setSchedSubmitting] = useState(false);
+
+  // Payments form
+  const [paymentCp, setPaymentCp] = useState<ClientPackage | null>(null);
+  const [paymentForm, setPaymentForm] = useState({ amount: 0, paymentMethod: 'cash' as 'cash'|'card'|'transfer', notes: '' });
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
 
   const activeStaff = useMemo(() => staff.filter((s) => s.active), [staff]);
 
@@ -94,6 +112,10 @@ export default function SessionPackages() {
   // ── Sell package ───────────────────────────────────────────────
   const handleSellSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!sellForm.clientId) {
+      toast.error('Por favor selecciona una clienta de la lista');
+      return;
+    }
     const pkg = packages.find((p) => p.id === sellForm.packageId);
     const client = clients.find((c) => c.id === sellForm.clientId);
     if (!pkg || !client) return;
@@ -104,10 +126,11 @@ export default function SessionPackages() {
         packageId: pkg.id, packageName: pkg.name,
         serviceName: pkg.serviceName, totalSessions: pkg.sessions,
         usedSessions: 0, purchasedAt: todayStr(), notes: sellForm.notes,
+        totalPrice: pkg.price, amountPaid: sellForm.amountPaid, status: 'active',
       });
       toast.success('Venta de paquete registrada');
       setShowModalSell(false);
-      setSellForm({ clientId: '', packageId: '', notes: '' });
+      setSellForm({ clientId: '', clientName: '', packageId: '', notes: '', amountPaid: 0 });
       setActiveTab('sold');
     } catch (err) {
       toast.error('Error al vender el paquete');
@@ -218,6 +241,39 @@ export default function SessionPackages() {
     }
   };
 
+  // ── Payments ───────────────────────────────────────────────────
+  const openPayments = (cp: ClientPackage) => {
+    setPaymentCp(cp);
+    setPaymentForm({ amount: 0, paymentMethod: 'cash', notes: '' });
+    fetchPayments(cp.id);
+  };
+
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paymentCp || paymentForm.amount <= 0) return;
+    
+    // Balance check
+    const balance = paymentCp.totalPrice - paymentCp.amountPaid;
+    if (paymentForm.amount > balance) {
+      toast.error(`El monto no puede ser mayor al balance (RD$ ${balance.toLocaleString()})`);
+      return;
+    }
+
+    setPaymentSubmitting(true);
+    try {
+      await addPayment({
+        clientId: paymentCp.clientId,
+        packageId: paymentCp.id,
+        amount: paymentForm.amount,
+        paymentMethod: paymentForm.paymentMethod,
+        notes: paymentForm.notes,
+      });
+      setPaymentForm({ amount: 0, paymentMethod: 'cash', notes: '' });
+    } finally {
+      setPaymentSubmitting(false);
+    }
+  };
+
   // Stats
   const stats = useMemo(() => ({
     total: clientPackages.length,
@@ -231,69 +287,72 @@ export default function SessionPackages() {
 
   return (
     <div className="spa-pkgs">
-      <div className="clients__header">
+      <div className="spa-pkgs__header-wrapper">
         <div>
-          <h1 className="clients__title">Paquetes con Sesiones</h1>
-          <p className="clients__subtitle">Control de sesiones por clienta</p>
+          <h1 className="clients__title">Gestión de Paquetes</h1>
+          <p className="clients__subtitle">Administra los paquetes y sesiones de tus clientas</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           {user?.role === 'admin' && (
             <>
               <button
-                className="appts__add-btn"
-                style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', boxShadow: 'none' }}
+                className="btn-secondary"
+                style={{ padding: '10px 20px', fontSize: '0.85rem' }}
                 onClick={() => setShowModalPkg(true)}
                 id="btn-new-package"
               >
-                <Package size={18} /> Nuevo Tipo
+                <Package size={16} /> Nuevo Tipo
               </button>
-              <button className="appts__add-btn" onClick={() => setShowModalSell(true)} id="btn-sell-package">
-                <Plus size={18} /> Vender Paquete
+              <button 
+                className="btn-primary" 
+                style={{ padding: '10px 24px', fontSize: '0.85rem' }}
+                onClick={() => setShowModalSell(true)} 
+                id="btn-sell-package"
+              >
+                <Plus size={16} /> Vender Paquete
               </button>
             </>
           )}
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats Dashboard */}
       <div className="spa-pkgs__stats">
         <div className="spa-pkgs__stat">
           <span className="spa-pkgs__stat-val">{stats.total}</span>
-          <span>Total Vendidos</span>
+          <span className="spa-pkgs__stat-lbl">Vendidos Totales</span>
         </div>
         <div className="spa-pkgs__stat spa-pkgs__stat--green">
           <span className="spa-pkgs__stat-val">{stats.active}</span>
-          <span>Con Sesiones Activas</span>
+          <span className="spa-pkgs__stat-lbl">Con Sesiones Activas</span>
         </div>
         <div className="spa-pkgs__stat spa-pkgs__stat--amber">
           <span className="spa-pkgs__stat-val">{stats.aboutToExpire}</span>
-          <span>Última Sesión</span>
+          <span className="spa-pkgs__stat-lbl">Última Sesión</span>
         </div>
         <div className="spa-pkgs__stat spa-pkgs__stat--gray">
           <span className="spa-pkgs__stat-val">{stats.completed}</span>
-          <span>Completados</span>
+          <span className="spa-pkgs__stat-lbl">Completados</span>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="spa-pkgs__tabs">
-        <button className={`spa-pkgs__tab ${activeTab === 'sold' ? 'spa-pkgs__tab--active' : ''}`} onClick={() => setActiveTab('sold')}>
-          <Users size={16} /> Paquetes de Clientas
-        </button>
-        <button className={`spa-pkgs__tab ${activeTab === 'packages' ? 'spa-pkgs__tab--active' : ''}`} onClick={() => setActiveTab('packages')}>
-          <Package size={16} /> Tipos de Paquetes
-        </button>
-      </div>
-
-      {/* Search */}
-      {activeTab === 'sold' && (
-        <div className="clients__search-bar">
-          <div className="appts__search" style={{ maxWidth: 360 }}>
+      {/* Toolbar */}
+      <div className="spa-pkgs__toolbar">
+        <div className="spa-pkgs__tabs">
+          <button className={`spa-pkgs__tab ${activeTab === 'sold' ? 'spa-pkgs__tab--active' : ''}`} onClick={() => setActiveTab('sold')}>
+            <Users size={16} /> Clientas
+          </button>
+          <button className={`spa-pkgs__tab ${activeTab === 'packages' ? 'spa-pkgs__tab--active' : ''}`} onClick={() => setActiveTab('packages')}>
+            <Package size={16} /> Catálogo
+          </button>
+        </div>
+        {activeTab === 'sold' && (
+          <div className="appts__search" style={{ minWidth: 280, margin: 0 }}>
             <Search size={16} />
             <input placeholder="Buscar clienta, servicio..." value={search} onChange={(e) => setSearch(e.target.value)} id="pkgs-search" />
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ── Tab: Sold (Client Packages) ── */}
       {activeTab === 'sold' && (
@@ -303,87 +362,104 @@ export default function SessionPackages() {
           ) : (
             filteredClientPkgs.map((cp) => {
               const { pct, remaining, done } = getProgress(cp);
+              const isMenuOpen = openMenu === cp.id;
+              
               return (
-                <div className={`client-pkg ${done ? 'client-pkg--done' : remaining === 1 ? 'client-pkg--alert' : ''}`} key={cp.id}>
-                  <div className="client-pkg__left">
-                    <div className="client-pkg__avatar">
-                      {cp.clientName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                <div className={`client-pkg-card ${done ? 'client-pkg-card--done' : remaining === 1 ? 'client-pkg-card--alert' : ''}`} key={cp.id}>
+                  
+                  {/* Header */}
+                  <div className="client-pkg__header">
+                    <div className="client-pkg__avatar-wrap">
+                      <div className="client-pkg__avatar">
+                        {cp.clientName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                      </div>
                     </div>
                     <div className="client-pkg__info">
-                      <strong>{cp.clientName}</strong>
-                      <span>{cp.packageName}</span>
-                      <span className="client-pkg__service">{cp.serviceName}</span>
-                      {cp.notes && (
-                        <span className="client-pkg__notes-badge">
-                          <FileText size={11} /> {cp.notes}
+                      <h3>{cp.clientName}</h3>
+                      <p>{cp.packageName}</p>
+                      <span className="client-pkg__service-badge">{cp.serviceName}</span>
+                    </div>
+                    
+                    {/* Tooltip Menu for Secondary Actions */}
+                    <div className="client-pkg__menu">
+                      <button 
+                        className="client-pkg__btn client-pkg__btn--icon" 
+                        onClick={(e) => { e.stopPropagation(); setOpenMenu(isMenuOpen ? null : cp.id); }}
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+                      
+                      {isMenuOpen && (
+                        <div className="client-pkg__menu-content" onClick={(e) => e.stopPropagation()}>
+                          <button className="client-pkg__menu-item" onClick={() => { setOpenMenu(null); openPayments(cp); }}>
+                            <DollarSign size={15} /> Pagos / Abonos
+                          </button>
+                          <button className="client-pkg__menu-item" onClick={() => { setOpenMenu(null); openEditCp(cp); }}>
+                            <Edit2 size={15} /> Editar
+                          </button>
+                          {user?.role === 'admin' && (
+                            <button className="client-pkg__menu-item client-pkg__menu-item--danger" onClick={() => { setOpenMenu(null); deleteClientPackage(cp.id); }}>
+                              <Trash2 size={15} /> Eliminar
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Progress Area */}
+                  <div className="client-pkg__progress-area">
+                    <div className="client-pkg__progress-stats">
+                      <span>Sesiones Completadas</span>
+                      <strong>{cp.usedSessions} / {cp.totalSessions}</strong>
+                    </div>
+                    <div className="client-pkg__dots">
+                      {Array.from({ length: cp.totalSessions }).map((_, i) => (
+                        <div
+                          key={i}
+                          className={`client-pkg__dot ${i < cp.usedSessions ? 'client-pkg__dot--used' : ''}`}
+                        />
+                      ))}
+                    </div>
+                    {cp.notes && (
+                      <div style={{ marginTop: 12, fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'flex', gap: 6 }}>
+                        <FileText size={12} style={{ flexShrink: 0 }} />
+                        <span>{cp.notes}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer Actions */}
+                  <div className="client-pkg__footer">
+                    <span className="client-pkg__date">{new Date(cp.purchasedAt + 'T12:00:00').toLocaleDateString('es-DO')}</span>
+                    <div className="client-pkg__primary-actions">
+                      {!done && (
+                        <>
+                          <button
+                            className="client-pkg__btn client-pkg__btn--use"
+                            onClick={() => useSession(cp.id)}
+                            id={`use-session-${cp.id}`}
+                            title="Descontar una sesión"
+                          >
+                            ✓ Usar
+                          </button>
+                          <button
+                            className="client-pkg__btn client-pkg__btn--schedule"
+                            onClick={() => openSchedule(cp)}
+                            title="Agendar sesión en el calendario"
+                          >
+                            <CalendarPlus size={14} /> Agendar
+                          </button>
+                        </>
+                      )}
+                      {done && (
+                        <span style={{ color: '#4ade80', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <CheckCircle2 size={16} /> Completado
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="client-pkg__progress-col">
-                    <div className="client-pkg__sessions-display">
-                      {Array.from({ length: cp.totalSessions }).map((_, i) => (
-                        <div
-                          key={i}
-                          className={`client-pkg__session-dot ${i < cp.usedSessions ? 'client-pkg__session-dot--used' : ''}`}
-                        />
-                      ))}
-                    </div>
-                    <div className="client-pkg__bar-wrap">
-                      <div className="client-pkg__bar">
-                        <div
-                          className={`client-pkg__bar-fill ${done ? 'client-pkg__bar-fill--done' : ''}`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="client-pkg__bar-label">
-                        {cp.usedSessions}/{cp.totalSessions} sesiones usadas
-                        {!done && ` · ${remaining} restante${remaining !== 1 ? 's' : ''}`}
-                      </span>
-                    </div>
-                    {remaining === 1 && !done && (
-                      <div className="client-pkg__alert"><AlertTriangle size={13} /> ¡Última sesión!</div>
-                    )}
-                    {done && (
-                      <div className="client-pkg__done"><CheckCircle2 size={13} /> Completado</div>
-                    )}
-                  </div>
-
-                  <div className="client-pkg__actions">
-                    <span className="client-pkg__date">Compra: {new Date(cp.purchasedAt + 'T12:00:00').toLocaleDateString('es-DO')}</span>
-                    {!done && (
-                      <>
-                        <button
-                          className="client-pkg__schedule-btn"
-                          onClick={() => openSchedule(cp)}
-                          title="Agendar siguiente sesión"
-                        >
-                          <CalendarPlus size={14} /> Agendar Sesión
-                        </button>
-                        <button
-                          className="client-pkg__use-btn"
-                          onClick={() => useSession(cp.id)}
-                          id={`use-session-${cp.id}`}
-                          title="Marcar sesión como usada sin agendar"
-                        >
-                          ✓ Marcar Usada
-                        </button>
-                      </>
-                    )}
-                    <button
-                      className="appt-card__action-btn"
-                      onClick={() => openEditCp(cp)}
-                      title="Editar paquete"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                    {user?.role === 'admin' && (
-                      <button className="appt-card__action-btn" onClick={() => deleteClientPackage(cp.id)} title="Eliminar">
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
                 </div>
               );
             })
@@ -391,24 +467,34 @@ export default function SessionPackages() {
         </div>
       )}
 
-      {/* ── Tab: Package Types ── */}
+      {/* ── Tab: Package Types (VIP Cards) ── */}
       {activeTab === 'packages' && (
         <div className="spa-pkgs__types-grid">
           {packages.map((p) => (
-            <div className="pkg-type-card" key={p.id}>
-              <div className="pkg-type-card__sessions">
-                <span className="pkg-type-card__sessions-num">{p.sessions}</span>
-                <span>sesiones</span>
-              </div>
+            <div className="vip-card" key={p.id}>
+              <div className="vip-card__sessions">{p.sessions}</div>
               <h3>{p.name}</h3>
               <p>{p.serviceName}</p>
-              <div className="pkg-type-card__price"><DollarSign size={15} />{fmtPrice(p.price)}</div>
-              <div className="pkg-type-card__per">{fmtPrice(Math.round(p.price / p.sessions))} por sesión</div>
+              
+              <div className="vip-card__price-box">
+                <div className="vip-card__price">
+                  <DollarSign size={20} /> {p.price.toLocaleString('es-DO')}
+                </div>
+                <div className="vip-card__per-session">
+                  {Math.round(p.price / p.sessions).toLocaleString('es-DO')} RD$ por sesión
+                </div>
+              </div>
+
               {user?.role === 'admin' && (
-                <div className="pkg-type-card__actions">
+                <div className="vip-card__actions">
                   <button
-                    className="appts__add-btn"
-                    style={{ padding: '8px 14px', fontSize: '0.8rem', background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', boxShadow: 'none' }}
+                    className="vip-card__btn vip-card__btn--sell"
+                    onClick={() => { setSellForm({ clientId: '', clientName: '', packageId: p.id, notes: '', amountPaid: 0 }); setShowModalSell(true); }}
+                  >
+                    Vender
+                  </button>
+                  <button
+                    className="vip-card__btn vip-card__btn--secondary"
                     onClick={() => {
                       setEditingPkgId(p.id);
                       setPkgForm({ name: p.name, serviceId: p.serviceId, active: p.active });
@@ -418,16 +504,15 @@ export default function SessionPackages() {
                       setShowModalPkg(true);
                     }}
                   >
-                    <Edit2 size={13} /> Editar
+                    <Edit2 size={14} />
                   </button>
-                  <button
-                    className="appts__add-btn"
-                    style={{ padding: '8px 18px', fontSize: '0.8rem' }}
-                    onClick={() => { setSellForm({ clientId: '', packageId: p.id, notes: '' }); setShowModalSell(true); }}
+                  <button 
+                    className="vip-card__btn vip-card__btn--secondary" 
+                    onClick={() => deletePackage(p.id)}
+                    style={{ flex: '0 0 auto' }}
                   >
-                    Vender
+                    <Trash2 size={14} />
                   </button>
-                  <button className="appt-card__action-btn" onClick={() => deletePackage(p.id)}><X size={14} /></button>
                 </div>
               )}
             </div>
@@ -501,10 +586,13 @@ export default function SessionPackages() {
             <form onSubmit={handleSellSubmit} className="modal__form">
               <div className="modal__field">
                 <label><Users size={14} /> Clienta</label>
-                <select required value={sellForm.clientId} onChange={(e) => setSellForm({ ...sellForm, clientId: e.target.value })}>
-                  <option value="">Seleccionar clienta</option>
-                  {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <ClientAutocomplete 
+                  clients={clients}
+                  value={sellForm.clientName}
+                  onChange={(text) => setSellForm({ ...sellForm, clientName: text, clientId: '' })}
+                  onSelect={(client) => setSellForm({ ...sellForm, clientName: client.name, clientId: client.id })}
+                  required
+                />
               </div>
               <div className="modal__field">
                 <label><Package size={14} /> Paquete</label>
@@ -527,6 +615,19 @@ export default function SessionPackages() {
                   </div>
                 );
               })()}
+              <div className="modal__field">
+                <label>Abono Inicial (RD$)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max={(() => {
+                    const pkg = packages.find(p => p.id === sellForm.packageId);
+                    return pkg ? pkg.price : undefined;
+                  })()}
+                  value={sellForm.amountPaid}
+                  onChange={(e) => setSellForm({ ...sellForm, amountPaid: Number(e.target.value) })}
+                />
+              </div>
               <div className="modal__field">
                 <label>Notas</label>
                 <textarea placeholder="Observaciones..." rows={2} value={sellForm.notes} onChange={(e) => setSellForm({ ...sellForm, notes: e.target.value })} />
@@ -561,7 +662,7 @@ export default function SessionPackages() {
                   value={editCpSessions}
                   onChange={(e) => setEditCpSessions(e.target.value)}
                 />
-                <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', marginTop: 4, display: 'block' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted, rgba(255,255,255,0.4))', marginTop: 4, display: 'block' }}>
                   Sesiones restantes: {editingCp.totalSessions - Number(editCpSessions)}
                 </span>
               </div>
@@ -579,7 +680,7 @@ export default function SessionPackages() {
                       borderColor: i < Number(editCpSessions) ? 'var(--rose)' : 'rgba(255,255,255,0.15)',
                       transition: 'all 0.15s',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.65rem', color: 'rgba(255,255,255,0.6)',
+                      fontSize: '0.65rem', color: 'var(--text-muted, rgba(255,255,255,0.6))',
                     }}
                   >
                     {i + 1}
@@ -609,7 +710,7 @@ export default function SessionPackages() {
               <h2>Agendar Sesión — {scheduleCp.clientName}</h2>
               <button className="modal__close" onClick={() => setShowModalSchedule(false)}><X size={20} /></button>
             </div>
-            <div style={{ padding: '0 0 16px', margin: '0 0 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+            <div style={{ padding: '0 0 16px', margin: '0 0 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.85rem', color: 'var(--text-muted, rgba(255,255,255,0.5))' }}>
               Sesión {scheduleCp.usedSessions + 1} de {scheduleCp.totalSessions} · {scheduleCp.serviceName}
             </div>
             <form onSubmit={handleScheduleSubmit} className="modal__form">
@@ -656,6 +757,107 @@ export default function SessionPackages() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Payments ── */}
+      {paymentCp && (
+        <div className="modal-overlay" onClick={() => setPaymentCp(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h2>Pagos — {paymentCp.clientName}</h2>
+              <button className="modal__close" onClick={() => setPaymentCp(null)}><X size={20} /></button>
+            </div>
+            
+            <div style={{ padding: '0 0 16px', margin: '0 0 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ color: 'var(--text-muted, rgba(255,255,255,0.6))' }}>Paquete:</span>
+                <strong style={{ color: 'var(--text-main, white)' }}>{paymentCp.packageName}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ color: 'var(--text-muted, rgba(255,255,255,0.6))' }}>Precio Total:</span>
+                <strong style={{ color: 'var(--text-main, white)' }}>{fmtPrice(paymentCp.totalPrice)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ color: 'var(--text-muted, rgba(255,255,255,0.6))' }}>Pagado:</span>
+                <strong style={{ color: 'var(--emerald)' }}>{fmtPrice(paymentCp.amountPaid)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
+                <span style={{ color: 'var(--text-muted, rgba(255,255,255,0.6))' }}>Balance Pendiente:</span>
+                <strong style={{ color: 'var(--amber)' }}>{fmtPrice(paymentCp.totalPrice - paymentCp.amountPaid)}</strong>
+              </div>
+            </div>
+
+            {paymentCp.totalPrice - paymentCp.amountPaid > 0 && (
+              <form onSubmit={handlePaymentSubmit} className="modal__form" style={{ marginBottom: 24 }}>
+                <h3 style={{ fontSize: '1rem', marginBottom: 12, color: 'var(--text-main, white)' }}>Registrar Abono</h3>
+                <div className="modal__row">
+                  <div className="modal__field">
+                    <label>Monto (RD$)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={paymentCp.totalPrice - paymentCp.amountPaid}
+                      value={paymentForm.amount || ''}
+                      onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })}
+                      required
+                    />
+                  </div>
+                  <div className="modal__field">
+                    <label>Método de Pago</label>
+                    <select
+                      value={paymentForm.paymentMethod}
+                      onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value as any })}
+                    >
+                      <option value="cash">Efectivo</option>
+                      <option value="transfer">Transferencia</option>
+                      <option value="card">Tarjeta</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="modal__field">
+                  <label>Notas del Pago</label>
+                  <input
+                    type="text"
+                    placeholder="Referencia de transferencia, banco..."
+                    value={paymentForm.notes}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+                  />
+                </div>
+                <button type="submit" className="modal__submit-btn" disabled={paymentSubmitting || paymentForm.amount <= 0}>
+                  {paymentSubmitting ? 'Registrando...' : 'Registrar Pago'}
+                </button>
+              </form>
+            )}
+
+            <h3 style={{ fontSize: '1rem', marginBottom: 12, color: 'var(--text-main, white)' }}>Historial de Pagos</h3>
+            {payments.filter(p => p.packageId === paymentCp.id).length === 0 ? (
+              <p style={{ color: 'var(--text-muted, rgba(255,255,255,0.4))', fontSize: '0.9rem' }}>No hay abonos registrados.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 200, overflowY: 'auto' }}>
+                {payments.filter(p => p.packageId === paymentCp.id).map(p => (
+                  <div key={p.id} style={{ background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <strong style={{ display: 'block', fontSize: '0.95rem', color: 'var(--text-main, white)' }}>
+                        {fmtPrice(p.amount)}
+                      </strong>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, rgba(255,255,255,0.5))' }}>
+                        {new Date(p.createdAt).toLocaleDateString('es-DO')} · {
+                          p.paymentMethod === 'cash' ? 'Efectivo' :
+                          p.paymentMethod === 'card' ? 'Tarjeta' : 'Transferencia'
+                        }
+                      </span>
+                    </div>
+                    {p.notes && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, rgba(255,255,255,0.4))', fontStyle: 'italic', maxWidth: '40%', textAlign: 'right' }}>
+                        {p.notes}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

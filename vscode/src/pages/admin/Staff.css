@@ -53,7 +53,6 @@
 }
 
 .staff-page__add-btn:hover {
-  transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(201, 125, 151, 0.35);
   background: linear-gradient(135deg, #d48da5, #be748f);
 }

@@ -3,7 +3,7 @@ import { useClientStore, type Client } from '../../store/clientStore';
 import { useAppointmentStore } from '../../store/appointmentStore';
 import {
   Plus, Search, User, Phone, Mail, FileText,
-  X, Edit2, Trash2, Heart, Shield, MessageCircle, ChevronRight, AlertCircle,
+  X, Edit2, Trash2, Heart, Shield, MessageCircle, ChevronRight, AlertCircle, Calendar,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './Clients.css';
@@ -133,32 +133,24 @@ export default function Clients() {
     window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(`Hola ${c.name}, te escribimos de Anadsll Beauty Esthetic.`)}`, '_blank');
   };
 
-  const clientAppointments = useMemo(() => {
-    if (!selectedClient) return [];
-    return appointments
-      .filter((a) => a.clientPhone === selectedClient.phone || (a.client_id === selectedClient.id) || (a.clientName.toLowerCase() === selectedClient.name.toLowerCase()))
-      .sort((a, b) => new Date(`${b.date}T${b.time}`).getTime() - new Date(`${a.date}T${a.time}`).getTime());
-  }, [appointments, selectedClient]);
-
   const closeModal = () => { setShowModal(false); setErrors({}); };
 
   return (
-    <div className="clients">
-      {/* Header */}
-      <div className="clients__header">
+    <div className="clients-page">
+      <div className="clients-page__header">
         <div>
-          <h1 className="clients__title">CRM de Clientas</h1>
-          <p className="clients__subtitle">{clients.length} clientas registradas</p>
+          <h1 className="clients-page__title">CRM de Clientas</h1>
+          <p className="clients-page__subtitle">{clients.length} clientas registradas</p>
         </div>
-        <button className="appts__add-btn" onClick={openCreate} id="btn-new-client">
+        <button className="clients-page__add-btn" onClick={openCreate} id="btn-new-client">
           <Plus size={18} /> Nueva Clienta
         </button>
       </div>
 
       {/* Search */}
-      <div className="clients__search-bar">
-        <div className="appts__search" style={{ maxWidth: 400 }}>
-          <Search size={16} />
+      <div className="clients-filters">
+        <div className="clients-filters__search">
+          <Search size={18} />
           <input
             type="text"
             placeholder="Buscar por nombre, cédula, teléfono..."
@@ -169,126 +161,78 @@ export default function Clients() {
         </div>
       </div>
 
-      <div className="clients__layout">
-        {/* Client List */}
-        <div className="clients__list">
-          {filtered.length === 0 ? (
-            <div className="appts__empty">
-              <User size={40} />
-              <p>No se encontraron clientas</p>
-            </div>
-          ) : (
-            filtered.map((c) => (
-              <div
-                className={`client-row ${selectedClient?.id === c.id ? 'client-row--selected' : ''}`}
-                key={c.id}
-                onClick={() => setSelectedClient(c)}
-              >
-                <div className="client-row__avatar">
-                  {c.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-                </div>
-                <div className="client-row__info">
-                  <strong>{c.name}</strong>
-                  <span><Phone size={12} /> {c.phone}</span>
-                </div>
-                <div className="client-row__meta">
-                  <span className="client-row__skin">{c.skin_type || '—'}</span>
-                  {c.allergies && <span className="client-row__allergy">⚠ Alergias</span>}
-                </div>
-                <ChevronRight size={16} className="client-row__chevron" />
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Client Detail Panel */}
-        {selectedClient ? (
-          <div className="client-detail">
-            <div className="client-detail__header">
-              <div className="client-detail__avatar-lg">
-                {selectedClient.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-              </div>
-              <h2>{selectedClient.name}</h2>
-              <span className="client-detail__since">Clienta desde {new Date(selectedClient.created_at).toLocaleDateString('es-DO', { month: 'long', year: 'numeric' })}</span>
-
-              <div className="client-detail__actions">
-                <button onClick={() => openEdit(selectedClient)} className="client-detail__btn"><Edit2 size={15} /> Editar</button>
-                <button onClick={() => handleWhatsApp(selectedClient)} className="client-detail__btn client-detail__btn--wa"><MessageCircle size={15} /> WhatsApp</button>
-                <button onClick={() => { deleteClient(selectedClient.id); setSelectedClient(null); }} className="client-detail__btn client-detail__btn--danger"><Trash2 size={15} /></button>
-              </div>
-            </div>
-
-            <div className="client-detail__body">
-              <div className="client-detail__section">
-                <h4>Información Personal</h4>
-                <div className="client-detail__grid">
-                  <div className="client-detail__item">
-                    <span className="client-detail__label"><Shield size={13} /> Cédula</span>
-                    <span className="client-detail__value">{selectedClient.cedula || '—'}</span>
-                  </div>
-                  <div className="client-detail__item">
-                    <span className="client-detail__label"><Phone size={13} /> Teléfono</span>
-                    <span className="client-detail__value">{selectedClient.phone}</span>
-                  </div>
-                  <div className="client-detail__item">
-                    <span className="client-detail__label"><Mail size={13} /> Email</span>
-                    <span className="client-detail__value">{selectedClient.email || '—'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="client-detail__section">
-                <h4>Información Clínica</h4>
-                <div className="client-detail__grid">
-                  <div className="client-detail__item">
-                    <span className="client-detail__label"><Heart size={13} /> Tipo de Piel</span>
-                    <span className="client-detail__value">{selectedClient.skin_type || '—'}</span>
-                  </div>
-                  <div className="client-detail__item">
-                    <span className="client-detail__label">⚠️ Alergias</span>
-                    <span className="client-detail__value" style={selectedClient.allergies ? { color: '#fbbf24' } : {}}>{selectedClient.allergies || 'Ninguna'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {selectedClient.notes && (
-                <div className="client-detail__section">
-                  <h4>Notas</h4>
-                  <p className="client-detail__notes-text"><FileText size={13} /> {selectedClient.notes}</p>
-                </div>
-              )}
-
-              <div className="client-detail__section">
-                <h4>Historial de Citas</h4>
-                {clientAppointments.length === 0 ? (
-                  <p className="client-detail__notes-text">No hay citas registradas</p>
-                ) : (
-                  <div className="client-detail__history">
-                    {clientAppointments.map((a) => (
-                      <div key={a.id} className="history-item">
-                        <div className="history-item__date">
-                          <strong>{new Date(a.date).toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
-                          <span>{a.time}</span>
-                        </div>
-                        <div className="history-item__info">
-                          <strong>{a.service}</strong>
-                          <span>{a.employee}</span>
-                        </div>
-                        <span className={`badge badge--${a.status === 'completed' ? 'blue' : a.status === 'cancelled' || a.status === 'no_show' ? 'red' : 'green'}`}>
-                          {a.status === 'completed' ? 'Completada' : a.status === 'cancelled' ? 'Cancelada' : a.status === 'no_show' ? 'No Asistió' : a.status === 'confirmed' ? 'Confirmada' : 'Pendiente'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+      <div className="clients-grid">
+        {filtered.length === 0 ? (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', color: 'rgba(255,255,255,0.4)' }}>
+            <User size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+            <p>No se encontraron clientas</p>
           </div>
         ) : (
-          <div className="client-detail client-detail--empty">
-            <User size={48} />
-            <p>Selecciona una clienta para ver su ficha</p>
-          </div>
+          filtered.map((c) => {
+            const clientAppts = appointments.filter((a) => a.client_id === c.id);
+            const completedAppts = clientAppts.filter(a => a.status === 'completed').length;
+            const pendingAppts = clientAppts.filter(a => a.status === 'pending' || a.status === 'confirmed').length;
+
+            return (
+              <div className="client-card" key={c.id}>
+                <div className="client-card__header">
+                  <div className="client-card__avatar">
+                    {c.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <div className="client-card__info">
+                    <h3 className="client-card__name">{c.name}</h3>
+                    <div className="client-card__role">
+                      <Calendar size={12} />
+                      Desde {new Date(c.created_at).toLocaleDateString('es-DO', { month: 'short', year: 'numeric' })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="client-card__stats">
+                  <div className="client-card__stat">
+                    <span className="client-card__stat-label">Total Citas</span>
+                    <span className="client-card__stat-value">{clientAppts.length}</span>
+                  </div>
+                  <div className="client-card__stat">
+                    <span className="client-card__stat-label">Completadas</span>
+                    <span className="client-card__stat-value" style={{ color: '#4ade80' }}>{completedAppts}</span>
+                  </div>
+                  <div className="client-card__stat">
+                    <span className="client-card__stat-label">Pendientes</span>
+                    <span className="client-card__stat-value" style={{ color: '#fbbf24' }}>{pendingAppts}</span>
+                  </div>
+                </div>
+
+                <div className="client-card__details">
+                  <div className="client-card__detail-item">
+                    <Phone size={14} /> {c.phone}
+                  </div>
+                  {c.email && (
+                    <div className="client-card__detail-item">
+                      <Mail size={14} /> {c.email}
+                    </div>
+                  )}
+                  {c.skin_type && (
+                    <div className="client-card__detail-item">
+                      <Heart size={14} /> Piel: {c.skin_type}
+                    </div>
+                  )}
+                </div>
+
+                <div className="client-card__actions">
+                  <button onClick={() => openEdit(c)} className="client-card__btn client-card__btn--primary">
+                    <Edit2 size={15} /> Editar
+                  </button>
+                  <button onClick={() => handleWhatsApp(c)} className="client-card__btn client-card__btn--wa">
+                    <MessageCircle size={15} /> WhatsApp
+                  </button>
+                  <button onClick={() => deleteClient(c.id)} className="client-card__btn" style={{ flex: 0, padding: '8px 12px', color: '#f87171' }}>
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
 
@@ -371,15 +315,6 @@ export default function Clients() {
                     {SKIN_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
-              </div>
-              <div className="modal__field">
-                <label>⚠️ Alergias</label>
-                <input
-                  type="text"
-                  placeholder="Retinol, fragancias, etc."
-                  value={form.allergies}
-                  onChange={(e) => setForm({ ...form, allergies: e.target.value })}
-                />
               </div>
               <div className="modal__field">
                 <label><FileText size={14} /> Notas</label>

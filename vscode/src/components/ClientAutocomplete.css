@@ -1,0 +1,94 @@
+.client-autocomplete {
+  position: relative;
+  width: 100%;
+}
+
+.client-autocomplete__input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.client-autocomplete__icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted, rgba(255,255,255,0.4));
+  pointer-events: none;
+}
+
+.client-autocomplete__input-wrapper input {
+  width: 100%;
+  padding-left: 36px !important;
+}
+
+.client-autocomplete__dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  background: var(--bg-card, #2a2a2a);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  z-index: 100;
+  max-height: 250px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+}
+
+.client-autocomplete__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.client-autocomplete__item:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.client-autocomplete__item-name {
+  font-weight: 600;
+  color: var(--text-main, white);
+  font-size: 0.9rem;
+}
+
+.client-autocomplete__item-phone {
+  font-size: 0.8rem;
+  color: var(--text-muted, rgba(255,255,255,0.5));
+}
+
+.client-autocomplete__item-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  color: var(--rose, #c97d97);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.client-autocomplete__item-new:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+/* Light Theme Overrides */
+[data-theme="light"] .client-autocomplete__dropdown {
+  background: white;
+  border-color: rgba(74,52,42,0.1);
+  box-shadow: 0 10px 30px rgba(74,52,42,0.1);
+}
+[data-theme="light"] .client-autocomplete__item:hover {
+  background: #F5F1EA;
+}
+[data-theme="light"] .client-autocomplete__item-new:hover {
+  background: #F5F1EA;
+}

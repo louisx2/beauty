@@ -10,7 +10,6 @@
 .admin__sidebar {
   width: 260px;
   background: linear-gradient(180deg, #352820 0%, #2A1F1A 100%);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -21,8 +20,8 @@
   overflow-y: auto;
 }
 
-.admin__sidebar::-webkit-scrollbar { width: 3px; }
-.admin__sidebar::-webkit-scrollbar-thumb { background: rgba(178,150,125,0.3); border-radius: 99px; }
+.admin__sidebar::-webkit-scrollbar { width: 0px; }
+.admin__sidebar::-webkit-scrollbar-thumb { background: transparent; }
 
 .admin__sidebar-header {
   padding: 24px 20px 20px;

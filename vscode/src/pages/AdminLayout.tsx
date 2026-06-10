@@ -21,15 +21,30 @@ import {
   AlertCircle,
   CheckCircle2,
   Scissors,
+  Zap
 } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
+import NextSessionModal from '../components/NextSessionModal';
+import ClientAutocomplete from '../components/ClientAutocomplete';
+import { useServiceStore } from '../store/serviceStore';
+import { useStaffStore } from '../store/staffStore';
+import { useClientStore } from '../store/clientStore';
+import toast, { Toaster, resolveValue } from 'react-hot-toast';
 import './AdminLayout.css';
+
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
 
 const navSections = [
   {
     label: 'Principal',
     items: [
       { to: '/admin/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
+      { action: 'walkin',       icon: <Zap size={20} style={{ color: '#fbbf24' }} />, label: 'Atender Ahora' },
       { to: '/admin/citas',     icon: <CalendarDays size={20} />, label: 'Citas' },
       { to: '/admin/clientes',  icon: <Users size={20} />,       label: 'Clientas' },
     ],
@@ -44,7 +59,7 @@ const navSections = [
   {
     label: 'Equipo',
     items: [
-      { to: '/admin/empleadas', icon: <UserCog size={20} />,     label: 'Empleadas' },
+      { to: '/admin/equipo', icon: <UserCog size={20} />,     label: 'Personal' },
     ],
   },
   {
@@ -61,28 +76,52 @@ const navSections = [
   },
 ];
 
-import { Toaster } from 'react-hot-toast';
-
 export default function AdminLayout() {
   const { user, logout } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
-  const { appointments, fetchAppointments } = useAppointmentStore();
+  const { appointments, fetchAppointments, initRealtime, cleanupRealtime } = useAppointmentStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+  // Walk-in modal state
+  const [showWalkin, setShowWalkin] = useState(false);
+  const { staff, fetchStaff } = useStaffStore();
+  const { services, clientPackages, fetchAll: fetchServices } = useServiceStore();
+  const { clients, addClient } = useClientStore();
+  const [walkinForm, setWalkinForm] = useState({ 
+    clientId: null as string | null,
+    clientName: '', 
+    clientPhone: '',
+    service: '', 
+    employee: '' 
+  });
+  const [walkinError, setWalkinError] = useState('');
+
+  // Packages of selected client
+  const activePackages = useMemo(() => {
+    if (!walkinForm.clientId) return [];
+    return clientPackages.filter(p => p.clientId === walkinForm.clientId && p.status === 'active' && p.totalSessions > p.usedSessions);
+  }, [walkinForm.clientId, clientPackages]);
+
+  useEffect(() => { 
+    fetchAppointments(); 
+    fetchStaff();
+    fetchServices();
+    initRealtime();
+    return () => cleanupRealtime();
+  }, [fetchAppointments, fetchStaff, fetchServices, initRealtime, cleanupRealtime]);
 
   // Redirect non-admin roles to their home pages
   useEffect(() => {
     if (user?.role === 'specialist') {
-      const adminOnly = ['/admin', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/empleadas', '/admin/ajustes', '/admin/reportes'];
+      const adminOnly = ['/admin', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/equipo', '/admin/ajustes', '/admin/reportes'];
       if (adminOnly.includes(location.pathname)) navigate('/admin/mi-turno', { replace: true });
     }
     if (user?.role === 'receptionist') {
-      const receptionistForbidden = ['/admin', '/admin/dashboard', '/admin/reportes', '/admin/ajustes', '/admin/empleadas'];
+      const receptionistForbidden = ['/admin', '/admin/dashboard', '/admin/reportes', '/admin/ajustes', '/admin/equipo'];
       if (receptionistForbidden.includes(location.pathname)) navigate('/admin/recepcion', { replace: true });
     }
   }, [user?.role, location.pathname, navigate]);
@@ -123,9 +162,91 @@ export default function AdminLayout() {
     }
   };
 
+  const handleWalkinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!walkinForm.clientName.trim() || !walkinForm.service || !walkinForm.employee) {
+      setWalkinError('Todos los campos son obligatorios');
+      return;
+    }
+    try {
+      let finalClientId = walkinForm.clientId;
+      let finalPhone = walkinForm.clientPhone || '0000000000';
+
+      // If it's a new client, create them automatically
+      if (!finalClientId) {
+        const newClient = await addClient({
+          name: walkinForm.clientName.trim(),
+          phone: walkinForm.clientPhone.trim() || '0000000000',
+          email: null,
+          cedula: null,
+          skin_type: null,
+          allergies: null,
+          notes: 'Registrada por Walk-in',
+          source: 'manual'
+        });
+        if (newClient) {
+          finalClientId = newClient.id;
+        }
+      }
+
+      const now = new Date();
+      await useAppointmentStore.getState().addAppointment({
+        client_id: finalClientId,
+        clientName: walkinForm.clientName.trim(),
+        clientPhone: finalPhone,
+        service: walkinForm.service,
+        employee: walkinForm.employee,
+        date: today,
+        time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
+        duration: 45,
+        status: 'in_progress',
+        notes: walkinForm.service.startsWith('Paquete:') ? 'Consumo de sesión por Walk-in' : 'Walk-in (Sin cita)',
+        source: 'manual'
+      });
+      toast.success('Cliente atendido inmediatamente');
+      setShowWalkin(false);
+      setWalkinForm({ clientId: null, clientName: '', clientPhone: '', service: '', employee: '' });
+    } catch (error) {
+      toast.error('Error al registrar');
+    }
+  };
+
   return (
     <div className="admin">
-      <Toaster position="top-right" />
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+        }}
+      >
+        {(t) => (
+          <div style={{
+            opacity: t.visible ? 1 : 0,
+            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+            background: t.type === 'error' ? '#fee2e2' : 'white',
+            color: t.type === 'error' ? '#ef4444' : '#1f2937',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            border: `1px solid ${t.type === 'error' ? '#fca5a5' : '#e5e7eb'}`
+          }}>
+            {t.type === 'success' && <CheckCircle2 size={20} color="#10b981" />}
+            {t.type === 'error' && <AlertCircle size={20} color="#ef4444" />}
+            <div style={{ flex: 1, fontSize: '0.9rem', fontWeight: 500 }}>
+              {resolveValue(t.message, t)}
+            </div>
+            <button 
+              onClick={() => toast.dismiss(t.id)}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: 'inherit', opacity: 0.5 }}
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+      </Toaster>
       {/* Sidebar */}
       <aside className={`admin__sidebar ${sidebarOpen ? 'admin__sidebar--open' : ''}`}>
         <div className="admin__sidebar-header">
@@ -169,6 +290,14 @@ export default function AdminLayout() {
                 <NavLink to="/admin/recepcion" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
                   <LayoutDashboard size={20} /><span>Panel</span>
                 </NavLink>
+                <button
+                  className="admin__nav-link"
+                  style={{ color: '#fbbf24', background: 'rgba(251,191,36,0.1)', cursor: 'pointer', textAlign: 'left', border: 'none', width: '100%', fontFamily: 'Outfit' }}
+                  onClick={() => { setSidebarOpen(false); setShowWalkin(true); }}
+                >
+                  <Zap size={20} />
+                  <span>Atender Ahora</span>
+                </button>
                 <NavLink to="/admin/citas" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
                   <CalendarDays size={20} /><span>Citas</span>
                 </NavLink>
@@ -191,19 +320,34 @@ export default function AdminLayout() {
               return (
                 <div className="admin__nav-section" key={section.label}>
                   <span className="admin__nav-label">{section.label}</span>
-                  {section.items.map((item) => (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      className={({ isActive }) =>
-                        `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`
-                      }
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      {item.icon}
-                      <span>{item.label}</span>
-                    </NavLink>
-                  ))}
+                  {section.items.map((item) => {
+                    if ((item as any).action === 'walkin') {
+                      return (
+                        <button
+                          key="walkin"
+                          className="admin__nav-link"
+                          style={{ color: '#fbbf24', background: 'rgba(251,191,36,0.1)', cursor: 'pointer', textAlign: 'left', border: 'none', width: '100%', fontFamily: 'Outfit' }}
+                          onClick={() => { setSidebarOpen(false); setShowWalkin(true); }}
+                        >
+                          {item.icon}
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    }
+                    return (
+                      <NavLink
+                        key={item.to}
+                        to={item.to as string}
+                        className={({ isActive }) =>
+                          `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`
+                        }
+                        onClick={() => setSidebarOpen(false)}
+                      >
+                        {item.icon}
+                        <span>{item.label}</span>
+                      </NavLink>
+                    );
+                  })}
                 </div>
               );
             })
@@ -315,6 +459,82 @@ export default function AdminLayout() {
           <Outlet />
         </div>
       </div>
+      <NextSessionModal />
+
+      {/* Walk-in Modal */}
+      {showWalkin && (
+        <div className="modal-overlay" onClick={() => setShowWalkin(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal__header">
+              <h2>⚡ Atender Ahora (Walk-in)</h2>
+              <button className="modal__close" onClick={() => setShowWalkin(false)}>✕</button>
+            </div>
+            <form onSubmit={handleWalkinSubmit} className="modal__form" style={{ padding: 24 }}>
+              <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 20, fontSize: '0.9rem' }}>
+                Registra a un cliente que llegó sin cita y pásalo a "En Curso" inmediatamente.
+              </p>
+              
+              <div className="modal__field">
+                <label>Clienta</label>
+                <ClientAutocomplete
+                  clients={clients}
+                  value={walkinForm.clientName}
+                  onChange={(text) => setWalkinForm({...walkinForm, clientName: text, clientId: null})}
+                  onSelect={(c) => setWalkinForm({...walkinForm, clientName: c.name, clientId: c.id, clientPhone: c.phone})}
+                  placeholder="Buscar o escribir nueva clienta..."
+                />
+              </div>
+
+              {!walkinForm.clientId && walkinForm.clientName && (
+                <div className="modal__field">
+                  <label>Teléfono (Nueva Clienta)</label>
+                  <input 
+                    placeholder="Teléfono de la clienta nueva"
+                    value={walkinForm.clientPhone}
+                    onChange={e => setWalkinForm({...walkinForm, clientPhone: formatPhone(e.target.value)})}
+                    maxLength={12}
+                  />
+                </div>
+              )}
+
+              <div className="modal__field">
+                <label>Servicio o Paquete</label>
+                <select value={walkinForm.service} onChange={e => setWalkinForm({...walkinForm, service: e.target.value})}>
+                  <option value="">Selecciona qué le harás...</option>
+                  <optgroup label="Servicios">
+                    {services.filter(s => s.active).map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                  </optgroup>
+                  {activePackages.length > 0 && (
+                    <optgroup label="Paquetes de la Clienta">
+                      {activePackages.map(p => (
+                        <option key={p.id} value={`Paquete: ${p.packageName}`}>
+                          Consumir {p.packageName} ({p.totalSessions - p.usedSessions} disp.)
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </div>
+
+              <div className="modal__field">
+                <label>Especialista</label>
+                <select value={walkinForm.employee} onChange={e => setWalkinForm({...walkinForm, employee: e.target.value})}>
+                  <option value="">Selecciona empleada...</option>
+                  {staff.filter(s => s.active && s.role === 'specialist').map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                </select>
+              </div>
+
+              {walkinError && <p style={{ color: '#f87171', fontSize: '0.85rem' }}>{walkinError}</p>}
+
+              <div className="modal__actions" style={{ marginTop: 24 }}>
+                <div style={{ flex: 1 }} />
+                <button type="button" className="modal__cancel-btn" onClick={() => setShowWalkin(false)}>Cancelar</button>
+                <button type="submit" className="modal__submit-btn" style={{ background: '#3b82f6', color: 'white' }}>Empezar Servicio</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
