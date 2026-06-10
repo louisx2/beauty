@@ -1,9 +1,9 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useRef } from 'react';
 import { useAppointmentStore, type Appointment } from '../../store/appointmentStore';
 import { useAuthStore } from '../../store/authStore';
 import {
   Play, CheckCircle2, Clock, Phone, CalendarDays,
-  Sparkles, User, RefreshCw, X, AlertCircle,
+  Sparkles, User, RefreshCw, X, AlertCircle, Timer,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './SpecialistView.css';
@@ -38,18 +38,56 @@ function minutesUntil(timeStr: string): number {
   return apptMinutes - nowMinutes;
 }
 
+function formatElapsed(startedAt: string | null): string {
+  if (!startedAt) return '';
+  const diffMs = Date.now() - new Date(startedAt).getTime();
+  const totalSec = Math.floor(diffMs / 1000);
+  const mins = Math.floor(totalSec / 60);
+  const secs = totalSec % 60;
+  if (mins >= 60) {
+    const hrs = Math.floor(mins / 60);
+    const rem = mins % 60;
+    return `${hrs}h ${rem}m`;
+  }
+  return `${mins}m ${String(secs).padStart(2, '0')}s`;
+}
+
 export default function SpecialistView() {
   const { appointments, fetchAppointments, updateStatus, updateAppointment } = useAppointmentStore();
   const { user } = useAuthStore();
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState('');
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     fetchAppointments();
     const iv = setInterval(fetchAppointments, 60_000);
     return () => clearInterval(iv);
   }, [fetchAppointments]);
+
+  // Live elapsed timer for in-progress appointment
+  const inProgressForTimer = useMemo(() =>
+    appointments.find(
+      (a) => a.status === 'in_progress' &&
+             a.employee.toLowerCase() === (user?.name ?? '').toLowerCase()
+    ) ?? null,
+    [appointments, user?.name]
+  );
+
+  useEffect(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (inProgressForTimer?.startedAt) {
+      setElapsed(formatElapsed(inProgressForTimer.startedAt));
+      timerRef.current = setInterval(() => {
+        setElapsed(formatElapsed(inProgressForTimer.startedAt));
+      }, 1000);
+    } else {
+      setElapsed('');
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [inProgressForTimer?.id, inProgressForTimer?.startedAt]);
 
   const today = new Date().toISOString().split('T')[0];
   const todayLabel = new Date().toLocaleDateString('es-DO', {
@@ -195,6 +233,17 @@ export default function SpecialistView() {
                 </a>
               )}
             </div>
+            {elapsed && (
+              <div className="spec-card__timer">
+                <Timer size={14} />
+                <span>En servicio hace <strong>{elapsed}</strong></span>
+                {inProgress.duration && (
+                  <span className="spec-card__timer-limit">
+                    · duración estimada {inProgress.duration} min
+                  </span>
+                )}
+              </div>
+            )}
             {inProgress.notes && (
               <div className="spec-card__notes">
                 📋 {inProgress.notes}

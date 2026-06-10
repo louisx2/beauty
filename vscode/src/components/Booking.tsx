@@ -83,6 +83,7 @@ export default function Booking() {
           .from('staff')
           .select('id, name, working_days, working_start, working_end, service_ids')
           .eq('active', true)
+          .eq('role', 'specialist')
           .order('name'),
       ]);
       if (svcRes.data) setServices(svcRes.data as Service[]);

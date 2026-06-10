@@ -75,13 +75,15 @@ export default function AdminLayout() {
 
   useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
 
-  // Redirect specialists away from admin-only pages
+  // Redirect non-admin roles to their home pages
   useEffect(() => {
     if (user?.role === 'specialist') {
-      const adminOnlyPaths = ['/admin', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/empleadas', '/admin/ajustes', '/admin/reportes'];
-      if (adminOnlyPaths.includes(location.pathname)) {
-        navigate('/admin/mi-turno', { replace: true });
-      }
+      const adminOnly = ['/admin', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/empleadas', '/admin/ajustes', '/admin/reportes'];
+      if (adminOnly.includes(location.pathname)) navigate('/admin/mi-turno', { replace: true });
+    }
+    if (user?.role === 'receptionist') {
+      const receptionistForbidden = ['/admin', '/admin/dashboard', '/admin/reportes', '/admin/ajustes', '/admin/empleadas'];
+      if (receptionistForbidden.includes(location.pathname)) navigate('/admin/recepcion', { replace: true });
     }
   }, [user?.role, location.pathname, navigate]);
 
@@ -132,7 +134,9 @@ export default function AdminLayout() {
             <div>
               <span className="admin__brand-name">Anadsll</span>
               <span className="admin__brand-sub">
-              {user?.role === 'specialist' ? 'Panel Especialista' : 'Sistema Admin'}
+              {user?.role === 'specialist'   ? 'Panel Especialista' :
+               user?.role === 'receptionist' ? 'Recepción' :
+               'Sistema Admin'}
             </span>
             </div>
           </div>
@@ -148,28 +152,34 @@ export default function AdminLayout() {
         <nav className="admin__nav">
           {user?.role === 'specialist' ? (
             /* ── Specialist nav ── */
+            <div className="admin__nav-section">
+              <span className="admin__nav-label">Mi trabajo</span>
+              <NavLink to="/admin/mi-turno" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                <Scissors size={20} /><span>Mi Turno</span>
+              </NavLink>
+              <NavLink to="/admin/citas" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                <CalendarDays size={20} /><span>Mis Citas</span>
+              </NavLink>
+            </div>
+          ) : user?.role === 'receptionist' ? (
+            /* ── Receptionist nav ── */
             <>
               <div className="admin__nav-section">
-                <span className="admin__nav-label">Mi trabajo</span>
-                <NavLink
-                  to="/admin/mi-turno"
-                  className={({ isActive }) =>
-                    `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`
-                  }
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <Scissors size={20} />
-                  <span>Mi Turno</span>
+                <span className="admin__nav-label">Recepción</span>
+                <NavLink to="/admin/recepcion" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                  <LayoutDashboard size={20} /><span>Panel</span>
                 </NavLink>
-                <NavLink
-                  to="/admin/citas"
-                  className={({ isActive }) =>
-                    `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`
-                  }
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <CalendarDays size={20} />
-                  <span>Mis Citas</span>
+                <NavLink to="/admin/citas" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                  <CalendarDays size={20} /><span>Citas</span>
+                </NavLink>
+                <NavLink to="/admin/clientes" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                  <Users size={20} /><span>Clientas</span>
+                </NavLink>
+              </div>
+              <div className="admin__nav-section">
+                <span className="admin__nav-label">Catálogo</span>
+                <NavLink to="/admin/paquetes" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                  <Package size={20} /><span>Paquetes</span>
                 </NavLink>
               </div>
             </>
@@ -292,8 +302,8 @@ export default function AdminLayout() {
               <div className="admin__user-info">
                 <span className="admin__user-name">{user?.name}</span>
                 <span className="admin__user-role">
-                  {user?.role === 'admin' ? 'Administradora' :
-                   user?.role === 'receptionist' ? 'Recepcionista' : 'Especialista'}
+                  {user?.role === 'admin'        ? 'Administradora' :
+                   user?.role === 'receptionist' ? 'Recepcionista'  : 'Especialista'}
                 </span>
               </div>
             </div>

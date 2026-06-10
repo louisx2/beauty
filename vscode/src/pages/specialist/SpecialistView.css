@@ -235,6 +235,31 @@
   animation: specPulse 1.2s ease-in-out infinite;
 }
 
+/* Live timer */
+.spec-card__timer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  color: #fbbf24;
+  font-weight: 500;
+  background: rgba(251,191,36,0.07);
+  padding: 7px 12px;
+  border-radius: 10px;
+  width: fit-content;
+}
+
+.spec-card__timer strong {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.spec-card__timer-limit {
+  color: rgba(251,191,36,0.55);
+  font-size: 0.78rem;
+}
+
 .spec-card__notes {
   font-family: 'Outfit', sans-serif;
   font-size: 0.82rem;

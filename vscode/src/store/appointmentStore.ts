@@ -24,6 +24,7 @@ export interface Appointment {
   notes: string | null;
   source: string;
   createdAt: string;
+  startedAt: string | null;  // timestamp cuando la especialista inició el servicio
 }
 
 function mapRow(r: Record<string, unknown>): Appointment {
@@ -41,6 +42,7 @@ function mapRow(r: Record<string, unknown>): Appointment {
     notes: (r.notes as string) ?? null,
     source: r.source as string,
     createdAt: r.created_at as string,
+    startedAt: (r.started_at as string) ?? null,
   };
 }
 
@@ -156,15 +158,22 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
   },
 
   updateStatus: async (id, status) => {
+    const now = new Date().toISOString();
+    const extra = status === 'in_progress' ? { started_at: now } : {};
+
     // Optimistic update
     set((s) => ({
-      appointments: s.appointments.map((a) => (a.id === id ? { ...a, status } : a)),
+      appointments: s.appointments.map((a) =>
+        a.id === id
+          ? { ...a, status, ...(status === 'in_progress' ? { startedAt: now } : {}) }
+          : a
+      ),
     }));
 
     try {
       const { error } = await supabase
         .from('appointments')
-        .update({ status })
+        .update({ status, ...extra })
         .eq('id', id);
 
       if (error) {

@@ -2,10 +2,11 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useStaffStore, type StaffMember, type StaffRole, type StaffStats, WEEKDAYS } from '../../store/staffStore';
 import { useServiceStore } from '../../store/serviceStore';
 import { useAuthStore } from '../../store/authStore';
+import { supabase } from '../../lib/supabase';
 import {
   Plus, Search, User, Phone, Mail, Edit2, Trash2, X,
   Clock, Shield, Sparkles, CheckCircle2, XCircle, AlertCircle,
-  Percent, Calendar, TrendingUp, Filter,
+  Percent, Calendar, TrendingUp, Filter, Key, Lock, Unlock, UserCog,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './Staff.css';
@@ -77,15 +78,69 @@ function validateStaffForm(form: Omit<StaffMember, 'id' | 'createdAt'>): StaffEr
   return errors;
 }
 
+const SQL_MIGRATION_CODE = `-- Ejecuta esto en Supabase SQL Editor para habilitar la gestión de inicios de sesión
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE OR REPLACE FUNCTION public.list_staff_logins()
+RETURNS TABLE (id UUID, email VARCHAR, created_at TIMESTAMPTZ, last_sign_in_at TIMESTAMPTZ)
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.staff WHERE email = auth.jwt() ->> 'email' AND role = 'admin' AND active = true) THEN
+    RAISE EXCEPTION 'No autorizado';
+  END IF;
+  RETURN QUERY SELECT u.id, u.email, u.created_at, u.last_sign_in_at FROM auth.users u;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.create_staff_user(user_email TEXT, user_password TEXT, user_name TEXT, user_role TEXT)
+RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  new_user_id UUID := gen_random_uuid();
+  encrypted_pass TEXT;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.staff WHERE email = auth.jwt() ->> 'email' AND role = 'admin' AND active = true) THEN
+    RAISE EXCEPTION 'No autorizado';
+  END IF;
+  IF EXISTS (SELECT 1 FROM auth.users WHERE email = user_email) THEN
+    RAISE EXCEPTION 'El correo electrónico ya está registrado.';
+  END IF;
+  encrypted_pass := extensions.crypt(user_password, extensions.gen_salt('bf', 10));
+  INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, is_super_admin)
+  VALUES ('00000000-0000-0000-0000-000000000000', new_user_id, 'authenticated', 'authenticated', user_email, encrypted_pass, now(), '{"provider": "email", "providers": ["email"]}'::jsonb, jsonb_build_object('name', user_name, 'role', user_role), now(), now(), '', '', '', false);
+  INSERT INTO auth.identities (id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+  VALUES (new_user_id::text, new_user_id, jsonb_build_object('sub', new_user_id, 'email', user_email), 'email', now(), now(), now());
+  RETURN new_user_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.update_staff_user_password(user_email TEXT, new_password TEXT)
+RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE encrypted_pass TEXT;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.staff WHERE email = auth.jwt() ->> 'email' AND role = 'admin' AND active = true) THEN
+    RAISE EXCEPTION 'No autorizado';
+  END IF;
+  encrypted_pass := extensions.crypt(new_password, extensions.gen_salt('bf', 10));
+  UPDATE auth.users SET encrypted_password = encrypted_pass, updated_at = now() WHERE email = user_email;
+  RETURN FOUND;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.delete_staff_user(user_email TEXT)
+RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.staff WHERE email = auth.jwt() ->> 'email' AND role = 'admin' AND active = true) THEN
+    RAISE EXCEPTION 'No autorizado';
+  END IF;
+  DELETE FROM auth.users WHERE email = user_email;
+  RETURN FOUND;
+END;
+$$;`;
+
 export default function Staff() {
   const { staff, loading, fetchStaff, addStaff, updateStaff, deleteStaff, fetchStaffStats } = useStaffStore();
   const { services, fetchAll: fetchServices } = useServiceStore();
   const { user } = useAuthStore();
-
-  useEffect(() => {
-    fetchStaff().catch(() => toast.error('Error al cargar empleadas'));
-    fetchServices();
-  }, [fetchStaff, fetchServices]);
 
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -97,33 +152,64 @@ export default function Staff() {
   const [selected, setSelected] = useState<StaffMember | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [stats, setStats] = useState<StaffStats | null>(null);
-  const [loadingStats, setLoadingStats] = useState(false);
 
-  const loadStats = useCallback(async (member: StaffMember) => {
-    setLoadingStats(true);
+  // Stats for all staff loaded concurrently
+  const [memberStats, setMemberStats] = useState<Record<string, StaffStats>>({});
+
+  // Credentials / Logins state
+  const [logins, setLogins] = useState<{ id: string; email: string; created_at: string; last_sign_in_at: string | null }[]>([]);
+  const [userManagementEnabled, setUserManagementEnabled] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginStaff, setLoginStaff] = useState<StaffMember | null>(null);
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginSubmitting, setLoginSubmitting] = useState(false);
+  const [showSqlHelp, setShowSqlHelp] = useState(false);
+
+  const loadLogins = useCallback(async () => {
     try {
-      const s = await fetchStaffStats(member.name);
-      setStats(s);
-    } catch {
-      setStats(null);
-    } finally {
-      setLoadingStats(false);
+      const { data, error } = await supabase.rpc('list_staff_logins');
+      if (error) {
+        console.warn('list_staff_logins is not available:', error.message);
+        setUserManagementEnabled(false);
+        return;
+      }
+      setLogins(data || []);
+      setUserManagementEnabled(true);
+    } catch (err) {
+      console.warn('Failed to load logins:', err);
+      setUserManagementEnabled(false);
     }
-  }, [fetchStaffStats]);
-
-  const handleSelect = useCallback((m: StaffMember) => {
-    setSelected(m);
-    loadStats(m);
-  }, [loadStats]);
+  }, []);
 
   useEffect(() => {
-    if (selected) {
-      const updated = staff.find((m) => m.id === selected.id);
-      if (updated) setSelected(updated);
-      else setSelected(null);
+    fetchStaff().catch(() => toast.error('Error al cargar empleadas'));
+    fetchServices();
+    loadLogins();
+  }, [fetchStaff, fetchServices, loadLogins]);
+
+  // Load stats for each staff member on fetch
+  useEffect(() => {
+    if (staff.length > 0) {
+      staff.forEach(async (m) => {
+        try {
+          const s = await fetchStaffStats(m.name);
+          setMemberStats((prev) => ({ ...prev, [m.name]: s }));
+        } catch {
+          // Ignore stats error for individual staff members
+        }
+      });
     }
-  }, [staff]);
+  }, [staff, fetchStaffStats]);
+
+  const hasLogin = useCallback((email: string | null) => {
+    if (!email) return false;
+    return logins.some((l) => l.email.toLowerCase() === email.toLowerCase());
+  }, [logins]);
+
+  const getLoginDetails = useCallback((email: string | null) => {
+    if (!email) return null;
+    return logins.find((l) => l.email.toLowerCase() === email.toLowerCase()) || null;
+  }, [logins]);
 
   const filtered = useMemo(() => {
     let result = staff;
@@ -160,6 +246,90 @@ export default function Staff() {
     setShowModal(true);
   };
 
+  const openManageLogin = (m: StaffMember) => {
+    setLoginStaff(m);
+    setLoginPassword('');
+    setShowLoginModal(true);
+  };
+
+  const handleCreateLogin = async () => {
+    if (!loginStaff || !loginStaff.email) return;
+    if (loginPassword.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    setLoginSubmitting(true);
+    try {
+      const { error } = await supabase.rpc('create_staff_user', {
+        user_email: loginStaff.email,
+        user_password: loginPassword,
+        user_name: loginStaff.name,
+        user_role: loginStaff.role,
+      });
+
+      if (error) throw error;
+      toast.success('Acceso de login habilitado correctamente.');
+      loadLogins();
+      setShowLoginModal(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Error al habilitar acceso');
+    } finally {
+      setLoginSubmitting(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!loginStaff || !loginStaff.email) return;
+    if (loginPassword.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    setLoginSubmitting(true);
+    try {
+      const { data, error } = await supabase.rpc('update_staff_user_password', {
+        user_email: loginStaff.email,
+        new_password: loginPassword,
+      });
+
+      if (error) throw error;
+      if (data) {
+        toast.success('Contraseña actualizada correctamente.');
+        setShowLoginModal(false);
+      } else {
+        toast.error('No se pudo encontrar el usuario en Supabase Auth.');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error al cambiar contraseña');
+    } finally {
+      setLoginSubmitting(false);
+    }
+  };
+
+  const handleDeleteLogin = async () => {
+    if (!loginStaff || !loginStaff.email) return;
+    if (!window.confirm(`¿Estás segura de revocar el acceso a ${loginStaff.name}? La cuenta en Supabase Auth será eliminada.`)) return;
+    
+    setLoginSubmitting(true);
+    try {
+      const { data, error } = await supabase.rpc('delete_staff_user', {
+        user_email: loginStaff.email,
+      });
+
+      if (error) throw error;
+      if (data) {
+        toast.success('Acceso revocado correctamente.');
+        loadLogins();
+        setShowLoginModal(false);
+      } else {
+        toast.error('No se pudo eliminar el usuario de Supabase Auth.');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error al revocar acceso');
+    } finally {
+      setLoginSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validateStaffForm(form);
@@ -177,7 +347,6 @@ export default function Staff() {
         const updated = await updateStaff(editingId, payload);
         if (selected?.id === editingId) {
           setSelected(updated);
-          loadStats(updated);
         }
         toast.success('Empleada actualizada correctamente');
       } else {
@@ -206,7 +375,6 @@ export default function Staff() {
     try {
       await deleteStaff(selected.id);
       setSelected(null);
-      setStats(null);
       setShowDeleteConfirm(false);
       toast.success('Empleada eliminada');
     } catch {
@@ -239,9 +407,17 @@ export default function Staff() {
 
   const roleBadgeClass = (role: StaffRole) => {
     switch (role) {
-      case 'admin': return 'staff-role-badge staff-role-badge--admin';
-      case 'receptionist': return 'staff-role-badge staff-role-badge--receptionist';
-      default: return 'staff-role-badge staff-role-badge--specialist';
+      case 'admin': return 'staff-card__role-badge staff-card__role-badge--admin';
+      case 'receptionist': return 'staff-card__role-badge staff-card__role-badge--receptionist';
+      default: return 'staff-card__role-badge staff-card__role-badge--specialist';
+    }
+  };
+
+  const avatarGradientClass = (role: StaffRole) => {
+    switch (role) {
+      case 'admin': return 'staff-card__avatar--admin';
+      case 'receptionist': return 'staff-card__avatar--receptionist';
+      default: return 'staff-card__avatar--specialist';
     }
   };
 
@@ -250,16 +426,23 @@ export default function Staff() {
       {/* Header */}
       <div className="staff-page__header">
         <div>
-          <h1 className="clients__title">Personal</h1>
-          <p className="clients__subtitle">
+          <h1 className="staff-page__title">Equipo y Colaboradoras</h1>
+          <p className="staff-page__subtitle">
             {activeCount} activas{inactiveCount > 0 && ` · ${inactiveCount} inactivas`}
           </p>
         </div>
-        {user?.role === 'admin' && (
-          <button className="appts__add-btn" onClick={openCreate} id="btn-new-staff">
-            <Plus size={18} /> Nueva Empleada
-          </button>
-        )}
+        <div className="staff-page__header-actions">
+          {!userManagementEnabled && (
+            <button className="staff-page__sql-btn" onClick={() => setShowSqlHelp(true)}>
+              <Shield size={16} /> Configurar Acceso DB
+            </button>
+          )}
+          {user?.role === 'admin' && (
+            <button className="staff-page__add-btn" onClick={openCreate} id="btn-new-staff">
+              <Plus size={18} /> Nueva Empleada
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -288,196 +471,168 @@ export default function Staff() {
         <button
           className={`staff-filter-inactive ${showInactive ? 'staff-filter-inactive--on' : ''}`}
           onClick={() => setShowInactive(!showInactive)}
-          title={showInactive ? 'Ocultar inactivas' : 'Mostrar inactivas'}
         >
           <Filter size={14} />
           {showInactive ? 'Todas' : 'Solo activas'}
         </button>
       </div>
 
-      {loading && <div className="staff-page__loading">Cargando...</div>}
+      {loading && <div className="staff-page__loading">Cargando equipo...</div>}
 
-      {/* Split layout */}
-      <div className="clients__layout">
-        {/* Left: List */}
-        <div className="clients__list">
-          {filtered.length === 0 ? (
-            <div className="appts__empty">
-              <User size={40} />
-              <p>{search || roleFilter !== 'all' ? 'No se encontraron resultados' : 'No hay empleadas registradas'}</p>
-            </div>
-          ) : (
-            filtered.map((m) => (
-              <div
-                key={m.id}
-                className={`client-row ${selected?.id === m.id ? 'client-row--selected' : ''} ${!m.active ? 'client-row--inactive' : ''}`}
-                onClick={() => handleSelect(m)}
-              >
-                <div className={`client-row__avatar ${!m.active ? 'client-row__avatar--inactive' : ''}`}>
-                  {m.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-                </div>
-                <div className="client-row__info">
-                  <strong>{m.name}</strong>
-                  <span><Phone size={12} /> {m.phone || '—'}</span>
-                </div>
-                <div className="client-row__meta">
-                  <span className={roleBadgeClass(m.role)}>{roleLabel(m.role)}</span>
-                  {!m.active && <span className="staff-inactive-badge">Inactiva</span>}
-                  {m.commissionPct > 0 && (
-                    <span className="staff-commission-mini">
-                      <Percent size={10} /> {m.commissionPct}%
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Right: Detail */}
-        {selected ? (
-          <div className="client-detail">
-            <div className="client-detail__header">
-              <div className={`client-detail__avatar-lg ${!selected.active ? 'client-row__avatar--inactive' : ''}`}>
-                {selected.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-              </div>
-              <h2>{selected.name}</h2>
-              <span className={roleBadgeClass(selected.role)} style={{ fontSize: '0.8rem', padding: '4px 14px' }}>
-                {roleLabel(selected.role)}
-              </span>
-
-              {user?.role === 'admin' && (
-                <div className="client-detail__actions">
-                  <button onClick={() => openEdit(selected)} className="client-detail__btn">
-                    <Edit2 size={15} /> Editar
-                  </button>
-                  <button
-                    onClick={() => handleToggleActive(selected)}
-                    className={`client-detail__btn ${selected.active ? '' : 'client-detail__btn--wa'}`}
-                  >
-                    {selected.active ? <XCircle size={15} /> : <CheckCircle2 size={15} />}
-                    {selected.active ? 'Desactivar' : 'Activar'}
-                  </button>
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="client-detail__btn client-detail__btn--danger"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="client-detail__body">
-              {/* Stats */}
-              {stats && !loadingStats && (
-                <div className="staff-stats">
-                  <div className="staff-stat-card">
-                    <Calendar size={16} />
-                    <div>
-                      <span className="staff-stat-card__value">{stats.totalAppointments}</span>
-                      <span className="staff-stat-card__label">Total Citas</span>
-                    </div>
-                  </div>
-                  <div className="staff-stat-card staff-stat-card--success">
-                    <CheckCircle2 size={16} />
-                    <div>
-                      <span className="staff-stat-card__value">{stats.completedAppointments}</span>
-                      <span className="staff-stat-card__label">Completadas</span>
-                    </div>
-                  </div>
-                  <div className="staff-stat-card staff-stat-card--info">
-                    <TrendingUp size={16} />
-                    <div>
-                      <span className="staff-stat-card__value">{stats.upcomingAppointments}</span>
-                      <span className="staff-stat-card__label">Próximas</span>
-                    </div>
-                  </div>
-                  <div className="staff-stat-card staff-stat-card--warning">
-                    <XCircle size={16} />
-                    <div>
-                      <span className="staff-stat-card__value">{stats.cancelledAppointments}</span>
-                      <span className="staff-stat-card__label">Canceladas</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {loadingStats && (
-                <div className="staff-stats-loading">Cargando estadísticas...</div>
-              )}
-
-              {/* Contacto */}
-              <div className="client-detail__section">
-                <h4>Contacto</h4>
-                <div className="client-detail__grid">
-                  <div className="client-detail__item">
-                    <span className="client-detail__label"><Phone size={13} /> Teléfono</span>
-                    <span className="client-detail__value">{selected.phone || '—'}</span>
-                  </div>
-                  <div className="client-detail__item">
-                    <span className="client-detail__label"><Mail size={13} /> Email</span>
-                    <span className="client-detail__value">{selected.email || '—'}</span>
-                  </div>
-                  <div className="client-detail__item">
-                    <span className="client-detail__label"><Shield size={13} /> Estado</span>
-                    <span className="client-detail__value" style={{ color: selected.active ? '#4ade80' : '#f87171' }}>
-                      {selected.active ? '● Activa' : '● Inactiva'}
-                    </span>
-                  </div>
-                  <div className="client-detail__item">
-                    <span className="client-detail__label"><Percent size={13} /> Comisión</span>
-                    <span className="client-detail__value">
-                      {selected.commissionPct > 0 ? `${selected.commissionPct}%` : 'Sin comisión'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Horario */}
-              <div className="client-detail__section">
-                <h4>Horario de Trabajo</h4>
-                <div className="staff-schedule-display">
-                  <div className="staff-schedule-display__days">
-                    {WEEKDAYS.map((d) => (
-                      <span
-                        key={d.key}
-                        className={`staff-day-chip ${selected.workingDays.includes(d.key) ? 'staff-day-chip--on' : ''}`}
-                      >
-                        {d.label}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="staff-schedule-display__hours">
-                    <Clock size={14} />
-                    {selected.workingStart} — {selected.workingEnd}
-                  </div>
-                </div>
-              </div>
-
-              {/* Servicios asignados */}
-              <div className="client-detail__section">
-                <h4>Servicios que Realiza</h4>
-                {staffServices(selected).length === 0 ? (
-                  <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.875rem' }}>
-                    Sin restricción — puede realizar todos los servicios
-                  </p>
-                ) : (
-                  <div className="staff-services-list">
-                    {staffServices(selected).map((s) => (
-                      <span key={s.id} className="staff-service-tag">
-                        <Sparkles size={11} /> {s.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+      {/* Cards Grid */}
+      <div className="staff-grid">
+        {filtered.length === 0 ? (
+          <div className="staff-page__empty">
+            <User size={48} />
+            <p>{search || roleFilter !== 'all' ? 'No se encontraron resultados' : 'No hay empleadas registradas'}</p>
           </div>
         ) : (
-          <div className="client-detail client-detail--empty">
-            <User size={48} />
-            <p>Selecciona una empleada para ver su perfil</p>
-          </div>
+          filtered.map((m) => {
+            const stats = memberStats[m.name] || null;
+            return (
+              <div
+                key={m.id}
+                className={`staff-card ${!m.active ? 'staff-card--inactive' : ''}`}
+              >
+                <div className="staff-card__header">
+                  <div className={`staff-card__avatar ${avatarGradientClass(m.role)}`}>
+                    {m.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                    <span className={`staff-card__status-dot ${m.active ? 'staff-card__status-dot--active' : ''}`} />
+                  </div>
+                  <div className="staff-card__name-role">
+                    <h3>{m.name}</h3>
+                    <span className={roleBadgeClass(m.role)}>{roleLabel(m.role)}</span>
+                  </div>
+                </div>
+
+                <div className="staff-card__body">
+                  {/* Quick Stats Grid */}
+                  <div className="staff-card__stats">
+                    <div className="staff-card__stat-item">
+                      <span className="staff-card__stat-val">{stats?.completedAppointments ?? 0}/{stats?.totalAppointments ?? 0}</span>
+                      <span className="staff-card__stat-lbl">Citas</span>
+                    </div>
+                    <div className="staff-card__stat-item">
+                      <span className="staff-card__stat-val text-info">{stats?.upcomingAppointments ?? 0}</span>
+                      <span className="staff-card__stat-lbl">Próximas</span>
+                    </div>
+                    <div className="staff-card__stat-item">
+                      <span className="staff-card__stat-val text-success">{m.commissionPct > 0 ? `${m.commissionPct}%` : '—'}</span>
+                      <span className="staff-card__stat-lbl">Comisión</span>
+                    </div>
+                  </div>
+
+                  {/* Info List */}
+                  <div className="staff-card__info-list">
+                    <div className="staff-card__info-item">
+                      <Phone size={13} />
+                      <span>{m.phone || 'Sin teléfono'}</span>
+                    </div>
+                    <div className="staff-card__info-item">
+                      <Mail size={13} />
+                      <span className="staff-card__email-text">{m.email || 'Sin correo'}</span>
+                    </div>
+                  </div>
+
+                  {/* Schedule */}
+                  <div className="staff-card__schedule">
+                    <div className="staff-card__schedule-days">
+                      {WEEKDAYS.map((d) => {
+                        const isWorking = m.workingDays.includes(d.key);
+                        return (
+                          <span
+                            key={d.key}
+                            className={`staff-card__day-dot ${isWorking ? 'staff-card__day-dot--active' : ''}`}
+                            title={d.label}
+                          >
+                            {d.label[0]}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <div className="staff-card__schedule-hours">
+                      <Clock size={12} />
+                      <span>{m.workingStart} — {m.workingEnd}</span>
+                    </div>
+                  </div>
+
+                  {/* Services tags */}
+                  <div className="staff-card__services">
+                    <h4 className="staff-card__section-title">Servicios que realiza</h4>
+                    <div className="staff-card__services-tags">
+                      {m.serviceIds.length === 0 ? (
+                        <span className="staff-card__service-tag staff-card__service-tag--all">
+                          Todos los servicios
+                        </span>
+                      ) : (
+                        staffServices(m).slice(0, 3).map((s) => (
+                          <span key={s.id} className="staff-card__service-tag">
+                            <Sparkles size={10} /> {s.name}
+                          </span>
+                        ))
+                      )}
+                      {m.serviceIds.length > 3 && (
+                        <span className="staff-card__service-tag staff-card__service-tag--more">
+                          +{m.serviceIds.length - 3} más
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="staff-card__footer">
+                  {/* Credentials / login status */}
+                  <div className="staff-card__login-status">
+                    {m.email ? (
+                      hasLogin(m.email) ? (
+                        <span className="staff-card__login-badge staff-card__login-badge--active" title="Acceso habilitado">
+                          <Lock size={11} /> Login Activo
+                        </span>
+                      ) : (
+                        <span className="staff-card__login-badge staff-card__login-badge--inactive" title="Sin cuenta de acceso">
+                          <Unlock size={11} /> Sin Acceso
+                        </span>
+                      )
+                    ) : (
+                      <span className="staff-card__login-badge staff-card__login-badge--noemail" title="Introduce un email para habilitar acceso">
+                        <AlertCircle size={11} /> Falta Email
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="staff-card__actions">
+                    {user?.role === 'admin' && (
+                      <>
+                        {m.email && (
+                          <button
+                            className={`staff-card__action-btn staff-card__action-btn--login ${hasLogin(m.email) ? 'staff-card__action-btn--active-login' : ''}`}
+                            onClick={() => openManageLogin(m)}
+                            title="Administrar acceso a la plataforma"
+                          >
+                            <Key size={14} />
+                          </button>
+                        )}
+                        <button
+                          className="staff-card__action-btn"
+                          onClick={() => openEdit(m)}
+                          title="Editar"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          className="staff-card__action-btn staff-card__action-btn--danger"
+                          onClick={() => { setSelected(m); setShowDeleteConfirm(true); }}
+                          title="Eliminar"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
 
@@ -492,13 +647,12 @@ export default function Staff() {
               <h3>Eliminar Empleada</h3>
               <p>
                 ¿Estás segura de que deseas eliminar a <strong>{selected.name}</strong>?
-                Esta acción no se puede deshacer.
+                Esta acción removerá su ficha de empleada de la base de datos.
               </p>
-              {stats && stats.upcomingAppointments > 0 && (
-                <div className="staff-delete-modal__warning">
-                  <AlertCircle size={14} />
-                  Esta empleada tiene <strong>{stats.upcomingAppointments}</strong> cita{stats.upcomingAppointments > 1 ? 's' : ''} próxima{stats.upcomingAppointments > 1 ? 's' : ''}.
-                  Considera desactivarla en lugar de eliminarla.
+              {hasLogin(selected.email) && (
+                <div className="staff-delete-modal__warning" style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', borderColor: 'rgba(239,68,68,0.15)' }}>
+                  <Shield size={14} />
+                  Atención: Esta empleada tiene un inicio de sesión activo. Su login también debe ser revocado.
                 </div>
               )}
               <div className="staff-delete-modal__actions">
@@ -710,6 +864,175 @@ export default function Staff() {
           </div>
         </div>
       )}
+
+      {/* SQL Migration Help Modal */}
+      {showSqlHelp && (
+        <div className="modal-overlay" onClick={() => setShowSqlHelp(false)}>
+          <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h2><Shield size={20} /> Configuración de Base de Datos para Logins</h2>
+              <button className="modal__close" onClick={() => setShowSqlHelp(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="sql-help-modal-body">
+              <p>
+                Para habilitar la creación y administración de usuarios (inicio de sesión) directamente
+                desde este panel, es necesario instalar funciones administrativas especiales en la base de datos de Supabase.
+              </p>
+              <p>
+                Copia el código SQL a continuación y pégalo en el <strong>SQL Editor</strong> de tu Supabase Dashboard,
+                luego ejecútalo haciendo clic en <strong>Run</strong>.
+              </p>
+              <div className="sql-code-container">
+                <pre><code>{SQL_MIGRATION_CODE}</code></pre>
+              </div>
+              <div className="modal__actions">
+                <button
+                  type="button"
+                  className="modal__submit-btn"
+                  onClick={() => {
+                    navigator.clipboard.writeText(SQL_MIGRATION_CODE);
+                    toast.success('SQL copiado al portapapeles');
+                  }}
+                >
+                  Copiar Código SQL
+                </button>
+                <button type="button" className="modal__cancel-btn" onClick={() => setShowSqlHelp(false)}>
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Login Credentials Management Modal */}
+      {showLoginModal && loginStaff && (
+        <div className="modal-overlay" onClick={() => setShowLoginModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h2><UserCog size={18} /> Gestionar Acceso de Login</h2>
+              <button className="modal__close" onClick={() => setShowLoginModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal__form" style={{ padding: '20px 24px' }}>
+              <div className="login-details-summary">
+                <p><strong>Colaboradora:</strong> {loginStaff.name}</p>
+                <p><strong>Rol asignado:</strong> {roleLabel(loginStaff.role)}</p>
+                <p><strong>Correo electrónico:</strong> {loginStaff.email}</p>
+              </div>
+
+              {!userManagementEnabled ? (
+                <div className="sql-warning-banner">
+                  <AlertCircle size={20} />
+                  <div>
+                    <strong>Instalación pendiente:</strong>
+                    <p>Las funciones de acceso no están instaladas en la base de datos.</p>
+                    <button
+                      type="button"
+                      className="sql-warning-banner__btn"
+                      onClick={() => {
+                        setShowLoginModal(false);
+                        setShowSqlHelp(true);
+                      }}
+                    >
+                      Ver instrucciones SQL
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {hasLogin(loginStaff.email) ? (
+                    /* Existing Login account options */
+                    <div className="login-status-details">
+                      <div className="login-status-details__active">
+                        <CheckCircle2 size={16} style={{ color: '#4ade80' }} />
+                        <span>Tiene acceso activo a la plataforma.</span>
+                      </div>
+                      
+                      {getLoginDetails(loginStaff.email)?.last_sign_in_at && (
+                        <p className="login-status-details__last-login">
+                          Última conexión: {new Date(getLoginDetails(loginStaff.email)!.last_sign_in_at!).toLocaleString('es-DO')}
+                        </p>
+                      )}
+
+                      <div className="modal__field" style={{ marginTop: 16 }}>
+                        <label><Key size={14} /> Nueva Contraseña</label>
+                        <input
+                          type="password"
+                          placeholder="Mínimo 6 caracteres para cambiar"
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="login-status-actions">
+                        <button
+                          type="button"
+                          className="modal__submit-btn"
+                          onClick={handleUpdatePassword}
+                          disabled={loginSubmitting}
+                          style={{ flex: 1 }}
+                        >
+                          {loginSubmitting ? 'Cambiando...' : 'Cambiar Contraseña'}
+                        </button>
+                        <button
+                          type="button"
+                          className="login-status-actions__revoke"
+                          onClick={handleDeleteLogin}
+                          disabled={loginSubmitting}
+                        >
+                          <XCircle size={14} /> Revocar Acceso
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* No Login account options */
+                    <div className="login-status-details">
+                      <div className="login-status-details__inactive">
+                        <AlertCircle size={16} style={{ color: '#fbbf24' }} />
+                        <span>Sin acceso configurado. Puede crear una contraseña abajo para darle acceso.</span>
+                      </div>
+
+                      <div className="modal__field" style={{ marginTop: 16 }}>
+                        <label><Key size={14} /> Contraseña de Acceso *</label>
+                        <input
+                          type="password"
+                          placeholder="Mínimo 6 caracteres"
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="modal__actions" style={{ marginTop: 24, padding: 0 }}>
+                        <button
+                          type="button"
+                          className="modal__cancel-btn"
+                          onClick={() => setShowLoginModal(false)}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          className="modal__submit-btn"
+                          onClick={handleCreateLogin}
+                          disabled={loginSubmitting}
+                        >
+                          {loginSubmitting ? 'Creando acceso...' : 'Habilitar Acceso'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
