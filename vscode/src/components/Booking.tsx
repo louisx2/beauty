@@ -24,6 +24,16 @@ interface StaffMember {
   service_ids: string[];
 }
 
+interface SessionPackage {
+  id: string;
+  name: string;
+  service_id: string;
+  services: {
+    duration: number;
+    name: string;
+  };
+}
+
 interface ExistingAppt {
   time: string;
   duration: number;
@@ -55,11 +65,13 @@ function getTodayStr(): string {
 
 export default function Booking() {
   const [services, setServices] = useState<Service[]>([]);
+  const [packages, setPackages] = useState<SessionPackage[]>([]);
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [existingAppts, setExistingAppts] = useState<ExistingAppt[]>([]);
 
+  const [bookingType, setBookingType] = useState<'service' | 'package'>('service');
   const [form, setForm] = useState({
-    name: '', phone: '', serviceId: '', staffId: '', date: '', time: '', notes: '',
+    name: '', phone: '', serviceId: '', packageId: '', staffId: '', date: '', time: '', notes: '',
   });
 
   const { settings, fetchSettings } = useSettingsStore();
@@ -77,7 +89,7 @@ export default function Booking() {
   // Load base data once
   useEffect(() => {
     async function loadData() {
-      const [svcRes, staffRes] = await Promise.all([
+      const [svcRes, staffRes, pkgRes] = await Promise.all([
         supabase.from('services').select('id, name, duration').eq('active', true).order('name'),
         supabase
           .from('staff')
@@ -85,9 +97,15 @@ export default function Booking() {
           .eq('active', true)
           .eq('role', 'specialist')
           .order('name'),
+        supabase
+          .from('session_packages')
+          .select('id, name, service_id, services(duration, name)')
+          .eq('active', true)
+          .order('name'),
       ]);
       if (svcRes.data) setServices(svcRes.data as Service[]);
       if (staffRes.data) setStaffList(staffRes.data as StaffMember[]);
+      if (pkgRes.data) setPackages(pkgRes.data as SessionPackage[]);
     }
     loadData();
   }, []);
@@ -115,20 +133,25 @@ export default function Booking() {
   }, [form.date, form.staffId, staffList]);
 
   const selectedService = services.find((s) => s.id === form.serviceId);
+  const selectedPkg = packages.find((p) => p.id === form.packageId);
   const selectedStaff = staffList.find((s) => s.id === form.staffId);
+
+  const effectiveServiceId = bookingType === 'package' ? selectedPkg?.service_id : form.serviceId;
+  const effectiveServiceName = bookingType === 'package' ? `Paquete: ${selectedPkg?.name}` : selectedService?.name;
+  const effectiveDuration = bookingType === 'package' ? selectedPkg?.services?.duration : selectedService?.duration;
 
   // Only show staff who can perform the selected service
   const availableStaff = useMemo(() => {
-    if (!form.serviceId) return [];
+    if (!effectiveServiceId) return [];
     return staffList.filter((s) => {
       const ids = s.service_ids ?? [];
-      return ids.length === 0 || ids.includes(form.serviceId);
+      return ids.length === 0 || ids.includes(effectiveServiceId);
     });
-  }, [form.serviceId, staffList]);
+  }, [effectiveServiceId, staffList]);
 
   // Build list of available time slots
   const availableSlots = useMemo(() => {
-    if (!selectedService || !selectedStaff || !form.date) return [];
+    if (!effectiveServiceId || !selectedStaff || !form.date) return [];
 
     const dateObj = new Date(`${form.date}T12:00:00`);
     const dayName = WEEKDAYS[dateObj.getDay()];
@@ -138,7 +161,7 @@ export default function Booking() {
 
     const startMin = timeToMinutes(selectedStaff.working_start);
     const endMin = timeToMinutes(selectedStaff.working_end);
-    const duration = selectedService.duration ?? 45;
+    const duration = effectiveDuration ?? 45;
 
     // For today, never show slots that have already started (with 15-min buffer)
     const today = getTodayStr();
@@ -165,7 +188,7 @@ export default function Booking() {
     }
 
     return slots;
-  }, [selectedService, selectedStaff, form.date, existingAppts]);
+  }, [effectiveServiceId, selectedStaff, form.date, existingAppts, effectiveDuration]);
 
   const isDayOff =
     form.date &&
@@ -176,7 +199,7 @@ export default function Booking() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedService || !selectedStaff || !form.time) return;
+    if (!effectiveServiceName || !effectiveDuration || !selectedStaff || !form.time) return;
 
     setSending(true);
     setBookingError('');
@@ -187,11 +210,11 @@ export default function Booking() {
         .insert({
           client_name: form.name.trim(),
           client_phone: form.phone.trim(),
-          service: selectedService.name,
+          service: effectiveServiceName,
           employee: selectedStaff.name,
           date: form.date,
           time: form.time,
-          duration: selectedService.duration,
+          duration: effectiveDuration,
           status: 'pending',
           notes: form.notes.trim() || '',
           source: 'web',
@@ -211,7 +234,7 @@ export default function Booking() {
         `Hola, acabo de reservar una cita:\n\n` +
         `Nombre: ${form.name}\n` +
         `Telefono: ${form.phone}\n` +
-        `Servicio: ${selectedService.name}\n` +
+        `Servicio: ${effectiveServiceName}\n` +
         `Con: ${selectedStaff.name}\n` +
         `Fecha: ${form.date}\n` +
         `Hora: ${form.time}\n` +
@@ -234,7 +257,7 @@ export default function Booking() {
   const resetForm = () => {
     setSuccess(false);
     setBookingError('');
-    setForm({ name: '', phone: '', serviceId: '', staffId: '', date: '', time: '', notes: '' });
+    setForm({ name: '', phone: '', serviceId: '', packageId: '', staffId: '', date: '', time: '', notes: '' });
   };
 
   if (success) {
@@ -400,15 +423,48 @@ export default function Booking() {
             </div>
           </div>
 
-          {/* Service & Staff */}
-          <div className="booking__row">
+          {/* Booking Type Toggle */}
+          <div style={{ marginBottom: '1.5rem', width: '100%' }}>
             <div className="booking__field">
+              <label>¿Qué deseas reservar?</label>
+              <div className="booking__type-toggle-wrapper">
+                <div 
+                  className="booking__type-toggle-slider" 
+                  style={{ transform: bookingType === 'service' ? 'translateX(0)' : 'translateX(100%)' }}
+                />
+                <button
+                  type="button"
+                  className={`booking__type-toggle-btn ${bookingType === 'service' ? 'active' : ''}`}
+                  onClick={() => {
+                    setBookingType('service');
+                    setForm({ ...form, packageId: '', staffId: '', date: '', time: '' });
+                  }}
+                >
+                  Servicio Individual
+                </button>
+                <button
+                  type="button"
+                  className={`booking__type-toggle-btn ${bookingType === 'package' ? 'active' : ''}`}
+                  onClick={() => {
+                    setBookingType('package');
+                    setForm({ ...form, serviceId: '', staffId: '', date: '', time: '' });
+                  }}
+                >
+                  Paquete de Sesiones
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Service / Package & Staff */}
+          <div className="booking__row">
+            <div className="booking__field" style={{ display: bookingType === 'service' ? undefined : 'none' }}>
               <label htmlFor="booking-service">
                 <Sparkles size={16} /> Servicio
               </label>
               <select
                 id="booking-service"
-                required
+                required={bookingType === 'service'}
                 value={form.serviceId}
                 onChange={(e) =>
                   setForm({ ...form, serviceId: e.target.value, staffId: '', date: '', time: '' })
@@ -422,6 +478,26 @@ export default function Booking() {
                 ))}
               </select>
             </div>
+            <div className="booking__field" style={{ display: bookingType === 'package' ? undefined : 'none' }}>
+              <label htmlFor="booking-package">
+                <Sparkles size={16} /> Paquete
+              </label>
+              <select
+                id="booking-package"
+                required={bookingType === 'package'}
+                value={form.packageId}
+                onChange={(e) =>
+                  setForm({ ...form, packageId: e.target.value, staffId: '', date: '', time: '' })
+                }
+              >
+                <option value="">Selecciona un paquete</option>
+                {packages.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.services?.duration} min/sesión)
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div className="booking__field">
               <label htmlFor="booking-staff">
@@ -430,7 +506,7 @@ export default function Booking() {
               <select
                 id="booking-staff"
                 required
-                disabled={!form.serviceId}
+                disabled={!effectiveServiceId}
                 value={form.staffId}
                 onChange={(e) => setForm({ ...form, staffId: e.target.value, date: '', time: '' })}
               >
@@ -463,39 +539,41 @@ export default function Booking() {
           </div>
 
           {/* Time slots */}
-          {form.date && selectedStaff && (
-            <div className="booking__field">
-              <label>
-                <Clock size={16} /> Horas Disponibles
-              </label>
+          <div className="booking__field" style={{ minHeight: '130px' }}>
+            <label>
+              <Clock size={16} /> Horas Disponibles
+            </label>
 
-              {isDayOff ? (
-                <div className="booking__alert">
-                  <AlertCircle size={16} /> {selectedStaff.name} no trabaja este dia.
-                </div>
-              ) : loadingSlots ? (
-                <div className="booking__loading">Buscando horarios disponibles...</div>
-              ) : availableSlots.length === 0 ? (
-                <div className="booking__alert">
-                  <AlertCircle size={16} /> No hay horarios libres para esta fecha. Prueba otro
-                  dia.
-                </div>
-              ) : (
-                <div className="booking__slots">
-                  {availableSlots.map((time) => (
-                    <button
-                      key={time}
-                      type="button"
-                      className={`booking__slot ${form.time === time ? 'booking__slot--active' : ''}`}
-                      onClick={() => setForm({ ...form, time })}
-                    >
-                      {time}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+            {!(form.date && selectedStaff) ? (
+              <div className="booking__alert" style={{ background: 'transparent', border: '1px dashed #cbd5e1', color: '#64748b', justifyContent: 'center', marginTop: '4px' }}>
+                Selecciona especialista y fecha para ver los horarios.
+              </div>
+            ) : isDayOff ? (
+              <div className="booking__alert">
+                <AlertCircle size={16} /> {selectedStaff.name} no trabaja este dia.
+              </div>
+            ) : loadingSlots ? (
+              <div className="booking__loading">Buscando horarios disponibles...</div>
+            ) : availableSlots.length === 0 ? (
+              <div className="booking__alert">
+                <AlertCircle size={16} /> No hay horarios libres para esta fecha. Prueba otro
+                dia.
+              </div>
+            ) : (
+              <div className="booking__slots">
+                {availableSlots.map((time) => (
+                  <button
+                    key={time}
+                    type="button"
+                    className={`booking__slot ${form.time === time ? 'booking__slot--active' : ''}`}
+                    onClick={() => setForm({ ...form, time })}
+                  >
+                    {time}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="booking__field">
             <label htmlFor="booking-notes">📝 Notas adicionales</label>

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 
-export type ServiceCategory = 'laser' | 'facial' | 'corporal' | 'belleza';
+export type ServiceCategory = 'laser' | 'facial' | 'corporal' | 'belleza' | 'medicina';
 
 export interface Service {
   id: string;

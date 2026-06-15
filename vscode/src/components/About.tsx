@@ -15,15 +15,15 @@ export default function About() {
         <div className="about__image-side">
           <div className="about__image-main">
             <img
-              src="https://images.unsplash.com/photo-1560750588-73207b1ef5b8?w=500&h=600&fit=crop"
-              alt="Interior de Anadsll Beauty Esthetic"
+              src="/brand/logo-fondo.png"
+              alt="Anadsll Beauty Esthetic"
               loading="lazy"
             />
           </div>
-          <div className="about__image-accent glass">
+          <div className="about__image-accent">
             <img
-              src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&h=250&fit=crop"
-              alt="Tratamiento de belleza"
+              src="/equipo/duena-laser.jpeg"
+              alt="Anabel, especialista de Anadsll Beauty Esthetic, con equipo láser"
               loading="lazy"
             />
           </div>

@@ -1,46 +1,66 @@
-import { Zap, Droplets, Sparkles, Scissors, Heart, Sun } from 'lucide-react';
+import { useState } from 'react';
+import type { ReactNode } from 'react';
+import {
+  Sparkles, Zap, Flame, Eye, Smile, Sun, Eraser, Brush, ArrowRight,
+  Syringe, Droplet, Dna, Pipette, HeartPulse, Bandage, Waves,
+} from 'lucide-react';
+import { servicesMenu } from '../data/servicesMenu';
+import type { ServiceCategory } from '../data/servicesMenu';
 import './Services.css';
 
-const services = [
-  {
-    icon: <Zap size={28} />,
-    title: 'Láser',
-    description: 'Depilación láser de última generación con resultados permanentes y sin dolor.',
-    image: 'https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=400&h=300&fit=crop',
-  },
-  {
-    icon: <Droplets size={28} />,
-    title: 'Limpieza Profunda',
-    description: 'Limpieza facial profesional que elimina impurezas y renueva tu piel por completo.',
-    image: 'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=400&h=300&fit=crop',
-  },
-  {
-    icon: <Sparkles size={28} />,
-    title: 'Cuidado Facial',
-    description: 'Tratamientos faciales personalizados con productos de alta calidad y tecnología avanzada.',
-    image: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400&h=300&fit=crop',
-  },
-  {
-    icon: <Scissors size={28} />,
-    title: 'Belleza Integral',
-    description: 'Maquillaje profesional, cejas, pestañas y todo lo que necesitas para lucir radiante.',
-    image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=300&fit=crop',
-  },
-  {
-    icon: <Heart size={28} />,
-    title: 'Tratamientos Corporales',
-    description: 'Reductivos, reafirmantes y drenajes linfáticos para moldear tu figura ideal.',
-    image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400&h=300&fit=crop',
-  },
-  {
-    icon: <Sun size={28} />,
-    title: 'Rejuvenecimiento',
-    description: 'Radiofrecuencia, microneedling y procedimientos anti-edad para una piel joven.',
-    image: 'https://images.unsplash.com/photo-1595867818082-083862f3d630?w=400&h=300&fit=crop',
-  },
-];
+const icons: Record<string, ReactNode> = {
+  'limpieza-facial': <Sparkles />,
+  'depilacion-laser': <Zap />,
+  'depilacion-cera': <Flame />,
+  'cejas-pestanas': <Eye />,
+  'hidra-lips': <Smile />,
+  'blanqueamiento-corporal': <Sun />,
+  'remocion-tatuaje': <Eraser />,
+  maquillaje: <Brush />,
+  'toxina-botulinica': <Syringe />,
+  rellenos: <Droplet />,
+  bioestimuladores: <Dna />,
+  mesoterapia: <Pipette />,
+  escleroterapia: <HeartPulse />,
+  verrugas: <Bandage />,
+  aparatologia: <Waves />,
+};
+
+interface Block { label?: string; items: string[]; }
+
+function buildBlocks(cat: ServiceCategory): { description?: string; blocks: Block[] } {
+  const description = cat.items.find((i) => i.description)?.description;
+  const blocks: Block[] = [];
+  const loose: string[] = [];
+
+  cat.items.forEach((item) => {
+    if (item.groups) {
+      item.groups.forEach((g) => blocks.push({ label: g.label, items: g.items }));
+    } else if (item.options) {
+      blocks.push({ label: cat.items.length > 1 ? item.name : undefined, items: item.options });
+    } else {
+      loose.push(item.name);
+    }
+  });
+
+  if (loose.length) blocks.unshift({ items: loose });
+  return { description, blocks };
+}
+
+function countServices(cat: ServiceCategory): number {
+  return cat.items.reduce((n, i) => {
+    if (i.groups) return n + i.groups.reduce((m, g) => m + g.items.length, 0);
+    if (i.options) return n + i.options.length;
+    return n + 1;
+  }, 0);
+}
 
 export default function Services() {
+  const [active, setActive] = useState(0);
+  const cat = servicesMenu[active];
+  const { description, blocks } = buildBlocks(cat);
+  const n = countServices(cat);
+
   return (
     <section className="services" id="servicios">
       <div className="services__inner">
@@ -50,25 +70,59 @@ export default function Services() {
             Tratamientos <span className="gradient-text">especializados</span> para ti
           </h2>
           <p className="services__subtitle">
-            Contamos con tecnología de punta y profesionales certificadas para ofrecerte
-            los mejores resultados en cada sesión.
+            Explora cada categoría y descubre todo lo que tenemos para realzar tu belleza.
           </p>
         </div>
 
-        <div className="services__grid">
-          {services.map((s, i) => (
-            <div className="service-card" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
-              <div className="service-card__image-wrap">
-                <img src={s.image} alt={s.title} className="service-card__image" loading="lazy" />
-                <div className="service-card__overlay" />
-              </div>
-              <div className="service-card__body">
-                <div className="service-card__icon">{s.icon}</div>
-                <h3 className="service-card__title">{s.title}</h3>
-                <p className="service-card__desc">{s.description}</p>
-              </div>
-            </div>
+        {/* Tabs */}
+        <div className="svc-tabs" role="tablist">
+          {servicesMenu.map((c, i) => (
+            <button
+              key={c.id}
+              className={`svc-tab ${i === active ? 'svc-tab--active' : ''}`}
+              onClick={() => setActive(i)}
+              role="tab"
+              aria-selected={i === active}
+              type="button"
+            >
+              <span className="svc-tab__icon">{icons[c.id]}</span>
+              {c.title}
+            </button>
           ))}
+        </div>
+
+        {/* Panel (re-mounts on tab change for entrance animation) */}
+        <div className="svc-panel" key={cat.id}>
+          <aside className="svc-panel__aside">
+            <div className="svc-panel__icon">{icons[cat.id]}</div>
+            <h3 className="svc-panel__title">{cat.title}</h3>
+            <span className="svc-panel__count">
+              {n} {n === 1 ? 'servicio' : 'servicios'}
+            </span>
+            {description && <p className="svc-panel__desc">{description}</p>}
+            <a href="/reservar" className="btn-primary svc-panel__cta">
+              Reservar <ArrowRight size={16} />
+            </a>
+          </aside>
+
+          <div className="svc-panel__main">
+            {blocks.map((b, bi) => (
+              <div className="svc-block" key={bi}>
+                {b.label && <span className="svc-block__label">{b.label}</span>}
+                <div className="svc-chips">
+                  {b.items.map((it, ci) => (
+                    <span
+                      className="svc-chip"
+                      key={it}
+                      style={{ animationDelay: `${ci * 0.03}s` }}
+                    >
+                      {it}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

@@ -9,11 +9,11 @@
 }
 
 .navbar--scrolled {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(245, 241, 234, 0.78);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(232, 165, 184, 0.15);
-  box-shadow: 0 4px 30px rgba(201, 125, 151, 0.08);
+  border-bottom: 1px solid rgba(125, 90, 68, 0.12);
+  box-shadow: 0 4px 30px rgba(125, 90, 68, 0.08);
   padding: 8px 0;
 }
 
@@ -35,18 +35,11 @@
   color: var(--charcoal);
 }
 
-.navbar__logo-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--rose), var(--lavender));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Cormorant Garamond', serif;
-  font-weight: 700;
-  font-size: 1.3rem;
-  color: white;
+.navbar__logo-icon-img {
+  height: 46px;
+  width: auto;
+  object-fit: contain;
+  display: block;
 }
 
 .navbar__logo-name {
@@ -85,8 +78,8 @@
 }
 
 .navbar__link:hover {
-  color: var(--rose-dark);
-  background: rgba(232, 165, 184, 0.1);
+  color: var(--cocoa);
+  background: rgba(125, 90, 68, 0.08);
 }
 
 .navbar__cta {
@@ -144,4 +137,22 @@
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
   }
+}
+
+/* Mis Citas destacado */
+.navbar__link--highlight {
+  color: var(--cocoa);
+  font-weight: 600;
+  border: 1px solid var(--camel);
+  background: rgba(178, 150, 125, 0.12);
+}
+.navbar__link--highlight:hover {
+  background: var(--cocoa);
+  color: #fff;
+}
+.navbar__mobile-link--highlight {
+  color: var(--cocoa);
+  font-weight: 600;
+  border: 1px solid var(--camel);
+  background: rgba(178, 150, 125, 0.12);
 }

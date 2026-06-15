@@ -17,16 +17,21 @@ export default function Navbar() {
     { label: 'Servicios', href: '/#servicios' },
     { label: 'Paquetes', href: '/#paquetes' },
     { label: 'Nosotros', href: '/#nosotros' },
-    { label: 'Mis Citas', href: '/mis-citas' },
     { label: 'Contacto', href: '/#contacto' },
+    { label: 'Mis Citas', href: '/mis-citas', highlight: true },
   ];
 
   return (
     <nav className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`} id="navbar">
       <div className="navbar__inner">
         {/* Logo */}
-        <a href="/#hero" className="navbar__logo">
-          <span className="navbar__logo-icon">N</span>
+        <a href="/#hero" className="navbar__logo" aria-label="Anadsll Beauty Esthetic">
+          <img
+            src="/brand/icono.png"
+            alt=""
+            className="navbar__logo-icon-img"
+            aria-hidden="true"
+          />
           <div>
             <span className="navbar__logo-name">Anadsll</span>
             <span className="navbar__logo-sub">Beauty Esthetic</span>
@@ -37,18 +42,14 @@ export default function Navbar() {
         <ul className="navbar__links">
           {links.map((l) => (
             <li key={l.href}>
-              <a href={l.href} className="navbar__link">{l.label}</a>
+              <a href={l.href} className={`navbar__link ${l.highlight ? 'navbar__link--highlight' : ''}`}>{l.label}</a>
             </li>
           ))}
         </ul>
 
         {/* CTA */}
         <div className="navbar__cta">
-          <a
-            href="/reservar"
-            className="btn-primary"
-            id="nav-whatsapp-btn"
-          >
+          <a href="/reservar" className="btn-primary" id="nav-whatsapp-btn">
             <Phone size={16} />
             Agendar Cita
           </a>
@@ -71,7 +72,7 @@ export default function Navbar() {
           <a
             key={l.href}
             href={l.href}
-            className="navbar__mobile-link"
+            className={`navbar__mobile-link ${l.highlight ? 'navbar__mobile-link--highlight' : ''}`}
             onClick={() => setOpen(false)}
           >
             {l.label}

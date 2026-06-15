@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useServiceStore, type Service, type ServiceCategory } from '../../store/serviceStore';
 import { useAuthStore } from '../../store/authStore';
-import { Plus, Search, Edit2, Trash2, X, Clock, DollarSign, Sparkles, Zap, Heart, Scissors, Package } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Clock, DollarSign, Sparkles, Zap, Heart, Scissors, Syringe, Package } from 'lucide-react';
 import './Services.css';
 
 const CATEGORIES: { key: ServiceCategory | 'all'; label: string; icon: React.ReactNode }[] = [
@@ -10,6 +10,7 @@ const CATEGORIES: { key: ServiceCategory | 'all'; label: string; icon: React.Rea
   { key: 'facial', label: 'Facial', icon: <Heart size={15} /> },
   { key: 'corporal', label: 'Corporal', icon: <Sparkles size={15} /> },
   { key: 'belleza', label: 'Belleza', icon: <Scissors size={15} /> },
+  { key: 'medicina', label: 'Medicina Estética', icon: <Syringe size={15} /> },
 ];
 
 const CAT_COLORS: Record<ServiceCategory, string> = {
@@ -17,6 +18,7 @@ const CAT_COLORS: Record<ServiceCategory, string> = {
   facial: '#f9a8d4',
   corporal: '#6ee7b7',
   belleza: '#fcd34d',
+  medicina: '#7D5A44',
 };
 
 const emptyForm: Omit<Service, 'id'> = {

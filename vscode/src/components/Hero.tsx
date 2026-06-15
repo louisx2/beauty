@@ -25,11 +25,7 @@ export default function Hero() {
           </p>
 
           <div className="hero__actions animate-fade-up" style={{ animationDelay: '0.3s' }}>
-            <a
-              href="/reservar"
-              className="btn-primary"
-              id="hero-whatsapp-btn"
-            >
+            <a href="/reservar" className="btn-primary" id="hero-whatsapp-btn">
               Agendar Cita
               <ArrowRight size={16} />
             </a>
@@ -60,11 +56,12 @@ export default function Hero() {
         {/* Hero Image */}
         <div className="hero__image-wrap animate-fade-up" style={{ animationDelay: '0.25s' }}>
           <div className="hero__image-ring" />
-          <div className="hero__image-container">
+          <div className="hero__image-container" style={{ backgroundColor: '#fff' }}>
             <img
-              src="https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&h=750&fit=crop&crop=face"
-              alt="Tratamiento facial profesional"
+              src="/specialist2.jpeg"
+              alt="Especialista principal"
               className="hero__image"
+              style={{ objectFit: 'cover', objectPosition: 'center top' }}
             />
           </div>
           {/* Floating glassy card */}
