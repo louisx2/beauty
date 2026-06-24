@@ -298,6 +298,13 @@ export default function Appointments() {
     try {
       const payload = { ...form, clientName: form.clientName.trim(), clientPhone: form.clientPhone.trim() };
       if (editingId) {
+        const original = appointments.find((a) => a.id === editingId);
+        if (original && (original.date !== payload.date || original.time !== payload.time)) {
+          if (!window.confirm(`¿Estás segura de que deseas mover la cita a la nueva fecha y hora (${formatDate(payload.date)} a las ${format12h(payload.time)})?`)) {
+            setSubmitting(false);
+            return;
+          }
+        }
         const ok = await updateAppointment(editingId, payload);
         if (ok) {
           toast.success('Cita actualizada correctamente');
@@ -329,6 +336,7 @@ export default function Appointments() {
   };
 
   const handleReschedule = (appt: Appointment) => {
+    if (!window.confirm(`¿Estás segura de que deseas reprogramar (mover) la cita de ${appt.clientName}?`)) return;
     setEditingId(appt.id);
     setForm({
       client_id: appt.client_id || null,
@@ -348,7 +356,9 @@ export default function Appointments() {
 
   const handleCancel = (appt: Appointment) => {
     if (appt.status === 'cancelled' || appt.status === 'completed') return;
+    if (!window.confirm(`¿Estás segura de que deseas cancelar la cita de ${appt.clientName}?`)) return;
     updateStatus(appt.id, 'cancelled');
+    notifyStatusChange(appt, 'cancelled');
   };
 
   return (
@@ -510,6 +520,7 @@ export default function Appointments() {
                             key={s}
                             className="appt-card__status-option"
                             onClick={() => {
+                              if (s === 'cancelled' && !window.confirm(`¿Estás segura de que deseas cancelar la cita de ${appt.clientName}?`)) return;
                               updateStatus(appt.id, s);
                               setShowStatusMenu(null);
                               notifyStatusChange(appt, s);
@@ -587,7 +598,7 @@ export default function Appointments() {
                     </button>
                     <button
                       className="appt-card__action-btn appt-card__action-btn--cancel"
-                      onClick={(e) => { e.stopPropagation(); handleCancel(appt); notifyStatusChange(appt, 'cancelled'); }}
+                      onClick={(e) => { e.stopPropagation(); handleCancel(appt); }}
                       title="Cancelar Cita"
                     >
                       <XCircle size={16} />

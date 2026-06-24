@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { playNotificationSound } from '../lib/sound';
+import { useNotificationStore } from './notificationStore';
 
 export type AppointmentStatus =
   | 'pending'
@@ -125,6 +126,12 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
 
       const mapped = mapRow(data as Record<string, unknown>);
       set((s) => ({ appointments: [...s.appointments, mapped] }));
+      useNotificationStore.getState().addNotification({
+        type: 'new_appt',
+        text: `Nueva cita: ${mapped.clientName}`,
+        sub: `${mapped.service} · ${mapped.date} ${mapped.time}`,
+        appointmentId: mapped.id
+      });
       return mapped;
     } catch (err) {
       console.error('[appointments] insert network error:', err);
@@ -133,6 +140,7 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
   },
 
   updateAppointment: async (id, updates) => {
+    const oldAppt = get().appointments.find((a) => a.id === id);
     const db: Record<string, unknown> = {};
     if (updates.clientName !== undefined) db.client_name = updates.clientName;
     if (updates.clientPhone !== undefined) db.client_phone = updates.clientPhone;
@@ -158,11 +166,22 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
         return false;
       }
 
+      const mapped = mapRow(data as Record<string, unknown>);
       set((s) => ({
         appointments: s.appointments.map((a) =>
-          a.id === id ? mapRow(data as Record<string, unknown>) : a
+          a.id === id ? mapped : a
         ),
       }));
+
+      if (oldAppt && (oldAppt.date !== mapped.date || oldAppt.time !== mapped.time)) {
+        useNotificationStore.getState().addNotification({
+          type: 'rescheduled',
+          text: `Cita reprogramada: ${mapped.clientName}`,
+          sub: `Se movió al ${mapped.date} a las ${mapped.time}`,
+          appointmentId: mapped.id
+        });
+      }
+
       return true;
     } catch (err) {
       console.error('[appointments] update network error:', err);
@@ -171,6 +190,7 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
   },
 
   updateStatus: async (id, status) => {
+    const oldAppt = get().appointments.find((a) => a.id === id);
     const now = new Date().toISOString();
     const extra = status === 'in_progress' ? { started_at: now } : {};
 
@@ -195,6 +215,24 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
         await get().fetchAppointments();
         toast.error('Error al actualizar el estado');
         return false;
+      }
+
+      if (oldAppt) {
+        if (status === 'no_show') {
+          useNotificationStore.getState().addNotification({
+            type: 'no_show',
+            text: `${oldAppt.clientName} no asistió`,
+            sub: `${oldAppt.service} · ${oldAppt.time}`,
+            appointmentId: oldAppt.id
+          });
+        } else if (status === 'completed') {
+          useNotificationStore.getState().addNotification({
+            type: 'completed',
+            text: `Cita completada por ${oldAppt.employee}`,
+            sub: `${oldAppt.clientName} — ${oldAppt.service}`,
+            appointmentId: oldAppt.id
+          });
+        }
       }
 
       if (status === 'completed') {
@@ -286,12 +324,57 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
             const newAppt = mapRow(payload.new as Record<string, unknown>);
             if (!current.some(a => a.id === newAppt.id)) {
               set({ appointments: [...current, newAppt] });
-              playNotificationSound();
+              playNotificationSound(useNotificationStore.getState().soundProfile);
               toast.success(`Nueva cita online: ${newAppt.clientName} - ${newAppt.service}`, { duration: 5000 });
+              
+              useNotificationStore.getState().addNotification({
+                type: 'new_appt',
+                text: `Nueva cita online: ${newAppt.clientName}`,
+                sub: `${newAppt.service} · ${newAppt.date} ${newAppt.time}`,
+                appointmentId: newAppt.id,
+              });
             }
           } else if (payload.eventType === 'UPDATE') {
             const updated = mapRow(payload.new as Record<string, unknown>);
-            set({ appointments: current.map(a => a.id === updated.id ? updated : a) });
+            const oldAppt = current.find((a) => a.id === updated.id);
+            set({ appointments: current.map((a) => (a.id === updated.id ? updated : a)) });
+
+            if (oldAppt) {
+              const statusChanged = oldAppt.status !== updated.status;
+              const dateChanged = oldAppt.date !== updated.date || oldAppt.time !== updated.time;
+
+              if (statusChanged && updated.status === 'no_show') {
+                playNotificationSound(useNotificationStore.getState().soundProfile);
+                toast.error(`Cita No Asistida: ${updated.clientName} - ${updated.service}`, { duration: 5000 });
+                
+                useNotificationStore.getState().addNotification({
+                  type: 'no_show',
+                  text: `${updated.clientName} no asistió`,
+                  sub: `${updated.service} · ${updated.time}`,
+                  appointmentId: updated.id,
+                });
+              } else if (statusChanged && updated.status === 'completed') {
+                playNotificationSound(useNotificationStore.getState().soundProfile);
+                toast.success(`Cita Completada por especialista: ${updated.clientName} - ${updated.service}`, { duration: 5000 });
+                
+                useNotificationStore.getState().addNotification({
+                  type: 'completed',
+                  text: `Cita completada por ${updated.employee}`,
+                  sub: `${updated.clientName} — ${updated.service}`,
+                  appointmentId: updated.id,
+                });
+              } else if (dateChanged) {
+                playNotificationSound(useNotificationStore.getState().soundProfile);
+                toast(`Cita Reprogramada: ${updated.clientName} se movió al ${updated.date} a las ${updated.time}`, { icon: '📅', duration: 5000 });
+                
+                useNotificationStore.getState().addNotification({
+                  type: 'rescheduled',
+                  text: `Cita reprogramada: ${updated.clientName}`,
+                  sub: `Se movió al ${updated.date} a las ${updated.time}`,
+                  appointmentId: updated.id,
+                });
+              }
+            }
           } else if (payload.eventType === 'DELETE') {
             set({ appointments: current.filter(a => a.id !== payload.old.id) });
           }

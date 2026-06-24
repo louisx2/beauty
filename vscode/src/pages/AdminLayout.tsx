@@ -21,7 +21,10 @@ import {
   AlertCircle,
   CheckCircle2,
   Scissors,
-  Zap
+  Zap,
+  Volume2,
+  Check,
+  Trash2
 } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import NextSessionModal from '../components/NextSessionModal';
@@ -30,6 +33,8 @@ import { useServiceStore } from '../store/serviceStore';
 import { useStaffStore } from '../store/staffStore';
 import { useClientStore } from '../store/clientStore';
 import toast, { Toaster, resolveValue } from 'react-hot-toast';
+import { useNotificationStore } from '../store/notificationStore';
+import { playNotificationSound } from '../lib/sound';
 import './AdminLayout.css';
 
 function formatPhone(raw: string): string {
@@ -75,6 +80,18 @@ const navSections = [
     ],
   },
 ];
+
+function formatTimeAgo(isoString: string): string {
+  const diff = Date.now() - new Date(isoString).getTime();
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return 'Ahora';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `Hace ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Hace ${hours} h`;
+  const days = Math.floor(hours / 24);
+  return `Hace ${days} d`;
+}
 
 export default function AdminLayout() {
   const { user, logout } = useAuthStore();
@@ -174,21 +191,9 @@ export default function AdminLayout() {
     };
   }, [logout, navigate]);
 
+  const { notifications, markAsRead, markAllAsRead, clearAll, soundProfile, setSoundProfile } = useNotificationStore();
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
   const today = new Date().toISOString().split('T')[0];
-
-  const notifications = useMemo(() => {
-    const todayAppts = appointments.filter((a) => a.date === today);
-    const items: { id: string; type: string; text: string; sub: string }[] = [];
-    // Pending appointments today
-    todayAppts.filter((a) => a.status === 'pending').forEach((a) => {
-      items.push({ id: a.id, type: 'pending', text: `${a.clientName} — ${a.service}`, sub: `Pendiente · ${a.time}` });
-    });
-    // No-show appointments today
-    todayAppts.filter((a) => a.status === 'no_show').forEach((a) => {
-      items.push({ id: a.id, type: 'no_show', text: `${a.clientName} no asistió`, sub: `${a.service} · ${a.time}` });
-    });
-    return items.slice(0, 8);
-  }, [appointments, today]);
 
   const handleLogout = async () => {
     try {
@@ -437,39 +442,95 @@ export default function AdminLayout() {
                 onClick={() => setNotifOpen((v) => !v)}
               >
                 <Bell size={20} />
-                {notifications.length > 0 && <span className="admin__notification-dot" />}
+                {unreadCount > 0 && <span className="admin__notification-dot" />}
               </button>
 
               {notifOpen && (
                 <div className="admin__notif-panel">
                   <div className="admin__notif-header">
-                    <span>Notificaciones de hoy</span>
-                    {notifications.length > 0 && (
-                      <span className="admin__notif-count">{notifications.length}</span>
-                    )}
+                    <span>Notificaciones</span>
+                    <div className="admin__notif-actions">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); playNotificationSound(soundProfile); }}
+                        className="admin__notif-btn"
+                        title="Probar sonido"
+                      >
+                        <Volume2 size={13} />
+                      </button>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); markAllAsRead(); }}
+                          className="admin__notif-btn"
+                          title="Marcar todo como leído"
+                        >
+                          <Check size={13} />
+                        </button>
+                      )}
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); clearAll(); }}
+                          className="admin__notif-btn admin__notif-btn--danger"
+                          title="Limpiar todo"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="admin__notif-sound-selector">
+                    <span>Sonido de alerta:</span>
+                    <select
+                      value={soundProfile}
+                      onChange={(e) => {
+                        const newProfile = e.target.value as any;
+                        setSoundProfile(newProfile);
+                        playNotificationSound(newProfile);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <option value="chime">Clásico 🔔</option>
+                      <option value="glass">Cristalino 💎</option>
+                      <option value="bell">Campana 🛎️</option>
+                      <option value="pop">Burbuja Pop 🫧</option>
+                      <option value="cosmic">Cósmico 🚀</option>
+                    </select>
                   </div>
                   {notifications.length === 0 ? (
                     <div className="admin__notif-empty">
                       <CheckCircle2 size={24} />
-                      <span>Sin alertas pendientes</span>
+                      <span>Sin alertas recientes</span>
                     </div>
                   ) : (
                     <div className="admin__notif-list">
-                      {notifications.map((n) => (
-                        <div
-                          key={n.id}
-                          className={`admin__notif-item admin__notif-item--${n.type}`}
-                          onClick={() => { setNotifOpen(false); navigate(`/admin/citas?highlight=${n.id}`); }}
-                        >
-                          <div className="admin__notif-icon">
-                            {n.type === 'pending' ? <Clock size={14} /> : <AlertCircle size={14} />}
+                      {notifications.map((n) => {
+                        let iconEl = <AlertCircle size={14} />;
+                        if (n.type === 'new_appt') iconEl = <CalendarDays size={14} />;
+                        else if (n.type === 'no_show') iconEl = <AlertCircle size={14} />;
+                        else if (n.type === 'completed') iconEl = <CheckCircle2 size={14} />;
+                        else if (n.type === 'rescheduled') iconEl = <Clock size={14} />;
+
+                        return (
+                          <div
+                            key={n.id}
+                            className={`admin__notif-item admin__notif-item--${n.type} ${!n.read ? 'admin__notif-item--unread' : ''}`}
+                            onClick={() => {
+                              markAsRead(n.id);
+                              setNotifOpen(false);
+                              navigate(`/admin/citas?highlight=${n.appointmentId}`);
+                            }}
+                          >
+                            <div className="admin__notif-icon">
+                              {iconEl}
+                            </div>
+                            <div className="admin__notif-text">
+                              <strong>{n.text}</strong>
+                              <span>{n.sub}</span>
+                              <span className="admin__notif-time">{formatTimeAgo(n.timestamp)}</span>
+                            </div>
+                            {!n.read && <span className="admin__notif-unread-dot" />}
                           </div>
-                          <div className="admin__notif-text">
-                            <strong>{n.text}</strong>
-                            <span>{n.sub}</span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

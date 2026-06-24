@@ -392,14 +392,80 @@
   margin-top: 2px;
 }
 
-.admin__notif-item--pending .admin__notif-icon {
-  background: rgba(251,191,36,0.12);
-  color: #fbbf24;
+.admin__notif-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.admin__notif-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.admin__notif-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.admin__notif-btn--danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.admin__notif-item {
+  position: relative;
+}
+
+.admin__notif-item--unread {
+  background: rgba(178, 150, 125, 0.04);
+  border-left: 3px solid var(--camel);
+  padding-left: 13px;
+}
+
+.admin__notif-unread-dot {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--camel);
+}
+
+.admin__notif-time {
+  font-size: 0.65rem !important;
+  color: rgba(255, 255, 255, 0.25) !important;
+  margin-top: 2px;
+}
+
+.admin__notif-item--new_appt .admin__notif-icon {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
 }
 
 .admin__notif-item--no_show .admin__notif-icon {
-  background: rgba(239,68,68,0.12);
+  background: rgba(239, 68, 68, 0.12);
   color: #f87171;
+}
+
+.admin__notif-item--rescheduled .admin__notif-icon {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+}
+
+.admin__notif-item--completed .admin__notif-icon {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
 }
 
 .admin__notif-text {
@@ -419,4 +485,31 @@
   font-size: 0.75rem;
   color: rgba(255,255,255,0.4);
   font-family: 'Outfit', sans-serif;
+}
+
+.admin__notif-sound-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.admin__notif-sound-selector select {
+  background: #2a1f1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.72rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.admin__notif-sound-selector select:hover {
+  border-color: var(--camel);
 }
