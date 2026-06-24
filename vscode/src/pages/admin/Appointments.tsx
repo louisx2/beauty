@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   useAppointmentStore,
   type Appointment,
@@ -146,6 +147,8 @@ const emptyForm: Omit<Appointment, 'id' | 'createdAt'> = {
 };
 
 export default function Appointments() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { 
     appointments, 
     fetchAppointments,
@@ -263,6 +266,21 @@ export default function Appointments() {
     setApptErrors({});
     setShowModal(true);
   };
+
+  // Highlight and open appointment from notification query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const highlightId = params.get('highlight');
+    if (highlightId && appointments.length > 0) {
+      const appt = appointments.find((a) => a.id === highlightId);
+      if (appt) {
+        setView('day');
+        setSelectedDate(appt.date);
+        openEdit(appt);
+        navigate('/admin/citas', { replace: true });
+      }
+    }
+  }, [location.search, appointments, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -10,9 +10,32 @@ if (!url || !key) {
   );
 }
 
+const customStorage = {
+  getItem: (key: string) => {
+    const local = localStorage.getItem(key);
+    if (local) return local;
+    return sessionStorage.getItem(key);
+  },
+  setItem: (key: string, value: string) => {
+    const remember = localStorage.getItem('sb_remember_me') === 'true';
+    if (remember) {
+      localStorage.setItem(key, value);
+      sessionStorage.removeItem(key);
+    } else {
+      sessionStorage.setItem(key, value);
+      localStorage.removeItem(key);
+    }
+  },
+  removeItem: (key: string) => {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  }
+};
+
 export const supabase = createClient<Database>(url, key, {
   auth: {
     persistSession: true,
+    storage: customStorage,
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },

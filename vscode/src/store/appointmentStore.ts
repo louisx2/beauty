@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
+import { playNotificationSound } from '../lib/sound';
 
 export type AppointmentStatus =
   | 'pending'
@@ -285,7 +286,8 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
             const newAppt = mapRow(payload.new as Record<string, unknown>);
             if (!current.some(a => a.id === newAppt.id)) {
               set({ appointments: [...current, newAppt] });
-              // Simple audio notification or toast could be added here
+              playNotificationSound();
+              toast.success(`Nueva cita online: ${newAppt.clientName} - ${newAppt.service}`, { duration: 5000 });
             }
           } else if (payload.eventType === 'UPDATE') {
             const updated = mapRow(payload.new as Record<string, unknown>);

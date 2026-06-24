@@ -9,6 +9,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const login = useAuthStore((s) => s.login);
@@ -40,6 +41,7 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    localStorage.setItem('sb_remember_me', rememberMe ? 'true' : 'false');
     const ok = await login(email, password);
     if (ok) navigate('/admin/citas');
     setLoading(false);
@@ -123,6 +125,17 @@ export default function Login() {
                 {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+          </div>
+
+          <div className="login__remember-me">
+            <label className="login__checkbox-label">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              <span>Mantener sesión activa</span>
+            </label>
           </div>
 
           <button

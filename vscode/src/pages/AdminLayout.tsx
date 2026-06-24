@@ -137,6 +137,43 @@ export default function AdminLayout() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // Inactivity timeout to expire session
+  useEffect(() => {
+    const rememberMe = localStorage.getItem('sb_remember_me') === 'true';
+    const timeoutDuration = rememberMe ? 4 * 60 * 60 * 1000 : 15 * 60 * 1000;
+
+    let timer: NodeJS.Timeout;
+
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(handleAutoLogout, timeoutDuration);
+    };
+
+    const handleAutoLogout = async () => {
+      try {
+        toast.error('Sesión expirada por inactividad.');
+        await logout();
+        navigate('/admin/login', { replace: true });
+      } catch (error) {
+        console.error('Auto logout error:', error);
+      }
+    };
+
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach((event) => {
+      window.addEventListener(event, resetTimer);
+    });
+
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((event) => {
+        window.removeEventListener(event, resetTimer);
+      });
+    };
+  }, [logout, navigate]);
+
   const today = new Date().toISOString().split('T')[0];
 
   const notifications = useMemo(() => {
@@ -422,7 +459,7 @@ export default function AdminLayout() {
                         <div
                           key={n.id}
                           className={`admin__notif-item admin__notif-item--${n.type}`}
-                          onClick={() => { setNotifOpen(false); navigate('/admin/citas'); }}
+                          onClick={() => { setNotifOpen(false); navigate(`/admin/citas?highlight=${n.id}`); }}
                         >
                           <div className="admin__notif-icon">
                             {n.type === 'pending' ? <Clock size={14} /> : <AlertCircle size={14} />}
