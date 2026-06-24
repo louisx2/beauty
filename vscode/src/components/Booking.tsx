@@ -60,7 +60,11 @@ function formatPhone(raw: string): string {
 }
 
 function getTodayStr(): string {
-  return new Date().toISOString().split('T')[0];
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export default function Booking() {
@@ -200,6 +204,11 @@ export default function Booking() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!effectiveServiceName || !effectiveDuration || !selectedStaff || !form.time) return;
+
+    if (form.date < getTodayStr()) {
+      setBookingError('No puedes reservar una cita en una fecha pasada.');
+      return;
+    }
 
     setSending(true);
     setBookingError('');

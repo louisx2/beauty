@@ -5,12 +5,13 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function check() {
-  await supabase.auth.signInWithPassword({
-    email: 'admin@anadsll.com',
-    password: 'admin123'
+  const { data: svcs } = await supabase.from('services').select('id, name, category').eq('active', true);
+  const categories = {};
+  svcs.forEach(s => {
+    if (!categories[s.category]) categories[s.category] = [];
+    categories[s.category].push(s.name);
   });
-  const { data: svcs } = await supabase.from('services').select('name').order('name');
-  console.log('ALL SERVICES:', svcs.map(s => s.name));
+  console.log('SERVICES BY CATEGORY:', categories);
 }
 
 check();

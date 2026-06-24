@@ -57,17 +57,21 @@ interface ApptErrors {
   employee?: string;
   date?: string;
 }
-function validateAppt(form: typeof emptyForm): ApptErrors {
+function validateAppt(form: typeof emptyForm, isEditing: boolean): ApptErrors {
   const e: ApptErrors = {};
   if (!form.clientName.trim()) e.clientName = 'El nombre es requerido';
   if (!form.clientPhone.trim()) {
-    e.clientPhone = 'El telfono es requerido';
+    e.clientPhone = 'El teléfono es requerido';
   } else if (form.clientPhone.replace(/\D/g, '').length < 10) {
-    e.clientPhone = 'Telfono invlido (10 dgitos)';
+    e.clientPhone = 'Teléfono inválido (10 dígitos)';
   }
   if (!form.service) e.service = 'Selecciona un servicio';
   if (!form.employee) e.employee = 'Selecciona una empleada';
-  if (!form.date) e.date = 'La fecha es requerida';
+  if (!form.date) {
+    e.date = 'La fecha es requerida';
+  } else if (!isEditing && form.date < getToday()) {
+    e.date = 'No puedes agendar citas en fechas pasadas';
+  }
   return e;
 }
 
@@ -111,7 +115,11 @@ function formatDate(dateStr: string): string {
 }
 
 function getToday(): string {
-  return new Date().toISOString().split('T')[0];
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function addDays(dateStr: string, days: number): string {
@@ -284,7 +292,7 @@ export default function Appointments() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const errs = validateAppt(form);
+    const errs = validateAppt(form, !!editingId);
     if (Object.keys(errs).length > 0) { setApptErrors(errs); return; }
     setSubmitting(true);
     try {
@@ -662,7 +670,13 @@ export default function Appointments() {
               <div className="modal__row">
                 <div className="modal__field">
                   <label><Calendar size={14} /> Fecha *</label>
-                  <input type="date" value={form.date} className={apptErrors.date ? 'input--error' : ''} onChange={(e) => { setForm({ ...form, date: e.target.value }); setApptErrors({ ...apptErrors, date: undefined }); }} />
+                  <input
+                    type="date"
+                    value={form.date}
+                    min={editingId ? undefined : getToday()}
+                    className={apptErrors.date ? 'input--error' : ''}
+                    onChange={(e) => { setForm({ ...form, date: e.target.value }); setApptErrors({ ...apptErrors, date: undefined }); }}
+                  />
                   {apptErrors.date && <span className="field-error"><AlertCircle size={12} /> {apptErrors.date}</span>}
                 </div>
                 <div className="modal__field">
