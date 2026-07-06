@@ -17,6 +17,8 @@ export interface Settings {
   whatsapp_number: string;
   package_deposit_type: 'fixed' | 'percentage';
   package_deposit_value: number;
+  show_welcome_card: boolean;
+  show_stats_cards: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -32,6 +34,8 @@ const DEFAULTS: Settings = {
   whatsapp_number: '18293224014',
   package_deposit_type: 'fixed',
   package_deposit_value: 500,
+  show_welcome_card: true,
+  show_stats_cards: true,
 };
 
 interface SettingsState {
@@ -63,7 +67,16 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
             account_name: data.account_name || DEFAULTS.account_name,
           }];
         }
-        set({ settings: { ...DEFAULTS, ...data } });
+        
+        // Load UI configurations from localStorage
+        const show_welcome_card = localStorage.getItem('show_welcome_card') !== 'false';
+        const show_stats_cards = localStorage.getItem('show_stats_cards') !== 'false';
+
+        set({ settings: { ...DEFAULTS, ...data, show_welcome_card, show_stats_cards } });
+      } else {
+        const show_welcome_card = localStorage.getItem('show_welcome_card') !== 'false';
+        const show_stats_cards = localStorage.getItem('show_stats_cards') !== 'false';
+        set({ settings: { ...DEFAULTS, show_welcome_card, show_stats_cards } });
       }
       // If table doesn't exist yet, silently keep defaults
     } catch {
@@ -84,13 +97,24 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       next.account_name = next.bank_accounts[0].account_name;
     }
 
+    // Save UI settings to localStorage
+    if (patch.show_welcome_card !== undefined) {
+      localStorage.setItem('show_welcome_card', String(patch.show_welcome_card));
+    }
+    if (patch.show_stats_cards !== undefined) {
+      localStorage.setItem('show_stats_cards', String(patch.show_stats_cards));
+    }
+
     // Optimistic update — apply immediately, rollback on error
     set({ settings: next });
 
     try {
+      // Strip UI preferences before saving to DB
+      const { show_welcome_card, show_stats_cards, ...dbSettings } = next;
+
       const { error } = await supabase
         .from('settings')
-        .upsert({ id: 1, ...next }, { onConflict: 'id' });
+        .upsert({ id: 1, ...dbSettings }, { onConflict: 'id' });
 
       if (error) {
         set({ settings: previous });

@@ -1,3 +1,11 @@
+.reports {
+  font-family: 'Outfit', sans-serif;
+}
+
+.reports h3 {
+  font-family: 'Outfit', sans-serif;
+}
+
 .reports__section {
   margin-bottom: 32px;
 }
@@ -345,3 +353,160 @@
   .reports__cards { grid-template-columns: 1fr; }
   .reports__bar-chart { height: 100px; }
 }
+
+/* ── New Period Filters & Downloads Styling ── */
+.reports__filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.reports__period-tabs {
+  display: flex;
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.reports__period-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reports__period-btn--active {
+  background: var(--rose);
+  color: white;
+  box-shadow: 0 4px 12px rgba(201,125,151,0.25);
+}
+
+.reports__date-input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: white;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.reports__download-group {
+  display: flex;
+  gap: 10px;
+}
+
+.reports__download-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: none;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reports__download-btn--excel {
+  background: rgba(74,222,128,0.15);
+  color: #4ade80;
+}
+
+.reports__download-btn--pdf {
+  background: rgba(59,130,246,0.15);
+  color: #60a5fa;
+}
+
+.reports__download-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+/* Light theme overrides for filters */
+[data-theme="light"] .reports__filters {
+  background: white;
+  border-color: rgba(74,52,42,0.06);
+  box-shadow: 0 2px 8px rgba(74,52,42,0.03);
+}
+
+[data-theme="light"] .reports__period-tabs {
+  background: #F5F1EA;
+}
+
+[data-theme="light"] .reports__period-btn {
+  color: var(--muted);
+}
+
+[data-theme="light"] .reports__period-btn--active {
+  background: var(--rose-dark);
+  color: white;
+}
+
+[data-theme="light"] .reports__date-input {
+  background: white;
+  border-color: rgba(74,52,42,0.12);
+  color: var(--espresso);
+}
+
+.reports__download-btn--advanced {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.reports__download-btn--advanced:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.reports__download-btn--advanced-active {
+  background: rgba(201, 125, 151, 0.15);
+  color: var(--rose-light);
+  border: 1px solid rgba(201, 125, 151, 0.25) !important;
+  box-shadow: 0 4px 12px rgba(201, 125, 151, 0.15);
+}
+
+.reports__download-btn--advanced-active:hover {
+  background: rgba(201, 125, 151, 0.22);
+}
+
+/* Light theme overrides */
+[data-theme="light"] .reports__download-btn--advanced {
+  background: white;
+  border: 1px solid rgba(74, 52, 42, 0.12) !important;
+  color: var(--muted);
+}
+
+[data-theme="light"] .reports__download-btn--advanced:hover {
+  background: #F5F1EA;
+  color: var(--espresso);
+}
+
+[data-theme="light"] .reports__download-btn--advanced-active {
+  background: rgba(201, 125, 151, 0.1);
+  color: var(--rose-dark);
+  border: 1px solid rgba(201, 125, 151, 0.2) !important;
+}
+
+[data-theme="light"] .reports__download-btn--advanced-active:hover {
+  background: rgba(201, 125, 151, 0.15);
+}
+
+

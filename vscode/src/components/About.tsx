@@ -15,15 +15,16 @@ export default function About() {
         <div className="about__image-side">
           <div className="about__image-main">
             <img
-              src="/lobby.jpg"
-              alt="Lobby y recepción de Anadsll Beauty Esthetic"
+              src="/equipo/as-07236.jpg"
+              alt="Anabel De los Santos Lluberes"
               loading="lazy"
             />
           </div>
           <div className="about__image-accent">
             <img
-              src="/equipo/anabel-escritorio.jpg"
-              alt="Anabel De los Santos Lluberes en su consultorio"
+              src="/brand/logo-sobre-nosotros.png"
+              alt="Logo Anadsll Beauty Esthetic"
+              className="about__logo"
               loading="lazy"
             />
           </div>

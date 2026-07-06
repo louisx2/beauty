@@ -4,7 +4,7 @@ import './Hero.css';
 
 export default function Hero() {
   const [currentBg, setCurrentBg] = useState(0);
-  const bgImages = ['/lobby.jpg', '/lobby2.jpg'];
+  const bgImages = ['/lobby.jpg', '/lobby2.jpg', '/lobby3.jpg', '/as-07365.jpg', '/as-07387.jpg'];
 
   useEffect(() => {
     const timer = setInterval(() => {

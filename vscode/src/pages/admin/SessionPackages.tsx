@@ -398,10 +398,10 @@ export default function SessionPackages() {
                             <Edit2 size={15} /> Editar
                           </button>
                           {user?.role === 'admin' && (
-                            <button className="client-pkg__menu-item client-pkg__menu-item--danger" onClick={() => { setOpenMenu(null); deleteClientPackage(cp.id); }}>
-                              <Trash2 size={15} /> Eliminar
-                            </button>
-                          )}
+                             <button className="client-pkg__menu-item client-pkg__menu-item--danger" onClick={() => { if (window.confirm(`¿Estás seguro de eliminar el paquete activo "${cp.packageName}" de "${cp.clientName}"?`)) { setOpenMenu(null); deleteClientPackage(cp.id); } }}>
+                               <Trash2 size={15} /> Eliminar
+                             </button>
+                           )}
                         </div>
                       )}
                     </div>
@@ -508,7 +508,7 @@ export default function SessionPackages() {
                   </button>
                   <button 
                     className="vip-card__btn vip-card__btn--secondary" 
-                    onClick={() => deletePackage(p.id)}
+                    onClick={() => { if (window.confirm(`¿Estás seguro de eliminar el paquete "${p.name}"?`)) deletePackage(p.id); }}
                     style={{ flex: '0 0 auto' }}
                   >
                     <Trash2 size={14} />

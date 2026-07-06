@@ -749,3 +749,30 @@ h1, h2, h3 {
   margin-top: 4px;
 }
 
+/* Coherent Page Headers in Admin Dashboard */
+.appts__title,
+.clients-page__title,
+.settings-page__title,
+.staff-page__title,
+.clients__title {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 1.8rem !important;
+  font-weight: 700 !important;
+  color: white !important;
+  margin: 0 !important;
+}
+
+[data-theme="light"] .appts__title,
+[data-theme="light"] .clients-page__title,
+[data-theme="light"] .settings-page__title,
+[data-theme="light"] .staff-page__title,
+[data-theme="light"] .clients__title,
+:root[data-theme="light"] .appts__title,
+:root[data-theme="light"] .clients-page__title,
+:root[data-theme="light"] .settings-page__title,
+:root[data-theme="light"] .staff-page__title,
+:root[data-theme="light"] .clients__title {
+  color: #1f2937 !important;
+}
+
+

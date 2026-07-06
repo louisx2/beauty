@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSettingsStore, type BankAccount } from '../../store/settingsStore';
-import { Save, AlertCircle, Building2, CreditCard, DollarSign, User as UserIcon, Phone, Plus, Trash2 } from 'lucide-react';
+import { Save, AlertCircle, Building2, CreditCard, DollarSign, User as UserIcon, Phone, Plus, Trash2, Star } from 'lucide-react';
 import './Settings.css';
 
 export default function Settings() {
@@ -16,7 +16,9 @@ export default function Settings() {
     bank_accounts: [] as BankAccount[],
     whatsapp_number: '',
     package_deposit_type: 'fixed' as 'fixed' | 'percentage',
-    package_deposit_value: 500
+    package_deposit_value: 500,
+    show_welcome_card: true,
+    show_stats_cards: true
   });
 
   useEffect(() => {
@@ -33,7 +35,9 @@ export default function Settings() {
         bank_accounts: settings.bank_accounts || [],
         whatsapp_number: settings.whatsapp_number,
         package_deposit_type: settings.package_deposit_type,
-        package_deposit_value: settings.package_deposit_value
+        package_deposit_value: settings.package_deposit_value,
+        show_welcome_card: settings.show_welcome_card,
+        show_stats_cards: settings.show_stats_cards
       });
     }
   }, [settings]);
@@ -261,6 +265,35 @@ export default function Settings() {
             </div>
           </div>
         </div>
+
+        {/* Preferencias de Interfaz */}
+        <div className="settings-card settings-card--primary">
+          <div className="settings-card__header">
+            <h3 className="settings-card__title"><Star size={20} /> Preferencias del Dashboard</h3>
+            <p className="settings-card__desc">Elige qué secciones deseas visualizar en tu panel de control principal.</p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '8px' }}>
+            <label className="settings-checkbox-wrap" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', cursor: 'pointer', color: 'rgba(255,255,255,0.8)' }}>
+              <input
+                type="checkbox"
+                checked={form.show_welcome_card}
+                onChange={(e) => setForm({ ...form, show_welcome_card: e.target.checked })}
+                style={{ width: '18px', height: '18px', borderRadius: '4px', cursor: 'pointer' }}
+              />
+              Mostrar Tarjeta de Bienvenida
+            </label>
+            <label className="settings-checkbox-wrap" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', cursor: 'pointer', color: 'rgba(255,255,255,0.8)' }}>
+              <input
+                type="checkbox"
+                checked={form.show_stats_cards}
+                onChange={(e) => setForm({ ...form, show_stats_cards: e.target.checked })}
+                style={{ width: '18px', height: '18px', borderRadius: '4px', cursor: 'pointer' }}
+              />
+              Mostrar Tarjetas de Estadísticas (Bento)
+            </label>
+          </div>
+        </div>
+
       </div>
     </div>
   );

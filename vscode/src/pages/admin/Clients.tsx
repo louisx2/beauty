@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useClientStore, type Client } from '../../store/clientStore';
 import { useAppointmentStore } from '../../store/appointmentStore';
 import { useServiceStore } from '../../store/serviceStore';
@@ -67,7 +68,16 @@ export default function Clients() {
     fetchPackages().catch((err) => console.warn('Error loading packages for clients CRM:', err));
   }, [fetchClients, fetchAppointments, fetchPackages]);
 
-  const [search, setSearch] = useState('');
+  const location = useLocation();
+  const [search, setSearch] = useState(() => {
+    return (location.state as any)?.searchName || '';
+  });
+
+  useEffect(() => {
+    if ((location.state as any)?.searchName) {
+      setSearch((location.state as any).searchName);
+    }
+  }, [location.state]);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);

@@ -59,6 +59,16 @@ function countServices(cat: ServiceCategory): number {
 export default function Services() {
   const [active, setActive] = useState(0);
   const [selectedSpecialist, setSelectedSpecialist] = useState<any | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
+  
+  const handleCloseModal = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setSelectedSpecialist(null);
+      setIsClosing(false);
+    }, 300);
+  };
+
   const cat = servicesMenu[active];
   const { description, blocks } = buildBlocks(cat);
   const n = countServices(cat);
@@ -68,6 +78,15 @@ export default function Services() {
   useEffect(() => {
     fetchAll().catch((err) => console.warn('Failed to fetch services for landing page:', err));
   }, [fetchAll]);
+
+  useEffect(() => {
+    if (selectedSpecialist) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [selectedSpecialist]);
 
   const findPrice = (catId: string, blockLabel: string, itName: string) => {
     let searchName = '';
@@ -213,11 +232,11 @@ export default function Services() {
 
       {/* Specialist Detail Modal */}
       {selectedSpecialist && (
-        <div className="modal-overlay" onClick={() => setSelectedSpecialist(null)}>
-          <div className="modal specialist-modal" onClick={(e) => e.stopPropagation()}>
+        <div className={`modal-overlay ${isClosing ? 'modal-overlay--closing' : ''}`} onClick={handleCloseModal}>
+          <div className={`modal specialist-modal ${isClosing ? 'specialist-modal--closing' : ''}`} onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
               <h2>Perfil de Especialista</h2>
-              <button className="modal__close" onClick={() => setSelectedSpecialist(null)}>
+              <button className="modal__close" onClick={handleCloseModal}>
                 <X size={20} />
               </button>
             </div>

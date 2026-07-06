@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useAppointmentStore } from '../../store/appointmentStore';
 import { useStaffStore } from '../../store/staffStore';
 import { useBillingStore } from '../../store/billingStore';
 import { useClientStore } from '../../store/clientStore';
 import { useServiceStore } from '../../store/serviceStore';
+import { useSettingsStore } from '../../store/settingsStore';
 import SaveClientModal from '../../components/SaveClientModal';
 import {
   Calendar, DollarSign, Users, Package, Clock, Sparkles, AlertCircle, 
@@ -15,11 +17,13 @@ import toast from 'react-hot-toast';
 import './Dashboard.css';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const { appointments, fetchAppointments, updateStatus: updateAppointmentStatus } = useAppointmentStore();
   const { invoices, fetchAll: fetchInvoices } = useBillingStore();
   const { clients, fetchClients } = useClientStore();
   const { clientPackages, fetchAll: fetchServicesAndPackages } = useServiceStore();
+  const { settings, fetchSettings } = useSettingsStore();
 
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [savingClientFor, setSavingClientFor] = useState<any>(null);
@@ -29,7 +33,8 @@ export default function Dashboard() {
     fetchInvoices();
     fetchClients();
     fetchServicesAndPackages();
-  }, [fetchAppointments, fetchInvoices, fetchClients, fetchServicesAndPackages]);
+    fetchSettings();
+  }, [fetchAppointments, fetchInvoices, fetchClients, fetchServicesAndPackages, fetchSettings]);
 
   // Handle clicking outside to close menus
   useEffect(() => {
@@ -91,63 +96,65 @@ export default function Dashboard() {
     <div className="dashboard">
       
       {/* ── Hero Banner ── */}
-      <div className="dash-hero">
-        <h1 className="dash-hero__title">{greeting}, {user?.name.split(' ')[0]} 👋</h1>
-        <p className="dash-hero__subtitle">
-          {stats.citasHoy > 0 
-            ? `Tienes ${stats.citasHoy} citas programadas para hoy.` 
-            : 'No hay citas programadas para hoy.'}
-        </p>
-      </div>
+      {settings.show_welcome_card && (
+        <div className="dash-hero">
+          <h1 className="dash-hero__title">{greeting}, {user?.name.split(' ')[0]} 👋</h1>
+          <p className="dash-hero__subtitle">
+            {stats.citasHoy > 0 
+              ? `Tienes ${stats.citasHoy} citas programadas para hoy.` 
+              : 'No hay citas programadas para hoy.'}
+          </p>
+        </div>
+      )}
 
       {/* ── Bento Stats ── */}
-      <div className="dash-bento">
-        {/* Card 1 */}
-        <div className="bento-card bento-card--rose">
-          <div className="bento-card__sparkline" />
-          <div className="bento-card__header">
-            <div className="bento-card__icon"><Calendar /></div>
-            <div className="bento-card__badge bento-card__badge--neutral">Hoy</div>
+      {settings.show_stats_cards && (
+        <div className="dash-bento">
+          {/* Card 1 */}
+          <div className="bento-card bento-card--rose">
+            <div className="bento-card__sparkline" />
+            <div className="bento-card__header">
+              <div className="bento-card__icon"><Calendar /></div>
+              <div className="bento-card__badge bento-card__badge--neutral">Hoy</div>
+            </div>
+            <div className="bento-card__value">{stats.citasHoy}</div>
+            <div className="bento-card__label">Citas Programadas</div>
           </div>
-          <div className="bento-card__value">{stats.citasHoy}</div>
-          <div className="bento-card__label">Citas Programadas</div>
-        </div>
-        
-        {/* Card 2 */}
-        <div className="bento-card bento-card--green">
-          <div className="bento-card__sparkline" />
-          <div className="bento-card__header">
-            <div className="bento-card__icon"><DollarSign /></div>
-            <div className="bento-card__badge bento-card__badge--up">+12%</div>
+          
+          {/* Card 2 */}
+          <div className="bento-card bento-card--green">
+            <div className="bento-card__sparkline" />
+            <div className="bento-card__header">
+              <div className="bento-card__icon"><DollarSign /></div>
+              <div className="bento-card__badge bento-card__badge--up">+12%</div>
+            </div>
+            <div className="bento-card__value">RD$ {stats.ingresosMes.toLocaleString('es-DO')}</div>
+            <div className="bento-card__label">Ingresos Brutos (Mes)</div>
           </div>
-          <div className="bento-card__value">RD$ {stats.ingresosMes.toLocaleString('es-DO')}</div>
-          <div className="bento-card__label">Ingresos Brutos (Mes)</div>
-        </div>
 
-        {/* Card 3 */}
-        <div className="bento-card bento-card--lavender">
-          <div className="bento-card__sparkline" />
-          <div className="bento-card__header">
-            <div className="bento-card__icon"><Users /></div>
-            <div className="bento-card__badge bento-card__badge--neutral">Total</div>
+          {/* Card 3 */}
+          <div className="bento-card bento-card--lavender">
+            <div className="bento-card__sparkline" />
+            <div className="bento-card__header">
+              <div className="bento-card__icon"><Users /></div>
+              <div className="bento-card__badge bento-card__badge--neutral">Total</div>
+            </div>
+            <div className="bento-card__value">{stats.clientasActivas}</div>
+            <div className="bento-card__label">Clientas Activas</div>
           </div>
-          <div className="bento-card__value">{stats.clientasActivas}</div>
-          <div className="bento-card__label">Clientas Activas</div>
-        </div>
 
-        {/* Card 4 */}
-        <div className="bento-card bento-card--amber">
-          <div className="bento-card__sparkline" />
-          <div className="bento-card__header">
-            <div className="bento-card__icon"><Package /></div>
-            <div className="bento-card__badge bento-card__badge--neutral">Vigentes</div>
+          {/* Card 4 */}
+          <div className="bento-card bento-card--amber">
+            <div className="bento-card__sparkline" />
+            <div className="bento-card__header">
+              <div className="bento-card__icon"><Package /></div>
+              <div className="bento-card__badge bento-card__badge--neutral">Vigentes</div>
+            </div>
+            <div className="bento-card__value">{stats.paquetesActivos}</div>
+            <div className="bento-card__label">Paquetes Activos</div>
           </div>
-          <div className="bento-card__value">{stats.paquetesActivos}</div>
-          <div className="bento-card__label">Paquetes Activos</div>
         </div>
-
-
-      </div>
+      )}
 
       {/* ── Main Layout ── */}
       <div className="dash-main-grid">
@@ -181,6 +188,7 @@ export default function Dashboard() {
                     <div className="action-card__actions" style={{ flexWrap: 'wrap' }}>
                       <button className="action-btn action-btn--primary" onClick={() => { updateAppointmentStatus(a.id, 'confirmed'); toast.success('Cita confirmada'); }}>Confirmar</button>
                       <button className="action-btn action-btn--wa" onClick={() => handleWhatsApp(a.clientPhone, `Hola ${a.clientName}, nos gustaría confirmar su cita para el ${a.date === todayStr ? 'hoy' : a.date}...`)}>WhatsApp</button>
+                      <button className="action-btn action-btn--secondary" onClick={() => navigate('/admin/clientes', { state: { searchName: a.clientName } })}>Ver Cliente</button>
                       <button className="action-btn action-btn--secondary" onClick={() => { updateAppointmentStatus(a.id, 'cancelled'); toast.success('Cita cancelada'); }} style={{ color: '#f87171' }}>Cancelar</button>
                     </div>
                   </div>
@@ -195,9 +203,12 @@ export default function Dashboard() {
                     <p className="action-card__desc">
                       El paquete de <strong>{p.clientName}</strong> ({p.packageName}) le quedan {p.totalSessions - p.usedSessions} sesiones.
                     </p>
-                    <div className="action-card__actions">
-                      <button className="action-btn action-btn--secondary">Ver Cliente</button>
-                    </div>
+                      <button 
+                        className="action-btn action-btn--secondary"
+                        onClick={() => navigate('/admin/clientes', { state: { searchName: p.clientName } })}
+                      >
+                        Ver Cliente
+                      </button>
                   </div>
                 ))}
               </div>
@@ -228,7 +239,10 @@ export default function Dashboard() {
                   <div key={a.id} className={`timeline-item timeline-item--${a.status}`}>
                     <div className="timeline-item__time">{format12h(a.time)}</div>
                     <div className="timeline-item__node"></div>
-                    <div className="timeline-item__card">
+                    <div 
+                      className="timeline-item__card"
+                      onClick={() => navigate(`/admin/citas?highlight=${a.id}`)}
+                    >
                       <div className="timeline-item__card-header">
                         <div>
                           <div className="timeline-item__client">{a.clientName}</div>

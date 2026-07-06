@@ -165,7 +165,7 @@ export default function Services() {
                 </button>
                 <div style={{ flex: 1 }} />
                 <button className="appt-card__action-btn" onClick={() => openEdit(s)}><Edit2 size={15} /></button>
-                <button className="appt-card__action-btn" onClick={() => deleteService(s.id)} style={{ '--hover-color': '#f87171' } as React.CSSProperties}><Trash2 size={15} /></button>
+                <button className="appt-card__action-btn" onClick={() => { if (window.confirm(`¿Estás seguro de eliminar el servicio "${s.name}"?`)) deleteService(s.id); }} style={{ '--hover-color': '#f87171' } as React.CSSProperties}><Trash2 size={15} /></button>
               </div>
             )}
           </div>
