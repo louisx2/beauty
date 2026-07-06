@@ -39,10 +39,10 @@
   background-color: var(--linen);
 }
 
-/* Custom positioning for lobby4 (show completely) */
+/* Custom positioning for lobby4 (fill/cover) */
 .hero__bg-slide--lobby4 {
   background-position: 85% center;
-  background-size: contain;
+  background-size: cover;
   background-repeat: no-repeat;
   background-color: var(--linen);
 }
@@ -224,10 +224,7 @@
     background-position: center center;
     background-size: 70% auto;
   }
-  .hero__bg-slide--lobby4 {
-    background-position: center center;
-    background-size: contain;
-  }
+
   .hero__gradient-overlay {
     background-image: linear-gradient(to bottom, rgba(245, 241, 234, 0.95) 0%, rgba(245, 241, 234, 0.85) 60%, rgba(245, 241, 234, 0.9) 100%);
   }
