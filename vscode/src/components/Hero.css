@@ -33,7 +33,7 @@
 
 /* Custom positioning for lobby3 (cocoa logo, shifted to right) */
 .hero__bg-slide--lobby3 {
-  background-position: 75% center;
+  background-position: 85% center;
   background-size: 40% auto;
   background-repeat: no-repeat;
   background-color: var(--linen);
