@@ -39,9 +39,9 @@
   background-color: var(--linen);
 }
 
-/* Custom positioning for lobby4 (fill/cover) */
+/* Custom positioning for lobby4 (fill/cover, focused on top to show lamps) */
 .hero__bg-slide--lobby4 {
-  background-position: 85% center;
+  background-position: 80% top;
   background-size: cover;
   background-repeat: no-repeat;
   background-color: var(--linen);
@@ -223,6 +223,9 @@
   .hero__bg-slide--lobby3 {
     background-position: center center;
     background-size: 70% auto;
+  }
+  .hero__bg-slide--lobby4 {
+    background-position: center top;
   }
 
   .hero__gradient-overlay {
