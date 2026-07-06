@@ -31,10 +31,10 @@
   transform: scale(0.98); /* Aleja la imagen (zoom out) lentamente */
 }
 
-/* Custom positioning for lobby3 (shifted 50% towards the right) */
+/* Custom positioning for lobby3 (cocoa logo, shifted to right) */
 .hero__bg-slide--lobby3 {
-  background-position: 73% center;
-  background-size: contain;
+  background-position: 75% center;
+  background-size: 40% auto;
   background-repeat: no-repeat;
   background-color: var(--linen);
 }
@@ -211,6 +211,10 @@
   }
   .hero__bg-slide {
     background-position: center;
+  }
+  .hero__bg-slide--lobby3 {
+    background-position: center center;
+    background-size: 70% auto;
   }
   .hero__gradient-overlay {
     background-image: linear-gradient(to bottom, rgba(245, 241, 234, 0.95) 0%, rgba(245, 241, 234, 0.85) 60%, rgba(245, 241, 234, 0.9) 100%);
