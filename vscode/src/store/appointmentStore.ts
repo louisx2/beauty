@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { playNotificationSound } from '../lib/sound';
 import { useNotificationStore } from './notificationStore';
+import { useServiceStore } from './serviceStore';
 
 export type AppointmentStatus =
   | 'pending'
@@ -237,6 +238,57 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
 
       if (status === 'completed') {
         const appt = get().appointments.find(a => a.id === id);
+        
+        // Auto-discount package session if client has an active package matching this service name
+        if (appt) {
+          try {
+            const { data: pkgs } = await supabase
+              .from('client_packages')
+              .select(`
+                id, 
+                used_sessions, 
+                total_sessions, 
+                status,
+                session_packages (
+                  name,
+                  services (
+                    name
+                  )
+                )
+              `)
+              .eq('client_id', appt.client_id)
+              .eq('status', 'active');
+
+            if (pkgs && pkgs.length > 0) {
+              const matchingPkg = pkgs.find(p => {
+                const svcName = p.session_packages?.services?.name;
+                return svcName && svcName.toLowerCase().trim() === appt.service.toLowerCase().trim() && p.used_sessions < p.total_sessions;
+              });
+
+              if (matchingPkg) {
+                const nextUsed = matchingPkg.used_sessions + 1;
+                const nextStatus = nextUsed >= matchingPkg.total_sessions ? 'completed' : 'active';
+                
+                const { error: updErr } = await supabase
+                  .from('client_packages')
+                  .update({ 
+                    used_sessions: nextUsed,
+                    status: nextStatus
+                  })
+                  .eq('id', matchingPkg.id);
+                  
+                if (!updErr) {
+                  toast.success(`Sesión descontada del paquete: ${matchingPkg.session_packages.name} (${nextUsed}/${matchingPkg.total_sessions})`);
+                  // Refresh the service store to sync active packages list
+                  await useServiceStore.getState().fetchAll();
+                }
+              }
+            }
+          } catch (pkgErr) {
+            console.error('Error auto-discounting package session:', pkgErr);
+          }
+        }
+
         // Prompt for next session if it's a package or if we just want to offer it
         if (appt && (appt.service.toLowerCase().includes('paquete') || appt.notes?.toLowerCase().includes('paquete'))) {
           get().promptNextSession(appt);

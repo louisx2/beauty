@@ -156,3 +156,16 @@
   border: 1px solid var(--camel);
   background: rgba(178, 150, 125, 0.12);
 }
+
+/* Active links for ScrollSpy */
+.navbar__link--active {
+  color: var(--cocoa-dark) !important;
+  background: rgba(125, 90, 68, 0.08) !important;
+  font-weight: 600;
+}
+.navbar__mobile-link--active {
+  background: var(--blush) !important;
+  color: var(--rose-dark) !important;
+  font-weight: 600;
+}
+

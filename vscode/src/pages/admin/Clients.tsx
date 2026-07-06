@@ -1,9 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useClientStore, type Client } from '../../store/clientStore';
 import { useAppointmentStore } from '../../store/appointmentStore';
+import { useServiceStore } from '../../store/serviceStore';
 import {
   Plus, Search, User, Phone, Mail, FileText,
   X, Edit2, Trash2, Heart, Shield, MessageCircle, ChevronRight, AlertCircle, Calendar,
+  Package,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './Clients.css';
@@ -57,11 +59,13 @@ function validateForm(form: typeof emptyForm) {
 export default function Clients() {
   const { clients, fetchClients, addClient, updateClient, deleteClient } = useClientStore();
   const { appointments, fetchAppointments } = useAppointmentStore();
+  const { clientPackages, fetchAll: fetchPackages } = useServiceStore();
 
   useEffect(() => { 
     fetchClients(); 
     fetchAppointments();
-  }, [fetchClients, fetchAppointments]);
+    fetchPackages().catch((err) => console.warn('Error loading packages for clients CRM:', err));
+  }, [fetchClients, fetchAppointments, fetchPackages]);
 
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -173,6 +177,10 @@ export default function Clients() {
             const completedAppts = clientAppts.filter(a => a.status === 'completed').length;
             const pendingAppts = clientAppts.filter(a => a.status === 'pending' || a.status === 'confirmed').length;
 
+            const activePkgs = clientPackages.filter(
+              (cp) => cp.clientId === c.id && cp.status === 'active' && cp.usedSessions < cp.totalSessions
+            );
+
             return (
               <div className="client-card" key={c.id}>
                 <div className="client-card__header">
@@ -219,15 +227,54 @@ export default function Clients() {
                   )}
                 </div>
 
-                <div className="client-card__actions">
-                  <button onClick={() => openEdit(c)} className="client-card__btn client-card__btn--primary">
-                    <Edit2 size={15} /> Editar
+                {activePkgs.length > 0 && (
+                  <div className="client-card__active-packages">
+                    <div className="client-card__packages-title">
+                      <Package size={13} />
+                      <span>Paquetes Activos ({activePkgs.length})</span>
+                    </div>
+                    <div className="client-card__packages-list">
+                      {activePkgs.map((pkg) => (
+                        <div key={pkg.id} className="client-card__package-row">
+                          <span className="pkg-name" title={`${pkg.packageName} - ${pkg.serviceName}`}>
+                            {pkg.packageName}
+                          </span>
+                          <span className="pkg-sessions">
+                            {pkg.usedSessions}/{pkg.totalSessions} ses.
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                 <div className="client-card__actions">
+                  <button onClick={() => openEdit(c)} className="client-card__btn" style={{ padding: '8px 10px' }}>
+                    <Edit2 size={13} /> Editar
                   </button>
-                  <button onClick={() => handleWhatsApp(c)} className="client-card__btn client-card__btn--wa">
-                    <MessageCircle size={15} /> WhatsApp
+                  <button onClick={() => setSelectedClient(c)} className="client-card__btn client-card__btn--primary" style={{ padding: '8px 10px' }}>
+                    <FileText size={13} /> Historial
                   </button>
-                  <button onClick={() => deleteClient(c.id)} className="client-card__btn" style={{ flex: 0, padding: '8px 12px', color: '#f87171' }}>
-                    <Trash2 size={15} />
+                  <button onClick={() => handleWhatsApp(c)} className="client-card__btn client-card__btn--wa" style={{ padding: '8px 10px' }}>
+                    <MessageCircle size={13} /> WhatsApp
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (window.confirm(`¿Estás segura de que deseas eliminar a la clienta "${c.name}"? Se perderá permanentemente todo su historial de citas y paquetes.`)) {
+                        try {
+                          await deleteClient(c.id);
+                          toast.success('Clienta eliminada correctamente');
+                        } catch (err) {
+                          console.error(err);
+                          toast.error('Ocurrió un error al eliminar a la clienta');
+                        }
+                      }
+                    }}
+                    className="client-card__btn"
+                    style={{ flex: 0, padding: '8px 10px', color: '#f87171' }}
+                    title="Eliminar clienta"
+                  >
+                    <Trash2 size={13} />
                   </button>
                 </div>
               </div>
@@ -333,6 +380,119 @@ export default function Clients() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Client Detail / History Modal */}
+      {selectedClient && (
+        <div className="modal-overlay" onClick={() => setSelectedClient(null)}>
+          <div className="modal modal--wide client-history-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h2><FileText size={18} /> Historial de {selectedClient.name}</h2>
+              <button className="modal__close" onClick={() => setSelectedClient(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="client-history-modal__content">
+              {/* Left Column: Client Profile Summary */}
+              <div className="client-history-modal__profile">
+                <div className="client-history-modal__avatar">
+                  {selectedClient.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                </div>
+                <h3>{selectedClient.name}</h3>
+                <p className="client-history-profile__phone">{selectedClient.phone}</p>
+                {selectedClient.email && <p className="client-history-profile__email">{selectedClient.email}</p>}
+                
+                <div className="client-history-profile__section">
+                  <strong>Tipo de Piel:</strong>
+                  <span>{selectedClient.skin_type || 'No especificado'}</span>
+                </div>
+                
+                <div className="client-history-profile__section">
+                  <strong>Alergias:</strong>
+                  <span className={selectedClient.allergies ? 'text-danger' : ''}>
+                    {selectedClient.allergies || 'Ninguna'}
+                  </span>
+                </div>
+
+                <div className="client-history-profile__section">
+                  <strong>Notas / Observaciones:</strong>
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{selectedClient.notes || 'Sin observaciones'}</p>
+                </div>
+              </div>
+              
+              {/* Right Column: History Timeline & Active Packages */}
+              <div className="client-history-modal__timeline-section">
+                {/* Active Packages list */}
+                <div className="client-history-modal__section-block" style={{ marginBottom: 24 }}>
+                  <h4 className="section-title"><Package size={14} /> Paquetes de Citas</h4>
+                  {clientPackages.filter(cp => cp.clientId === selectedClient.id).length === 0 ? (
+                    <p className="empty-text">No tiene paquetes registrados.</p>
+                  ) : (
+                    <div className="history-packages-grid">
+                      {clientPackages.filter(cp => cp.clientId === selectedClient.id).map(cp => {
+                        const pct = (cp.usedSessions / cp.totalSessions) * 100;
+                        return (
+                          <div key={cp.id} className="history-package-card">
+                            <div className="history-package-card__header">
+                              <h5>{cp.packageName}</h5>
+                              <span className={`status-badge status-badge--${cp.status}`}>
+                                {cp.status === 'active' ? 'Activo' : cp.status === 'completed' ? 'Completado' : 'Cancelado'}
+                              </span>
+                            </div>
+                            <p className="history-package-card__svc">Servicio: {cp.serviceName}</p>
+                            <div className="history-package-card__progress">
+                              <div className="progress-bar">
+                                <div className="progress-bar__fill" style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="progress-bar__text">{cp.usedSessions} / {cp.totalSessions} Sesiones</span>
+                            </div>
+                            {cp.notes && <p className="history-package-card__notes">Notas: {cp.notes}</p>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Timeline of appointments */}
+                <div className="client-history-modal__section-block">
+                  <h4 className="section-title"><Calendar size={14} /> Historial de Visitas</h4>
+                  {appointments.filter(a => a.client_id === selectedClient.id).length === 0 ? (
+                    <p className="empty-text">No registra visitas en la agenda todavía.</p>
+                  ) : (
+                    <div className="history-timeline">
+                      {appointments
+                        .filter(a => a.client_id === selectedClient.id)
+                        .sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time))
+                        .map(a => (
+                          <div key={a.id} className="history-timeline__item">
+                            <div className={`history-timeline__dot history-timeline__dot--${a.status}`} />
+                            <div className="history-timeline__date">
+                              {new Date(a.date + 'T12:00:00').toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </div>
+                            <div className="history-timeline__details">
+                              <div className="history-timeline__title-row">
+                                <h5 className="history-timeline__service">{a.service}</h5>
+                                <span className={`timeline-status timeline-status--${a.status}`}>
+                                  {a.status === 'completed' ? 'Completada' : a.status === 'pending' ? 'Pendiente' : a.status === 'confirmed' ? 'Confirmada' : a.status === 'cancelled' ? 'Cancelada' : 'No asistió'}
+                                </span>
+                              </div>
+                              <p className="history-timeline__meta">
+                                <span>Especialista: <strong>{a.employee}</strong></span>
+                                <span>Hora: {a.time}</span>
+                              </p>
+                              {a.notes && <p className="history-timeline__notes">Nota: {a.notes}</p>}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

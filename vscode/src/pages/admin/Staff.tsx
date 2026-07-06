@@ -34,7 +34,7 @@ const emptyForm: Omit<StaffMember, 'id' | 'createdAt'> = {
   commissionPct: 0,
   workingDays: ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'],
   workingStart: '09:00', workingEnd: '18:00',
-  serviceIds: [], active: true,
+  serviceIds: [], active: true, avatarUrl: null,
 };
 
 function capitalizeName(val: string) {
@@ -152,6 +152,7 @@ export default function Staff() {
   const [selected, setSelected] = useState<StaffMember | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Stats for all staff loaded concurrently
   const [memberStats, setMemberStats] = useState<Record<string, StaffStats>>({});
@@ -234,6 +235,33 @@ export default function Staff() {
     setShowModal(true);
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      setForm((prev) => ({ ...prev, avatarUrl: publicUrl }));
+      toast.success('Foto cargada temporalmente. Guarda la ficha para aplicar.');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al subir la imagen');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const openEdit = (m: StaffMember) => {
     setEditingId(m.id);
     setForm({
@@ -241,6 +269,7 @@ export default function Staff() {
       commissionPct: m.commissionPct,
       workingDays: [...m.workingDays], workingStart: m.workingStart,
       workingEnd: m.workingEnd, serviceIds: [...m.serviceIds], active: m.active,
+      avatarUrl: m.avatarUrl || null,
     });
     setErrors({});
     setShowModal(true);
@@ -490,8 +519,12 @@ export default function Staff() {
                 className={`staff-card ${!m.active ? 'staff-card--inactive' : ''}`}
               >
                 <div className="staff-card__header">
-                  <div className={`staff-card__avatar ${avatarGradientClass(m.role)}`}>
-                    {m.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                  <div className={`staff-card__avatar ${avatarGradientClass(m.role)}`} style={{ padding: 0, overflow: 'hidden' }}>
+                    {m.avatarUrl ? (
+                      <img src={m.avatarUrl} alt={m.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      m.name.split(' ').map((n) => n[0]).join('').slice(0, 2)
+                    )}
                     <span className={`staff-card__status-dot ${m.active ? 'staff-card__status-dot--active' : ''}`} />
                   </div>
                   <div className="staff-card__name-role">
@@ -681,6 +714,39 @@ export default function Staff() {
             </div>
 
             <form onSubmit={handleSubmit} className="modal__form" id="staff-form" noValidate>
+              {/* Avatar Selector */}
+              <div className="staff-avatar-upload">
+                <div className="staff-avatar-upload__preview">
+                  {uploading ? (
+                    <div className="staff-avatar-upload__loading">Cargando...</div>
+                  ) : form.avatarUrl ? (
+                    <img src={form.avatarUrl} alt="Vista previa" />
+                  ) : (
+                    <User size={32} />
+                  )}
+                </div>
+                <div className="staff-avatar-upload__actions">
+                  <label className="staff-avatar-upload__label">
+                    Subir foto
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  {form.avatarUrl && (
+                    <button
+                      type="button"
+                      className="staff-avatar-upload__remove"
+                      onClick={() => setForm({ ...form, avatarUrl: null })}
+                    >
+                      Remover
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <div className="modal__row">
                 <div className="modal__field">
                   <label><User size={14} /> Nombre Completo *</label>

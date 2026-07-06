@@ -1,13 +1,33 @@
+import { useState, useEffect } from 'react';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import './Hero.css';
 
 export default function Hero() {
+  const [currentBg, setCurrentBg] = useState(0);
+  const bgImages = ['/lobby.jpg', '/lobby2.jpg'];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentBg((prev) => (prev + 1) % bgImages.length);
+    }, 6000); // Cambiar cada 6 segundos
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <section className="hero" id="hero">
-      {/* Background decorations */}
-      <div className="blob" style={{ width: 500, height: 500, background: 'var(--rose-light)', top: '-10%', right: '-10%' }} />
-      <div className="blob" style={{ width: 400, height: 400, background: 'var(--lavender-light)', bottom: '-5%', left: '-8%' }} />
+      {/* Background Carousel Slides */}
+      <div className="hero__bg-slides">
+        {bgImages.map((src, index) => (
+          <div
+            key={src}
+            className={`hero__bg-slide ${index === currentBg ? 'hero__bg-slide--active' : ''}`}
+            style={{ backgroundImage: `url(${src})` }}
+          />
+        ))}
+      </div>
 
+      {/* Gradient Overlay */}
+      <div className="hero__gradient-overlay" />
       <div className="hero__inner">
         <div className="hero__content">
           <div className="hero__badge animate-fade-up">
@@ -42,34 +62,13 @@ export default function Hero() {
             </div>
             <div className="hero__stat-divider" />
             <div className="hero__stat">
-              <span className="hero__stat-value">5+</span>
+              <span className="hero__stat-value">10+</span>
               <span className="hero__stat-label">Años de Experiencia</span>
             </div>
             <div className="hero__stat-divider" />
             <div className="hero__stat">
               <span className="hero__stat-value">20+</span>
               <span className="hero__stat-label">Tratamientos</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Hero Image */}
-        <div className="hero__image-wrap animate-fade-up" style={{ animationDelay: '0.25s' }}>
-          <div className="hero__image-ring" />
-          <div className="hero__image-container" style={{ backgroundColor: '#fff' }}>
-            <img
-              src="/specialist2.jpeg"
-              alt="Especialista principal"
-              className="hero__image"
-              style={{ objectFit: 'cover', objectPosition: 'center top' }}
-            />
-          </div>
-          {/* Floating glassy card */}
-          <div className="hero__float-card glass animate-float">
-            <div className="hero__float-icon">✨</div>
-            <div>
-              <strong>Resultado garantizado</strong>
-              <span>Tecnología avanzada</span>
             </div>
           </div>
         </div>

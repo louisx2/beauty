@@ -214,3 +214,95 @@
 :root[data-theme="light"] .settings-input { background: #f9fafb; border-color: #d1d5db; color: #1f2937; }
 :root[data-theme="light"] .settings-input:focus { background: #fff; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
 :root[data-theme="light"] .settings-input-wrap svg { color: #9ca3af; }
+
+/* ── Bank Account Card ── */
+.settings-bank-card {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+:root[data-theme="light"] .settings-bank-card {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.settings-bank-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+}
+
+:root[data-theme="light"] .settings-bank-card__header {
+  border-color: #e2e8f0;
+}
+
+.settings-bank-card__title {
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+:root[data-theme="light"] .settings-bank-card__title {
+  color: #64748b;
+}
+
+.settings-bank-card__delete-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  transition: opacity 0.2s;
+}
+
+.settings-bank-card__delete-btn:hover {
+  opacity: 0.8;
+}
+
+.settings-bank-card__add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  width: fit-content;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.settings-bank-card__add-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+:root[data-theme="light"] .settings-bank-card__add-btn {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+:root[data-theme="light"] .settings-bank-card__add-btn:hover {
+  background: #e2e8f0;
+  color: #1f2937;
+}
+
+

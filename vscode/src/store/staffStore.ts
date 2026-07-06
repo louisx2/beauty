@@ -25,6 +25,7 @@ export interface StaffMember {
   workingEnd: string;
   serviceIds: string[];
   active: boolean;
+  avatarUrl?: string | null;
   createdAt: string;
 }
 
@@ -48,6 +49,7 @@ function mapRow(r: any): StaffMember {
     workingEnd: (r.working_end || '18:00:00').slice(0, 5),
     serviceIds: r.service_ids || [],
     active: r.active ?? true,
+    avatarUrl: r.avatar_url || null,
     createdAt: r.created_at,
   };
 }
@@ -94,6 +96,7 @@ export const useStaffStore = create<StaffState>()((set, get) => ({
         working_end: s.workingEnd,
         service_ids: s.serviceIds,
         active: s.active,
+        avatar_url: s.avatarUrl,
       })
       .select()
       .single();
@@ -115,6 +118,7 @@ export const useStaffStore = create<StaffState>()((set, get) => ({
     if (updates.workingEnd !== undefined) db.working_end = updates.workingEnd;
     if (updates.serviceIds !== undefined) db.service_ids = updates.serviceIds;
     if (updates.active !== undefined) db.active = updates.active;
+    if (updates.avatarUrl !== undefined) db.avatar_url = updates.avatarUrl;
 
     const { data, error } = await supabase
       .from('staff')

@@ -561,3 +561,191 @@ h1, h2, h3 {
   opacity: 0.25;
   pointer-events: none;
 }
+
+/* ── CRM Shared Modals (Global Fallback) ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal {
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #352820;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  animation: fadeInUp 0.3s ease;
+}
+
+.modal--wide {
+  max-width: 720px;
+}
+
+.modal::-webkit-scrollbar { width: 4px; }
+.modal::-webkit-scrollbar-thumb { background: rgba(232,165,184,0.2); border-radius: 99px; }
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.modal__header h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  color: white;
+}
+
+.modal__close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.modal__close:hover { color: white; }
+
+.modal__form {
+  padding: 20px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modal__field label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.modal__field label svg { color: var(--rose, #c97d97); }
+
+.modal__field input,
+.modal__field select,
+.modal__field textarea {
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  color: white;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.modal__field input:focus,
+.modal__field select:focus,
+.modal__field textarea:focus {
+  border-color: var(--rose, #c97d97);
+  box-shadow: 0 0 0 3px rgba(232,165,184,0.1);
+}
+
+.modal__field input::placeholder,
+.modal__field textarea::placeholder {
+  color: rgba(255,255,255,0.2);
+}
+
+.modal__field select option {
+  background: #352820;
+}
+
+.modal__field textarea {
+  resize: vertical;
+}
+
+.modal__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.modal__cancel-btn {
+  padding: 10px 20px;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  color: rgba(255,255,255,0.6);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal__cancel-btn:hover {
+  background: rgba(255,255,255,0.04);
+  color: white;
+}
+
+.modal__submit-btn {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #c97d97, #b16580);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 16px rgba(201,125,151,0.25);
+}
+
+.modal__submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(201,125,151,0.4);
+}
+
+.modal__submit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.input--error {
+  border-color: rgba(248,113,113,0.6) !important;
+  box-shadow: 0 0 0 3px rgba(248,113,113,0.1) !important;
+}
+
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #f87171;
+  margin-top: 4px;
+}
+

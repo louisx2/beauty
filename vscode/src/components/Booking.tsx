@@ -291,42 +291,53 @@ export default function Booking() {
                   </span>
                 </div>
 
-                <div className="booking__bank-grid">
-                  <div className="booking__bank-item">
-                    <span className="booking__bank-label">Banco</span>
-                    <span className="booking__bank-value">
-                      {settings?.bank_name || 'Banco Popular'}
-                    </span>
-                  </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
+                  {(settings?.bank_accounts && settings.bank_accounts.length > 0
+                    ? settings.bank_accounts
+                    : [{
+                        bank_name: settings?.bank_name || 'Banco Popular',
+                        account_number: settings?.account_number || '123456789',
+                        account_name: settings?.account_name || 'Anadsll Beauty Esthetic'
+                      }]
+                  ).map((account, index) => (
+                    <div key={index} className="booking__bank-grid" style={{ marginBottom: '0' }}>
+                      <div className="booking__bank-item">
+                        <span className="booking__bank-label">Banco</span>
+                        <span className="booking__bank-value">
+                          {account.bank_name}
+                        </span>
+                      </div>
 
-                  <div className="booking__bank-item">
-                    <span className="booking__bank-label">Cuenta</span>
-                    <div className="booking__bank-copy-group">
-                      <span className="booking__bank-value">
-                        {settings?.account_number || '123456789'}
-                      </span>
-                      <button
-                        className="booking__bank-copy-btn"
-                        onClick={() =>
-                          copyToClipboard(settings?.account_number || '123456789', 'account')
-                        }
-                        title="Copiar numero de cuenta"
-                      >
-                        {copiedField === 'account' ? (
-                          <CheckCircle2 size={16} className="text-green" />
-                        ) : (
-                          <Copy size={16} />
-                        )}
-                      </button>
+                      <div className="booking__bank-item">
+                        <span className="booking__bank-label">Cuenta</span>
+                        <div className="booking__bank-copy-group">
+                          <span className="booking__bank-value">
+                            {account.account_number}
+                          </span>
+                          <button
+                            className="booking__bank-copy-btn"
+                            onClick={() =>
+                              copyToClipboard(account.account_number, `account-${index}`)
+                            }
+                            title="Copiar numero de cuenta"
+                          >
+                            {copiedField === `account-${index}` ? (
+                              <CheckCircle2 size={16} className="text-green" />
+                            ) : (
+                              <Copy size={16} />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="booking__bank-item">
+                        <span className="booking__bank-label">A nombre de</span>
+                        <span className="booking__bank-value">
+                          {account.account_name}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="booking__bank-item">
-                    <span className="booking__bank-label">A nombre de</span>
-                    <span className="booking__bank-value">
-                      {settings?.account_name || 'Anadsll Beauty Esthetic'}
-                    </span>
-                  </div>
+                  ))}
                 </div>
               </div>
 
@@ -406,7 +417,7 @@ export default function Booking() {
           <div className="booking__row">
             <div className="booking__field">
               <label htmlFor="booking-name">
-                <User size={16} /> Nombre
+                <User size={16} /> Nombre completo
               </label>
               <input
                 type="text"

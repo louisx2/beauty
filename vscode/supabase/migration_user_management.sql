@@ -20,8 +20,8 @@ AS $$
 BEGIN
   -- Validar que el usuario ejecutor sea un administrador activo en la tabla public.staff
   IF NOT EXISTS (
-    SELECT 1 FROM public.staff
-    WHERE email = auth.jwt() ->> 'email' AND role = 'admin' AND active = true
+    SELECT 1 FROM public.staff s
+    WHERE s.email = (auth.jwt() ->> 'email') AND s.role = 'admin' AND s.active = true
   ) THEN
     RAISE EXCEPTION 'No autorizado: Solo administradoras activas pueden realizar esta acción.';
   END IF;
@@ -49,8 +49,8 @@ DECLARE
 BEGIN
   -- Validar que el usuario ejecutor sea un administrador activo
   IF NOT EXISTS (
-    SELECT 1 FROM public.staff
-    WHERE email = auth.jwt() ->> 'email' AND role = 'admin' AND active = true
+    SELECT 1 FROM public.staff s
+    WHERE s.email = (auth.jwt() ->> 'email') AND s.role = 'admin' AND s.active = true
   ) THEN
     RAISE EXCEPTION 'No autorizado: Solo administradoras activas pueden realizar esta acción.';
   END IF;
@@ -135,8 +135,8 @@ DECLARE
 BEGIN
   -- Validar que el usuario ejecutor sea un administrador activo
   IF NOT EXISTS (
-    SELECT 1 FROM public.staff
-    WHERE email = auth.jwt() ->> 'email' AND role = 'admin' AND active = true
+    SELECT 1 FROM public.staff s
+    WHERE s.email = (auth.jwt() ->> 'email') AND s.role = 'admin' AND s.active = true
   ) THEN
     RAISE EXCEPTION 'No autorizado: Solo administradoras activas pueden realizar esta acción.';
   END IF;
@@ -164,8 +164,8 @@ AS $$
 BEGIN
   -- Validar que el usuario ejecutor sea un administrador activo
   IF NOT EXISTS (
-    SELECT 1 FROM public.staff
-    WHERE email = auth.jwt() ->> 'email' AND role = 'admin' AND active = true
+    SELECT 1 FROM public.staff s
+    WHERE s.email = (auth.jwt() ->> 'email') AND s.role = 'admin' AND s.active = true
   ) THEN
     RAISE EXCEPTION 'No autorizado: Solo administradoras activas pueden realizar esta acción.';
   END IF;

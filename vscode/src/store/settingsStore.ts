@@ -2,11 +2,18 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 
+export interface BankAccount {
+  bank_name: string;
+  account_number: string;
+  account_name: string;
+}
+
 export interface Settings {
   deposit_amount: number;
   bank_name: string;
   account_number: string;
   account_name: string;
+  bank_accounts: BankAccount[];
   whatsapp_number: string;
   package_deposit_type: 'fixed' | 'percentage';
   package_deposit_value: number;
@@ -17,6 +24,11 @@ const DEFAULTS: Settings = {
   bank_name: 'Banco Popular',
   account_number: '123456789',
   account_name: 'Anadsll Beauty Esthetic',
+  bank_accounts: [{
+    bank_name: 'Banco Popular',
+    account_number: '123456789',
+    account_name: 'Anadsll Beauty Esthetic',
+  }],
   whatsapp_number: '18293224014',
   package_deposit_type: 'fixed',
   package_deposit_value: 500,
@@ -38,11 +50,19 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     try {
       const { data, error } = await supabase
         .from('settings')
-        .select('deposit_amount, bank_name, account_number, account_name, whatsapp_number, package_deposit_type, package_deposit_value')
+        .select('deposit_amount, bank_name, account_number, account_name, bank_accounts, whatsapp_number, package_deposit_type, package_deposit_value')
         .eq('id', 1)
         .maybeSingle();
 
       if (!error && data) {
+        // Fallback for missing bank_accounts
+        if (!data.bank_accounts || data.bank_accounts.length === 0) {
+          data.bank_accounts = [{
+            bank_name: data.bank_name || DEFAULTS.bank_name,
+            account_number: data.account_number || DEFAULTS.account_number,
+            account_name: data.account_name || DEFAULTS.account_name,
+          }];
+        }
         set({ settings: { ...DEFAULTS, ...data } });
       }
       // If table doesn't exist yet, silently keep defaults
@@ -56,6 +76,13 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   updateSettings: async (patch) => {
     const previous = get().settings;
     const next = { ...previous, ...patch };
+
+    // Update legacy fields with the first account just in case anything else relies on it
+    if (next.bank_accounts && next.bank_accounts.length > 0) {
+      next.bank_name = next.bank_accounts[0].bank_name;
+      next.account_number = next.bank_accounts[0].account_number;
+      next.account_name = next.bank_accounts[0].account_name;
+    }
 
     // Optimistic update — apply immediately, rollback on error
     set({ settings: next });

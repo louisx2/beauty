@@ -2,6 +2,40 @@
 // Extraído de las gráficas oficiales (carpeta ANABEL/servicios) con las erratas corregidas.
 // Editable en un solo lugar para alimentar el landing y/o la reserva.
 
+export interface Specialist {
+  name: string;
+  role: string;
+  image: string;
+  bio?: string;
+}
+
+const specialists = {
+  anabel: {
+    name: 'Anabel De los Santos',
+    role: 'Fundadora & Cosmetóloga Superior',
+    image: '/equipo/anabel-retrato.jpg',
+    bio: 'Fundadora de Anadsll Beauty Esthetic. Especialista certificada en cosmetología avanzada, cejas, pestañas y técnicas de maquillaje profesional. Más de 10 años de experiencia realzando la belleza natural.',
+  },
+  nadieska: {
+    name: 'Dra. Nadieska Soto',
+    role: 'Médico Estético & Cosmiatra',
+    image: '/equipo/colaboradora1.png',
+    bio: 'Médico Estético y Cosmiatra. Especialista en tratamientos inyectables de rejuvenecimiento, toxina botulínica, rellenos de ácido hialurónico, bioestimuladores de colágeno y terapias de renovación de la piel.',
+  },
+  carmen: {
+    name: 'Carmen Rodríguez',
+    role: 'Esp. en Aparatología & Corporal',
+    image: '/equipo/colaboradora2.png',
+    bio: 'Especialista en Aparatología y Tratamientos Corporales. Experta en tecnologías avanzadas de moldeamiento, tonificación corporal, depilación láser de diodo y blanqueamiento cosmético.',
+  },
+  paola: {
+    name: 'Paola Jiménez',
+    role: 'Cosmetóloga & Masajista',
+    image: '/equipo/specialist2.jpeg',
+    bio: 'Cosmetóloga y Masajista Terapeuta. Especialista en técnicas de depilación con cera, masajes de relajación profunda, drenaje linfático y tratamientos de bienestar integral.',
+  },
+};
+
 export interface ServiceItem {
   name: string;
   /** Subopciones / áreas / variantes del servicio */
@@ -16,12 +50,14 @@ export interface ServiceCategory {
   id: string;
   title: string;
   items: ServiceItem[];
+  specialist: Specialist;
 }
 
 export const servicesMenu: ServiceCategory[] = [
   {
     id: 'limpieza-facial',
     title: 'Limpieza Facial',
+    specialist: specialists.nadieska,
     items: [
       { name: 'Limpieza facial express / hidratación' },
       { name: 'Limpieza facial profunda' },
@@ -41,6 +77,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'depilacion-laser',
     title: 'Depilación Láser',
+    specialist: specialists.anabel,
     items: [
       {
         name: 'Depilación láser',
@@ -74,6 +111,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'depilacion-cera',
     title: 'Depilación con Cera',
+    specialist: specialists.paola,
     items: [
       {
         name: 'Depilación con cera',
@@ -84,6 +122,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'cejas-pestanas',
     title: 'Cejas y Pestañas',
+    specialist: specialists.anabel,
     items: [
       { name: 'Lifting de pestañas' },
       { name: 'Laminado de cejas' },
@@ -106,6 +145,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'hidra-lips',
     title: 'Hidra Lips',
+    specialist: specialists.nadieska,
     items: [
       {
         name: 'Hidra Lips',
@@ -117,6 +157,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'blanqueamiento-corporal',
     title: 'Blanqueamiento Corporal',
+    specialist: specialists.carmen,
     items: [
       {
         name: 'Blanqueamiento corporal',
@@ -127,6 +168,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'remocion-tatuaje',
     title: 'Remoción de Tatuaje',
+    specialist: specialists.anabel,
     items: [
       {
         name: 'Remoción de tatuaje',
@@ -137,6 +179,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'maquillaje',
     title: 'Maquillaje',
+    specialist: specialists.anabel,
     items: [
       {
         name: 'Maquillaje',
@@ -147,6 +190,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'toxina-botulinica',
     title: 'Toxina Botulínica',
+    specialist: specialists.nadieska,
     items: [
       {
         name: 'Toxina botulínica',
@@ -162,6 +206,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'rellenos',
     title: 'Rellenos con Ácido Hialurónico',
+    specialist: specialists.nadieska,
     items: [
       {
         name: 'Rellenos',
@@ -179,6 +224,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'bioestimuladores',
     title: 'Bioestimuladores de Colágeno',
+    specialist: specialists.nadieska,
     items: [
       {
         name: 'Bioestimuladores',
@@ -195,6 +241,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'mesoterapia',
     title: 'Mesoterapias',
+    specialist: specialists.nadieska,
     items: [
       {
         name: 'Mesoterapias',
@@ -208,6 +255,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'escleroterapia',
     title: 'Escleroterapia',
+    specialist: specialists.nadieska,
     items: [
       {
         name: 'Escleroterapia',
@@ -220,6 +268,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'verrugas',
     title: 'Eliminación de Verrugas',
+    specialist: specialists.nadieska,
     items: [
       {
         name: 'Eliminación de verrugas',
@@ -232,6 +281,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'aparatologia',
     title: 'Aparatologías',
+    specialist: specialists.carmen,
     items: [
       {
         name: 'Aparatologías',
@@ -247,3 +297,4 @@ export const servicesMenu: ServiceCategory[] = [
 ];
 
 export default servicesMenu;
+

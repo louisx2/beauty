@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useSettingsStore } from '../../store/settingsStore';
-import { Save, AlertCircle, Building2, CreditCard, DollarSign, User as UserIcon, Phone } from 'lucide-react';
+import { useSettingsStore, type BankAccount } from '../../store/settingsStore';
+import { Save, AlertCircle, Building2, CreditCard, DollarSign, User as UserIcon, Phone, Plus, Trash2 } from 'lucide-react';
 import './Settings.css';
 
 export default function Settings() {
@@ -13,6 +13,7 @@ export default function Settings() {
     bank_name: '',
     account_number: '',
     account_name: '',
+    bank_accounts: [] as BankAccount[],
     whatsapp_number: '',
     package_deposit_type: 'fixed' as 'fixed' | 'percentage',
     package_deposit_value: 500
@@ -29,12 +30,38 @@ export default function Settings() {
         bank_name: settings.bank_name,
         account_number: settings.account_number,
         account_name: settings.account_name,
+        bank_accounts: settings.bank_accounts || [],
         whatsapp_number: settings.whatsapp_number,
         package_deposit_type: settings.package_deposit_type,
         package_deposit_value: settings.package_deposit_value
       });
     }
   }, [settings]);
+
+  const handleAddBankAccount = () => {
+    setForm(prev => ({
+      ...prev,
+      bank_accounts: [
+        ...prev.bank_accounts,
+        { bank_name: '', account_number: '', account_name: '' }
+      ]
+    }));
+  };
+
+  const handleRemoveBankAccount = (index: number) => {
+    setForm(prev => ({
+      ...prev,
+      bank_accounts: prev.bank_accounts.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleBankAccountChange = (index: number, field: keyof BankAccount, value: string) => {
+    setForm(prev => {
+      const newAccounts = [...prev.bank_accounts];
+      newAccounts[index] = { ...newAccounts[index], [field]: value };
+      return { ...prev, bank_accounts: newAccounts };
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,50 +167,77 @@ export default function Settings() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="settings-field">
-              <label>Banco</label>
-              <div className="settings-input-wrap">
-                <Building2 size={16} />
-                <input
-                  type="text"
-                  className="settings-input has-icon"
-                  value={form.bank_name}
-                  onChange={(e) => setForm({ ...form, bank_name: e.target.value })}
-                  placeholder="Ej. Banco Popular"
-                  required
-                />
-              </div>
-            </div>
+            {form.bank_accounts.map((account, index) => (
+              <div key={index} className="settings-bank-card">
+                <div className="settings-bank-card__header">
+                  <h4 className="settings-bank-card__title">Cuenta Bancaria {index + 1}</h4>
+                  {form.bank_accounts.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveBankAccount(index)}
+                      className="settings-bank-card__delete-btn"
+                      title="Eliminar cuenta"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
 
-            <div className="settings-field">
-              <label>Número de Cuenta</label>
-              <div className="settings-input-wrap">
-                <CreditCard size={16} />
-                <input
-                  type="text"
-                  className="settings-input has-icon"
-                  value={form.account_number}
-                  onChange={(e) => setForm({ ...form, account_number: e.target.value })}
-                  placeholder="Ej. 012345678"
-                  required
-                />
-              </div>
-            </div>
+                <div className="settings-field">
+                  <label>Banco</label>
+                  <div className="settings-input-wrap">
+                    <Building2 size={16} />
+                    <input
+                      type="text"
+                      className="settings-input has-icon"
+                      value={account.bank_name || ''}
+                      onChange={(e) => handleBankAccountChange(index, 'bank_name', e.target.value)}
+                      placeholder="Ej. Banco Popular"
+                      required
+                    />
+                  </div>
+                </div>
 
-            <div className="settings-field">
-              <label>Nombre del Titular</label>
-              <div className="settings-input-wrap">
-                <UserIcon size={16} />
-                <input
-                  type="text"
-                  className="settings-input has-icon"
-                  value={form.account_name}
-                  onChange={(e) => setForm({ ...form, account_name: e.target.value })}
-                  placeholder="Ej. María López"
-                  required
-                />
+                <div className="settings-field">
+                  <label>Número de Cuenta</label>
+                  <div className="settings-input-wrap">
+                    <CreditCard size={16} />
+                    <input
+                      type="text"
+                      className="settings-input has-icon"
+                      value={account.account_number || ''}
+                      onChange={(e) => handleBankAccountChange(index, 'account_number', e.target.value)}
+                      placeholder="Ej. 012345678"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="settings-field">
+                  <label>Nombre del Titular</label>
+                  <div className="settings-input-wrap">
+                    <UserIcon size={16} />
+                    <input
+                      type="text"
+                      className="settings-input has-icon"
+                      value={account.account_name || ''}
+                      onChange={(e) => handleBankAccountChange(index, 'account_name', e.target.value)}
+                      placeholder="Ej. María López"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={handleAddBankAccount}
+              className="settings-bank-card__add-btn"
+            >
+              <Plus size={16} />
+              Agregar otra cuenta bancaria
+            </button>
 
             <div className="settings-field">
               <label>WhatsApp de Confirmación</label>

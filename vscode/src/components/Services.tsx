@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import {
   Sparkles, Zap, Flame, Eye, Smile, Sun, Eraser, Brush, ArrowRight,
-  Syringe, Droplet, Dna, Pipette, HeartPulse, Bandage, Waves,
+  Syringe, Droplet, Dna, Pipette, HeartPulse, Bandage, Waves, X,
 } from 'lucide-react';
 import { servicesMenu } from '../data/servicesMenu';
 import type { ServiceCategory } from '../data/servicesMenu';
+import { useServiceStore } from '../store/serviceStore';
 import './Services.css';
 
 const icons: Record<string, ReactNode> = {
@@ -57,9 +58,66 @@ function countServices(cat: ServiceCategory): number {
 
 export default function Services() {
   const [active, setActive] = useState(0);
+  const [selectedSpecialist, setSelectedSpecialist] = useState<any | null>(null);
   const cat = servicesMenu[active];
   const { description, blocks } = buildBlocks(cat);
   const n = countServices(cat);
+
+  const { services, fetchAll } = useServiceStore();
+
+  useEffect(() => {
+    fetchAll().catch((err) => console.warn('Failed to fetch services for landing page:', err));
+  }, [fetchAll]);
+
+  const findPrice = (catId: string, blockLabel: string, itName: string) => {
+    let searchName = '';
+    const cleanIt = itName.split(' — ')[0].trim();
+
+    if (catId === 'depilacion-laser') {
+      searchName = `Depilación Láser - ${cleanIt}`;
+    } else if (catId === 'depilacion-cera') {
+      searchName = `Depilación Cera - ${cleanIt}`;
+    } else if (catId === 'blanqueamiento-corporal') {
+      searchName = `Blanqueamiento - ${cleanIt}`;
+    } else if (catId === 'cejas-pestanas') {
+      if (blockLabel === 'Extensiones de pestañas') {
+        if (cleanIt.startsWith('Volumen 2D')) {
+          searchName = 'Extensiones de Pestañas - Volumen 2D-5D';
+        } else {
+          searchName = `Extensiones de Pestañas - ${cleanIt}`;
+        }
+      } else {
+        searchName = cleanIt;
+      }
+    } else if (catId === 'maquillaje') {
+      searchName = `Maquillaje - ${cleanIt}`;
+    } else if (catId === 'toxina-botulinica') {
+      searchName = `Toxina Botulínica - ${cleanIt}`;
+    } else if (catId === 'rellenos') {
+      searchName = `Relleno Ácido Hialurónico - ${cleanIt}`;
+    } else if (catId === 'bioestimuladores') {
+      let subPart = cleanIt;
+      if (subPart.startsWith('Hilos PDO')) subPart = 'Hilos PDO (x10)';
+      if (subPart.startsWith('Hilos tensores')) subPart = 'Hilos tensores (desde)';
+      searchName = `Bioestimulador - ${subPart}`;
+    } else if (catId === 'mesoterapia') {
+      let subPart = cleanIt;
+      if (subPart.startsWith('NCTF')) subPart = 'NCTF - Ojeras';
+      if (subPart.startsWith('PDRN')) subPart = 'PDRN de Salmón - Ojeras';
+      searchName = `Mesoterapia ${subPart}`;
+    } else if (catId === 'escleroterapia') {
+      searchName = 'Escleroterapia - Ampolla 2ml';
+    } else if (catId === 'verrugas') {
+      searchName = 'Eliminación de Verrugas (desde)';
+    } else {
+      searchName = cleanIt;
+    }
+
+    const match = services.find(
+      (s) => s.name.toLowerCase().trim() === searchName.toLowerCase().trim()
+    );
+    return match && match.active ? match.price : null;
+  };
 
   return (
     <section className="services" id="servicios">
@@ -100,6 +158,25 @@ export default function Services() {
               {n} {n === 1 ? 'servicio' : 'servicios'}
             </span>
             {description && <p className="svc-panel__desc">{description}</p>}
+
+            {/* Specialist Info */}
+            <div
+              className="svc-panel__specialist svc-panel__specialist--clickable"
+              onClick={() => setSelectedSpecialist(cat.specialist)}
+            >
+              <img
+                src={cat.specialist.image}
+                alt={cat.specialist.name}
+                className="svc-panel__specialist-img"
+                loading="lazy"
+              />
+              <div className="svc-panel__specialist-info">
+                <span className="svc-panel__specialist-label">Realizado por</span>
+                <strong className="svc-panel__specialist-name">{cat.specialist.name}</strong>
+                <span className="svc-panel__specialist-role">{cat.specialist.role}</span>
+              </div>
+            </div>
+
             <a href="/reservar" className="btn-primary svc-panel__cta">
               Reservar <ArrowRight size={16} />
             </a>
@@ -110,21 +187,71 @@ export default function Services() {
               <div className="svc-block" key={bi}>
                 {b.label && <span className="svc-block__label">{b.label}</span>}
                 <div className="svc-chips">
-                  {b.items.map((it, ci) => (
-                    <span
-                      className="svc-chip"
-                      key={it}
-                      style={{ animationDelay: `${ci * 0.03}s` }}
-                    >
-                      {it}
-                    </span>
-                  ))}
+                  {b.items.map((it, ci) => {
+                    const price = findPrice(cat.id, b.label || '', it);
+                    return (
+                      <span
+                        className="svc-chip"
+                        key={it}
+                        style={{ animationDelay: `${ci * 0.03}s` }}
+                      >
+                        <span className="svc-chip__name">{it.split(' — ')[0]}</span>
+                        {price !== null && (
+                          <span className="svc-chip__price">
+                            RD$ {price.toLocaleString('es-DO')}
+                          </span>
+                        )}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Specialist Detail Modal */}
+      {selectedSpecialist && (
+        <div className="modal-overlay" onClick={() => setSelectedSpecialist(null)}>
+          <div className="modal specialist-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h2>Perfil de Especialista</h2>
+              <button className="modal__close" onClick={() => setSelectedSpecialist(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="specialist-modal__content">
+              <div className="specialist-modal__image-container">
+                <img
+                  src={selectedSpecialist.image}
+                  alt={selectedSpecialist.name}
+                  className="specialist-modal__image"
+                />
+              </div>
+              <div className="specialist-modal__details">
+                <h3 className="specialist-modal__name">{selectedSpecialist.name}</h3>
+                <span className="specialist-modal__role">{selectedSpecialist.role}</span>
+                <p className="specialist-modal__bio">{selectedSpecialist.bio}</p>
+                
+                <div className="specialist-modal__services">
+                  <h4>Áreas de Especialidad</h4>
+                  <div className="specialist-modal__tags">
+                    {servicesMenu
+                      .filter((c) => c.specialist.name === selectedSpecialist.name)
+                      .map((c) => (
+                        <span key={c.id} className="specialist-modal__tag">
+                          {c.title}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
+

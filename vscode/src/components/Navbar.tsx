@@ -5,11 +5,38 @@ import './Navbar.css';
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState('hero');
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    const sections = ['hero', 'servicios', 'paquetes', 'nosotros', 'mision', 'contacto'];
+
+    const handleScroll = () => {
+      // Add a threshold of 120px to make the transition feel natural
+      const scrollPosition = window.scrollY + 120;
+      
+      // Determine scrolled header state
+      setScrolled(window.scrollY > 40);
+
+      // Find active section
+      for (const section of sections) {
+        const el = document.getElementById(section);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPosition >= top && scrollPosition < top + height) {
+            // Map 'mision' section to highlight 'nosotros' in the navbar
+            setActiveSection(section === 'mision' ? 'nosotros' : section);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    // Set initial active section
+    handleScroll();
+    
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const links = [
@@ -20,6 +47,11 @@ export default function Navbar() {
     { label: 'Contacto', href: '/#contacto' },
     { label: 'Mis Citas', href: '/mis-citas', highlight: true },
   ];
+
+  const getHash = (href: string) => {
+    if (href.startsWith('/#')) return href.substring(2);
+    return '';
+  };
 
   return (
     <nav className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`} id="navbar">
@@ -40,11 +72,22 @@ export default function Navbar() {
 
         {/* Desktop Links */}
         <ul className="navbar__links">
-          {links.map((l) => (
-            <li key={l.href}>
-              <a href={l.href} className={`navbar__link ${l.highlight ? 'navbar__link--highlight' : ''}`}>{l.label}</a>
-            </li>
-          ))}
+          {links.map((l) => {
+            const hash = getHash(l.href);
+            const isActive = hash && activeSection === hash;
+            return (
+              <li key={l.href}>
+                <a
+                  href={l.href}
+                  className={`navbar__link ${l.highlight ? 'navbar__link--highlight' : ''} ${
+                    isActive ? 'navbar__link--active' : ''
+                  }`}
+                >
+                  {l.label}
+                </a>
+              </li>
+            );
+          })}
         </ul>
 
         {/* CTA */}
@@ -68,16 +111,22 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       <div className={`navbar__mobile ${open ? 'navbar__mobile--open' : ''}`}>
-        {links.map((l) => (
-          <a
-            key={l.href}
-            href={l.href}
-            className={`navbar__mobile-link ${l.highlight ? 'navbar__mobile-link--highlight' : ''}`}
-            onClick={() => setOpen(false)}
-          >
-            {l.label}
-          </a>
-        ))}
+        {links.map((l) => {
+          const hash = getHash(l.href);
+          const isActive = hash && activeSection === hash;
+          return (
+            <a
+              key={l.href}
+              href={l.href}
+              className={`navbar__mobile-link ${l.highlight ? 'navbar__mobile-link--highlight' : ''} ${
+                isActive ? 'navbar__mobile-link--active' : ''
+              }`}
+              onClick={() => setOpen(false)}
+            >
+              {l.label}
+            </a>
+          );
+        })}
         <a
           href="/reservar"
           className="btn-primary"
@@ -90,3 +139,4 @@ export default function Navbar() {
     </nav>
   );
 }
+

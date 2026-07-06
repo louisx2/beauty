@@ -3,6 +3,7 @@ import Hero from '../components/Hero';
 import Services from '../components/Services';
 import Packages from '../components/Packages';
 import About from '../components/About';
+import Mission from '../components/Mission';
 import Testimonials from '../components/Testimonials';
 import Footer from '../components/Footer';
 import { ArrowRight } from 'lucide-react';
@@ -16,6 +17,7 @@ export default function LandingPage() {
       <Services />
       <Packages />
       <About />
+      <Mission />
       <Testimonials />
       
       {/* CTA Section */}
