@@ -17,13 +17,24 @@ export default function Hero() {
     <section className="hero" id="hero">
       {/* Background Carousel Slides */}
       <div className="hero__bg-slides">
-        {bgImages.map((src, index) => (
-          <div
-            key={src}
-            className={`hero__bg-slide ${index === currentBg ? 'hero__bg-slide--active' : ''}`}
-            style={{ backgroundImage: `url(${src})` }}
-          />
-        ))}
+        {bgImages.map((src, index) => {
+          let slideClass = 'hero__bg-slide';
+          if (index === currentBg) {
+            slideClass += ' hero__bg-slide--active';
+          }
+          if (src === '/lobby3.jpg') {
+            slideClass += ' hero__bg-slide--lobby3';
+          } else if (src === '/lobby.jpg') {
+            slideClass += ' hero__bg-slide--lobby';
+          }
+          return (
+            <div
+              key={src}
+              className={slideClass}
+              style={{ backgroundImage: `url(${src})` }}
+            />
+          );
+        })}
       </div>
 
       {/* Gradient Overlay */}

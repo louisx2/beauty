@@ -31,6 +31,22 @@
   transform: scale(0.98); /* Aleja la imagen (zoom out) lentamente */
 }
 
+/* Custom positioning for lobby3 (more to the right) */
+.hero__bg-slide--lobby3 {
+  background-position: 98% center;
+}
+
+/* Custom positioning and zoom out (mas lejos) for lobby */
+.hero__bg-slide--lobby {
+  background-position: 100% center;
+  transform: scale(0.92); /* Zoom in inicial menor */
+  transform-origin: right center;
+}
+
+.hero__bg-slide--lobby.hero__bg-slide--active {
+  transform: scale(0.85); /* Zoom out activo menor (se ve mas lejos) */
+}
+
 .hero__gradient-overlay {
   position: absolute;
   inset: 0;
