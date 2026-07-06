@@ -34,6 +34,9 @@
 /* Custom positioning for lobby3 (shifted 50% towards the right) */
 .hero__bg-slide--lobby3 {
   background-position: 73% center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-color: var(--linen);
 }
 
 /* Custom positioning and zoom out (mas lejos) for lobby */
