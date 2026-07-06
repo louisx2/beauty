@@ -4,7 +4,7 @@ import './Hero.css';
 
 export default function Hero() {
   const [currentBg, setCurrentBg] = useState(0);
-  const bgImages = ['/as-07365.jpg', '/lobby2.jpg', '/lobby3.png', '/as-07387.jpg'];
+  const bgImages = ['/as-07365.jpg', '/lobby2.jpg', '/lobby3.png', '/as-07387.jpg', '/lobby4.jpg'];
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -26,6 +26,8 @@ export default function Hero() {
             slideClass += ' hero__bg-slide--lobby3';
           } else if (src === '/lobby.jpg') {
             slideClass += ' hero__bg-slide--lobby';
+          } else if (src === '/lobby4.jpg') {
+            slideClass += ' hero__bg-slide--lobby4';
           }
           return (
             <div
