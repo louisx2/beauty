@@ -31,16 +31,16 @@
   transform: scale(0.98); /* Aleja la imagen (zoom out) lentamente */
 }
 
-/* Custom positioning for lobby3 (more to the right) */
+/* Custom positioning for lobby3 (50% more to the left) */
 .hero__bg-slide--lobby3 {
-  background-position: 98% center;
+  background-position: 48% center;
 }
 
 /* Custom positioning and zoom out (mas lejos) for lobby */
 .hero__bg-slide--lobby {
-  background-position: 100% center;
+  background-position: 50% center;
   transform: scale(0.92); /* Zoom in inicial menor */
-  transform-origin: right center;
+  transform-origin: center center;
 }
 
 .hero__bg-slide--lobby.hero__bg-slide--active {
