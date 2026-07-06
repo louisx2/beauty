@@ -15,7 +15,7 @@ export default function About() {
         <div className="about__image-side">
           <div className="about__image-main">
             <img
-              src="/equipo/as-07236.jpg"
+              src="/equipo/as-07245.jpg"
               alt="Anabel De los Santos Lluberes"
               loading="lazy"
             />
