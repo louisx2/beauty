@@ -273,6 +273,7 @@ export default function Reports() {
 
   // CSV Export
   const downloadExcel = () => {
+    const isSpec = user?.role === 'specialist';
     let csv = '\uFEFF'; // UTF-8 BOM
     csv += `REPORTE DE RENDIMIENTO - ANADSLL BEAUTY ESTHETIC\n`;
     csv += `Periodo:;${getPeriodLabel()}\n`;
@@ -284,12 +285,16 @@ export default function Reports() {
     csv += `Citas Perdidas (No Asistio);${totalNoShow}\n`;
     csv += `Citas Canceladas;${totalCancelled}\n`;
     csv += `Clientes Nuevos;${totalNewClients}\n`;
-    csv += `Ingresos Cobrados (Citas Completadas);RD$ ${totalRevenue}\n\n`;
+    if (!isSpec) {
+      csv += `Ingresos Cobrados (Citas Completadas);RD$ ${totalRevenue}\n\n`;
+    } else {
+      csv += `\n`;
+    }
 
     csv += `RENDIMIENTO POR ESPECIALISTA\n`;
-    csv += `Especialista;Citas Realizadas;Ingresos Generados;% Comision;Comision Calculada\n`;
+    csv += `Especialista;Citas Realizadas;${isSpec ? '' : 'Ingresos Generados;'}% Comision;Comision Calculada\n`;
     specialistStats.forEach(s => {
-      csv += `"${s.name}";${s.completedAppts};RD$ ${s.revenue};${s.commissionPct}%;RD$ ${s.commission}\n`;
+      csv += `"${s.name}";${s.completedAppts};${isSpec ? '' : 'RD$ ' + s.revenue + ';'}${s.commissionPct}%;RD$ ${s.commission}\n`;
     });
     csv += `\n`;
 
@@ -385,7 +390,9 @@ export default function Reports() {
             <div class="card"><span>Citas Perdidas (No Asistio)</span><strong>${totalNoShow}</strong></div>
             <div class="card"><span>Citas Canceladas</span><strong>${totalCancelled}</strong></div>
             <div class="card"><span>Clientes Nuevos</span><strong>${totalNewClients}</strong></div>
-            <div class="card" style="grid-column: span 2"><span>Ingresos Cobrados (Citas Completadas)</span><strong>RD$ ${totalRevenue.toLocaleString('es-DO')}</strong></div>
+            ${user?.role !== 'specialist' ? `
+              <div class="card" style="grid-column: span 2"><span>Ingresos Cobrados (Citas Completadas)</span><strong>RD$ ${totalRevenue.toLocaleString('es-DO')}</strong></div>
+            ` : ''}
           </div>
 
           <h2>Rendimiento por Especialista</h2>
@@ -394,7 +401,7 @@ export default function Reports() {
               <tr>
                 <th>Especialista</th>
                 <th>Citas Realizadas</th>
-                <th>Ingresos Generados</th>
+                ${user?.role !== 'specialist' ? '<th>Ingresos Generados</th>' : ''}
                 <th>% Comisión</th>
                 <th>Comisión Calculada</th>
               </tr>
@@ -404,7 +411,7 @@ export default function Reports() {
                 <tr>
                   <td><strong>${s.name}</strong></td>
                   <td>${s.completedAppts}</td>
-                  <td>RD$ ${s.revenue.toLocaleString('es-DO')}</td>
+                  ${user?.role !== 'specialist' ? `<td>RD$ ${s.revenue.toLocaleString('es-DO')}</td>` : ''}
                   <td>${s.commissionPct}%</td>
                   <td><strong>RD$ ${s.commission.toLocaleString('es-DO')}</strong></td>
                 </tr>
@@ -643,10 +650,12 @@ export default function Reports() {
             <span>Clientes Nuevos</span>
             <strong>{totalNewClients}</strong>
           </div>
-          <div className="report-card report-card--green" style={{ gridColumn: 'span 2' }}>
-            <span>Ingresos Generados (Citas Completas)</span>
-            <strong>{fmtPrice(totalRevenue)}</strong>
-          </div>
+          {user?.role !== 'specialist' && (
+            <div className="report-card report-card--green" style={{ gridColumn: 'span 2' }}>
+              <span>Ingresos Generados (Citas Completas)</span>
+              <strong>{fmtPrice(totalRevenue)}</strong>
+            </div>
+          )}
         </div>
       </div>
 
@@ -774,7 +783,7 @@ export default function Reports() {
               <tr>
                 <th>Especialista</th>
                 <th>Citas Realizadas</th>
-                <th>Ingresos Generados</th>
+                {user?.role !== 'specialist' && <th>Ingresos Generados</th>}
                 <th>% Comisión</th>
                 <th>Comisión Calculada</th>
               </tr>
@@ -784,7 +793,7 @@ export default function Reports() {
                 <tr key={s.name}>
                   <td><strong>{s.name}</strong></td>
                   <td>{s.completedAppts}</td>
-                  <td>{fmtPrice(s.revenue)}</td>
+                  {user?.role !== 'specialist' && <td>{fmtPrice(s.revenue)}</td>}
                   <td>{s.commissionPct}%</td>
                   <td><strong style={{ color: '#4ade80' }}>{fmtPrice(s.commission)}</strong></td>
                 </tr>
