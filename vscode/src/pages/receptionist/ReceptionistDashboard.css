@@ -846,7 +846,27 @@ input[type="date"].rec__input::-webkit-calendar-picker-indicator { filter: inver
     width: 100%;
   }
   .rec__clock  { font-size: 1.8rem; }
-  .rec__stats  { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .rec__stats  {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .rec__stat {
+    padding: 8px 10px;
+    gap: 6px;
+    border-radius: 10px;
+  }
+  .rec__stat svg {
+    width: 14px;
+    height: 14px;
+  }
+  .rec__stat-val {
+    font-size: 1.25rem;
+  }
+  .rec__stat-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.02em;
+  }
   .rec__field-row { grid-template-columns: 1fr; }
   .rec__proxima-row { flex-wrap: wrap; }
   .rec__col-side { grid-template-columns: 1fr; }
