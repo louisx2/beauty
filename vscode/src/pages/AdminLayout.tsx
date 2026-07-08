@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { useAppointmentStore } from '../store/appointmentStore';
@@ -98,7 +98,6 @@ export default function AdminLayout() {
   const { theme, toggleTheme } = useThemeStore();
   const { appointments, fetchAppointments, initRealtime, cleanupRealtime } = useAppointmentStore();
   const navigate = useNavigate();
-  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -130,18 +129,6 @@ export default function AdminLayout() {
     initRealtime();
     return () => cleanupRealtime();
   }, [fetchAppointments, fetchStaff, fetchServices, initRealtime, cleanupRealtime]);
-
-  // Redirect non-admin roles to their home pages
-  useEffect(() => {
-    if (user?.role === 'specialist') {
-      const adminOnly = ['/admin', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/equipo', '/admin/ajustes', '/admin/reportes'];
-      if (adminOnly.includes(location.pathname)) navigate('/admin/mi-turno', { replace: true });
-    }
-    if (user?.role === 'receptionist') {
-      const receptionistForbidden = ['/admin', '/admin/dashboard', '/admin/reportes', '/admin/ajustes', '/admin/equipo'];
-      if (receptionistForbidden.includes(location.pathname)) navigate('/admin/recepcion', { replace: true });
-    }
-  }, [user?.role, location.pathname, navigate]);
 
   // Close notification panel when clicking outside
   useEffect(() => {
@@ -322,6 +309,9 @@ export default function AdminLayout() {
               </NavLink>
               <NavLink to="/admin/citas" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
                 <CalendarDays size={20} /><span>Mis Citas</span>
+              </NavLink>
+              <NavLink to="/admin/mis-reportes" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                <BarChart3 size={20} /><span>Mis Reportes</span>
               </NavLink>
             </div>
           ) : user?.role === 'receptionist' ? (

@@ -6,6 +6,8 @@ import ClientPortal from './pages/ClientPortal';
 import Login from './pages/Login';
 import AdminLayout from './pages/AdminLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import RequireRole, { RoleHome } from './components/RequireRole';
+import type { UserRole } from './store/authStore';
 
 // Lazy load admin pages to prevent import-time errors from blocking the landing page
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
@@ -17,6 +19,7 @@ const Staff = lazy(() => import('./pages/admin/Staff'));
 const Settings = lazy(() => import('./pages/admin/Settings'));
 const Reports = lazy(() => import('./pages/admin/Reports'));
 const SpecialistView        = lazy(() => import('./pages/specialist/SpecialistView'));
+const MyReports             = lazy(() => import('./pages/specialist/MyReports'));
 const ReceptionistDashboard = lazy(() => import('./pages/receptionist/ReceptionistDashboard'));
 
 function AdminFallback() {
@@ -24,6 +27,14 @@ function AdminFallback() {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
       <div className="login__spinner" style={{ width: 32, height: 32 }} />
     </div>
+  );
+}
+
+function Guard({ roles, children }: { roles: UserRole[]; children: React.ReactNode }) {
+  return (
+    <RequireRole roles={roles}>
+      <Suspense fallback={<AdminFallback />}>{children}</Suspense>
+    </RequireRole>
   );
 }
 
@@ -48,17 +59,18 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<Suspense fallback={<AdminFallback />}><Dashboard /></Suspense>} />
-          <Route path="citas" element={<Suspense fallback={<AdminFallback />}><Appointments /></Suspense>} />
-          <Route path="clientes" element={<Suspense fallback={<AdminFallback />}><Clients /></Suspense>} />
-          <Route path="servicios" element={<Suspense fallback={<AdminFallback />}><Services /></Suspense>} />
-          <Route path="paquetes" element={<Suspense fallback={<AdminFallback />}><SessionPackages /></Suspense>} />
-          <Route path="equipo" element={<Suspense fallback={<AdminFallback />}><Staff /></Suspense>} />
-          <Route path="ajustes" element={<Suspense fallback={<AdminFallback />}><Settings /></Suspense>} />
-          <Route path="reportes" element={<Suspense fallback={<AdminFallback />}><Reports /></Suspense>} />
-          <Route path="mi-turno"  element={<Suspense fallback={<AdminFallback />}><SpecialistView /></Suspense>} />
-          <Route path="recepcion" element={<Suspense fallback={<AdminFallback />}><ReceptionistDashboard /></Suspense>} />
+          <Route index element={<RoleHome />} />
+          <Route path="dashboard" element={<Guard roles={['admin']}><Dashboard /></Guard>} />
+          <Route path="citas" element={<Guard roles={['admin', 'receptionist', 'specialist']}><Appointments /></Guard>} />
+          <Route path="clientes" element={<Guard roles={['admin', 'receptionist']}><Clients /></Guard>} />
+          <Route path="servicios" element={<Guard roles={['admin']}><Services /></Guard>} />
+          <Route path="paquetes" element={<Guard roles={['admin', 'receptionist']}><SessionPackages /></Guard>} />
+          <Route path="equipo" element={<Guard roles={['admin']}><Staff /></Guard>} />
+          <Route path="ajustes" element={<Guard roles={['admin']}><Settings /></Guard>} />
+          <Route path="reportes" element={<Guard roles={['admin']}><Reports /></Guard>} />
+          <Route path="mi-turno"  element={<Guard roles={['admin', 'specialist']}><SpecialistView /></Guard>} />
+          <Route path="mis-reportes" element={<Guard roles={['admin', 'specialist']}><MyReports /></Guard>} />
+          <Route path="recepcion" element={<Guard roles={['admin', 'receptionist']}><ReceptionistDashboard /></Guard>} />
         </Route>
 
         {/* Catch-all */}

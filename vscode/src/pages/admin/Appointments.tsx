@@ -369,9 +369,11 @@ export default function Appointments() {
           <h1 className="appts__title">Gestion de Citas</h1>
           <p className="appts__subtitle">Agenda y administra todas las citas del salon</p>
         </div>
-        <button className="appts__add-btn" onClick={openCreate} id="btn-new-appointment">
-          <Plus size={18} /> Nueva Cita
-        </button>
+        {user?.role !== 'specialist' && (
+          <button className="appts__add-btn" onClick={openCreate} id="btn-new-appointment">
+            <Plus size={18} /> Nueva Cita
+          </button>
+        )}
       </div>
 
       {/* Date Navigation + View Toggle */}
@@ -530,7 +532,7 @@ export default function Appointments() {
                             {STATUS_CONFIG[s].label}
                           </button>
                         ))}
-                        {!appt.client_id && (
+                        {!appt.client_id && user?.role !== 'specialist' && (
                           <button className="status-menu__item" onClick={() => { setSavingClientFor(appt); setShowStatusMenu(null); }} style={{ color: '#60a5fa', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 8, marginTop: 8 }}>
                             <Save size={16} /> Guardar Clienta
                           </button>
@@ -719,7 +721,7 @@ export default function Appointments() {
               </div>
 
               <div className="modal__actions">
-                {editingId && (
+                {editingId && user?.role !== 'specialist' && (
                   <button
                     type="button"
                     className="modal__delete-btn"
