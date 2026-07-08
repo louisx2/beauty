@@ -106,8 +106,8 @@ BEGIN
     RAISE EXCEPTION 'El correo electrónico ya está registrado.';
   END IF;
   encrypted_pass := extensions.crypt(user_password, extensions.gen_salt('bf', 10));
-  INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change_token_current, phone_change_token, reconfirmation_token, is_super_admin)
-  VALUES ('00000000-0000-0000-0000-000000000000', new_user_id, 'authenticated', 'authenticated', user_email, encrypted_pass, now(), '{"provider": "email", "providers": ["email"]}'::jsonb, jsonb_build_object('name', user_name, 'role', user_role), now(), now(), '', '', '', '', '', '', false);
+  INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, is_super_admin)
+  VALUES ('00000000-0000-0000-0000-000000000000', new_user_id, 'authenticated', 'authenticated', user_email, encrypted_pass, now(), '{"provider": "email", "providers": ["email"]}'::jsonb, jsonb_build_object('name', user_name, 'role', user_role), now(), now(), '', '', '', false);
   INSERT INTO auth.identities (provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
   VALUES (new_user_id::text, new_user_id, jsonb_build_object('sub', new_user_id, 'email', user_email), 'email', now(), now(), now());
   RETURN new_user_id;
