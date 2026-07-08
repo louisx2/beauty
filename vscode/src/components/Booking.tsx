@@ -37,7 +37,6 @@ interface SessionPackage {
 interface ExistingAppt {
   time: string;
   duration: number;
-  status: string;
 }
 
 function timeToMinutes(t: string): number {
@@ -124,12 +123,9 @@ export default function Booking() {
     setLoadingSlots(true);
     setForm((prev) => ({ ...prev, time: '' }));
 
+    // RPC segura: devuelve solo hora y duración ocupadas, sin datos de clientas
     supabase
-      .from('appointments')
-      .select('time, duration, status')
-      .eq('date', form.date)
-      .eq('employee', staffMember.name)
-      .neq('status', 'cancelled')
+      .rpc('get_busy_slots', { p_date: form.date, p_employee: staffMember.name })
       .then(({ data }) => {
         setExistingAppts((data as ExistingAppt[]) ?? []);
         setLoadingSlots(false);
@@ -214,7 +210,8 @@ export default function Booking() {
     setBookingError('');
 
     try {
-      const { data: appt, error } = await supabase
+      // Sin .select(): anon ya no puede leer la tabla, solo insertar (source='web')
+      const { error } = await supabase
         .from('appointments')
         .insert({
           client_name: form.name.trim(),
@@ -227,11 +224,9 @@ export default function Booking() {
           status: 'pending',
           notes: form.notes.trim() || '',
           source: 'web',
-        })
-        .select()
-        .single();
+        });
 
-      if (error || !appt) {
+      if (error) {
         console.error('[booking] insert error:', error);
         setBookingError(
           'Hubo un problema al guardar tu solicitud. Por favor intenta de nuevo o contactanos por WhatsApp.'

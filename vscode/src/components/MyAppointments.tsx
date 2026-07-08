@@ -12,7 +12,6 @@ import './MyAppointments.css';
 interface AppointmentRow {
   id: string;
   client_name: string;
-  client_phone: string;
   service: string;
   employee: string;
   date: string;
@@ -74,12 +73,10 @@ export default function MyAppointments() {
     setLoading(true);
     setSearched(true);
 
-    const { data, error } = await supabase
-      .from('appointments')
-      .select('*')
-      .eq('client_phone', cleanPhone)
-      .order('date', { ascending: false })
-      .order('time', { ascending: false });
+    // RPC segura: solo devuelve las citas cuyo teléfono coincide exactamente
+    const { data, error } = await supabase.rpc('get_client_appointments', {
+      p_phone: cleanPhone,
+    });
 
     if (error) {
       console.error('[my-appointments] search error:', error);
@@ -105,13 +102,14 @@ export default function MyAppointments() {
     setConfirmCancelId(null);
     setCancellingId(id);
 
-    const { error } = await supabase
-      .from('appointments')
-      .update({ status: 'cancelled' })
-      .eq('id', id)
-      .eq('client_phone', phone.trim()); // Safety: only cancel if phone matches
+    // RPC segura: valida en el servidor que el teléfono coincida,
+    // que la cita siga pendiente/confirmada y que falten más de 12 h
+    const { data: cancelled, error } = await supabase.rpc('cancel_client_appointment', {
+      p_id: id,
+      p_phone: phone.trim(),
+    });
 
-    if (error) {
+    if (error || !cancelled) {
       console.error('[my-appointments] cancel error:', error);
       toast.error(
         'No se pudo cancelar la cita. Por favor contáctanos por WhatsApp para ayudarte.'

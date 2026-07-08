@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAppointmentStore } from '../store/appointmentStore';
 import { useStaffStore } from '../store/staffStore';
+import { useAuthStore } from '../store/authStore';
 import { X, CalendarPlus, AlertCircle } from 'lucide-react';
 import { format12h } from '../lib/timeFormat';
 import toast from 'react-hot-toast';
@@ -29,6 +30,10 @@ function getAvailableHours(dateStr: string): string[] {
 export default function NextSessionModal() {
   const { completedApptForNextSession: appt, clearNextSessionPrompt, addAppointment } = useAppointmentStore();
   const { staff } = useStaffStore();
+  const { user } = useAuthStore();
+
+  // Las especialistas solo pueden agendar la siguiente sesión consigo mismas
+  const isSpecialist = user?.role === 'specialist';
   
   const [date, setDate] = useState(getTodayStr());
   const [time, setTime] = useState('09:00');
@@ -37,11 +42,11 @@ export default function NextSessionModal() {
 
   useEffect(() => {
     if (appt) {
-      setEmployee(appt.employee);
+      setEmployee(isSpecialist ? (user?.name ?? appt.employee) : appt.employee);
       setDate(getTodayStr());
       setTime('09:00');
     }
-  }, [appt]);
+  }, [appt, isSpecialist, user?.name]);
 
   if (!appt) return null;
 
@@ -103,10 +108,14 @@ export default function NextSessionModal() {
         <form onSubmit={handleSubmit} className="modal__form">
           <div className="modal__field">
             <label>Especialista</label>
-            <select required value={employee} onChange={(e) => setEmployee(e.target.value)}>
-              <option value="">Seleccionar especialista</option>
-              {activeSpecialists.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
-            </select>
+            {isSpecialist ? (
+              <input type="text" value={employee} disabled readOnly />
+            ) : (
+              <select required value={employee} onChange={(e) => setEmployee(e.target.value)}>
+                <option value="">Seleccionar especialista</option>
+                {activeSpecialists.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
+              </select>
+            )}
           </div>
           
           <div className="modal__row">

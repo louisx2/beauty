@@ -1,0 +1,316 @@
+/* ═══════════════════════════════════════════
+   My Reports — Reportes de la Especialista
+   ═══════════════════════════════════════════ */
+
+.my-reports {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+.my-reports__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.my-reports__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.my-reports__subtitle {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.38);
+  margin: 5px 0 0;
+}
+
+.my-reports__periods {
+  display: flex;
+  gap: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 11px;
+  padding: 4px;
+}
+
+.my-reports__period-btn {
+  padding: 7px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: rgba(255,255,255,0.45);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.my-reports__period-btn--active {
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+
+/* ── Stat cards ── */
+.my-reports__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.my-reports__stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+}
+
+.my-reports__stat > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.my-reports__stat-val {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1.1;
+}
+
+.my-reports__stat-label {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.4);
+}
+
+.my-reports__stat--green svg { color: #4ade80; }
+.my-reports__stat--blue  svg { color: #60a5fa; }
+.my-reports__stat--amber svg { color: #fbbf24; }
+.my-reports__stat--red   svg { color: #f87171; }
+
+/* ── Earnings ── */
+.my-reports__earnings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.my-reports__earning-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  background: rgba(74,222,128,0.06);
+  border: 1px solid rgba(74,222,128,0.2);
+  border-radius: 14px;
+}
+
+.my-reports__earning-card svg { color: #4ade80; }
+
+.my-reports__earning-card--commission {
+  background: rgba(96,165,250,0.06);
+  border-color: rgba(96,165,250,0.2);
+}
+
+.my-reports__earning-card--commission svg { color: #60a5fa; }
+
+.my-reports__earning-card > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.my-reports__earning-val {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1.2;
+}
+
+.my-reports__earning-label {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.4);
+}
+
+/* ── Sections ── */
+.my-reports__section {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.my-reports__section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin: 0 0 14px;
+}
+
+.my-reports__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 12px;
+  color: rgba(255,255,255,0.25);
+  text-align: center;
+}
+
+.my-reports__empty p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* ── Breakdown por servicio ── */
+.my-reports__breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.my-reports__breakdown-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.my-reports__breakdown-info {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.my-reports__breakdown-info strong {
+  font-size: 0.85rem;
+  color: white;
+  font-weight: 600;
+}
+
+.my-reports__breakdown-info span {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.4);
+  white-space: nowrap;
+}
+
+.my-reports__breakdown-bar {
+  height: 7px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.my-reports__breakdown-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80, #22d3ee);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+/* ── Historial ── */
+.my-reports__history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.my-reports__history-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+}
+
+.my-reports__history-date {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 82px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
+  text-transform: capitalize;
+}
+
+.my-reports__history-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: rgba(255,255,255,0.35);
+}
+
+.my-reports__history-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.my-reports__history-info strong {
+  font-size: 0.88rem;
+  color: white;
+  font-weight: 600;
+}
+
+.my-reports__history-info span {
+  font-size: 0.76rem;
+  color: rgba(255,255,255,0.42);
+}
+
+.my-reports__history-notes {
+  font-size: 0.72rem !important;
+  color: rgba(255,255,255,0.3) !important;
+}
+
+.my-reports__history-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #4ade80;
+  background: rgba(74,222,128,0.1);
+  border: 1px solid rgba(74,222,128,0.25);
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* ── Mobile ── */
+@media (max-width: 560px) {
+  .my-reports__stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .my-reports__history-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .my-reports__history-badge {
+    margin-left: auto;
+  }
+}
