@@ -178,7 +178,7 @@ export default function Appointments() {
     fetchClients();
   }, [fetchAppointments, autoMarkNoShow, fetchStaff, fetchServices, fetchClients]);
 
-  const activeEmployees = useMemo(() => staff.filter((m) => m.active && m.role === 'specialist').map((m) => m.name), [staff]);
+  const activeEmployees = useMemo(() => staff.filter((m) => m.active && (m.role === 'specialist' || m.role === 'admin')).map((m) => m.name), [staff]);
   const activeServices = useMemo(() => services.filter((s) => s.active).map((s) => s.name), [services]);
 
   const [selectedDate, setSelectedDate] = useState(getToday());

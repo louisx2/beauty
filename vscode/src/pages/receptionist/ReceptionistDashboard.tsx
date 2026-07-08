@@ -208,7 +208,7 @@ export default function ReceptionistDashboard() {
 
   /* ── Specialists for display ── */
   const specialists = useMemo(() =>
-    staff.filter(s => s.role === 'specialist' && s.active),
+    staff.filter(s => (s.role === 'specialist' || s.role === 'admin') && s.active),
     [staff]
   );
 

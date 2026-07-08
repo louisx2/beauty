@@ -32,8 +32,31 @@ export default function Login() {
 
   if (authLoading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-primary)' }}>
-        <div className="login__spinner" style={{ width: 40, height: 40 }} />
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '16px',
+        height: '100vh',
+        background: '#2A1F1A',
+        fontFamily: "'Outfit', sans-serif"
+      }}>
+        <style>{`
+          @keyframes spin-loader {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          border: '3px solid rgba(197, 168, 128, 0.15)',
+          borderTopColor: '#C5A880',
+          borderRadius: '50%',
+          animation: 'spin-loader 0.8s linear infinite'
+        }} />
+        <span style={{ color: '#C5A880', fontSize: '0.85rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.8 }}>Cargando portal...</span>
       </div>
     );
   }

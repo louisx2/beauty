@@ -99,7 +99,7 @@ export default function Booking() {
           .from('staff')
           .select('id, name, working_days, working_start, working_end, service_ids')
           .eq('active', true)
-          .eq('role', 'specialist')
+          .in('role', ['specialist', 'admin'])
           .order('name'),
         supabase
           .from('session_packages')

@@ -79,7 +79,7 @@ export default function NextSessionModal() {
     }
   };
 
-  const activeSpecialists = staff.filter(s => s.active && s.role === 'specialist');
+  const activeSpecialists = staff.filter(s => s.active && (s.role === 'specialist' || s.role === 'admin'));
 
   return (
     <div className="modal-overlay" onClick={clearNextSessionPrompt}>
