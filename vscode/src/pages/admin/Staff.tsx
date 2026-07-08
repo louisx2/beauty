@@ -8,6 +8,7 @@ import {
   Clock, Shield, Sparkles, CheckCircle2, XCircle, AlertCircle,
   Percent, Calendar, TrendingUp, Filter, Key, Lock, Unlock, UserCog,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
 import './Staff.css';
 
