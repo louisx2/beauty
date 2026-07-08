@@ -134,7 +134,7 @@ export default function AdminLayout() {
   // Redirect non-admin roles to their home pages
   useEffect(() => {
     if (user?.role === 'specialist') {
-      const adminOnly = ['/admin', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/equipo', '/admin/ajustes', '/admin/reportes'];
+      const adminOnly = ['/admin', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/equipo', '/admin/ajustes'];
       if (adminOnly.includes(location.pathname)) navigate('/admin/mi-turno', { replace: true });
     }
     if (user?.role === 'receptionist') {
