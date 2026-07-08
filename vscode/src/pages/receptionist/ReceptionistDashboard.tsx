@@ -739,7 +739,7 @@ export default function ReceptionistDashboard() {
                   >
                     <option value="">Seleccionar...</option>
                     {availableHours.map(h => (
-                      <option key={h} value={h}>{h}</option>
+                      <option key={h} value={h}>{format12h(h)}</option>
                     ))}
                   </select>
                 </div>

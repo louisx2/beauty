@@ -8,7 +8,7 @@ import {
   Clock, Shield, Sparkles, CheckCircle2, XCircle, AlertCircle,
   Percent, Calendar, TrendingUp, Filter, Key, Lock, Unlock, UserCog,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { format12h } from '../../lib/timeFormat';
 import './Staff.css';
 
 const ROLES: { key: StaffRole; label: string }[] = [
@@ -580,7 +580,7 @@ export default function Staff() {
                     </div>
                     <div className="staff-card__schedule-hours">
                       <Clock size={12} />
-                      <span>{m.workingStart} — {m.workingEnd}</span>
+                      <span>{format12h(m.workingStart)} — {format12h(m.workingEnd)}</span>
                     </div>
                   </div>
 
@@ -879,7 +879,7 @@ export default function Staff() {
                       setErrors({ ...errors, schedule: undefined });
                     }}
                   >
-                    {HOURS.map((h) => <option key={h} value={h}>{h}</option>)}
+                    {HOURS.map((h) => <option key={h} value={h}>{format12h(h)}</option>)}
                   </select>
                 </div>
                 <div className="modal__field">
@@ -892,7 +892,7 @@ export default function Staff() {
                     }}
                     className={errors.schedule ? 'input--error' : ''}
                   >
-                    {HOURS.filter((h) => h > form.workingStart).map((h) => <option key={h} value={h}>{h}</option>)}
+                    {HOURS.filter((h) => h > form.workingStart).map((h) => <option key={h} value={h}>{format12h(h)}</option>)}
                   </select>
                   {errors.schedule && <span className="field-error"><AlertCircle size={12} /> {errors.schedule}</span>}
                 </div>

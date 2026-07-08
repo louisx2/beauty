@@ -241,7 +241,7 @@ export default function MyAppointments() {
                                 <User size={13} /> {a.employee}
                               </span>
                               <span>
-                                <Clock size={13} /> {a.time?.slice(0, 5)} · {a.duration} min
+                                <Clock size={13} /> {format12h(a.time)} · {a.duration} min
                               </span>
                               <span className="my-appt-card__full-date">
                                 {formatDate(a.date)}
@@ -308,7 +308,7 @@ export default function MyAppointments() {
                                 <User size={13} /> {a.employee}
                               </span>
                               <span>
-                                <Clock size={13} /> {a.time?.slice(0, 5)} · {a.duration} min
+                                <Clock size={13} /> {format12h(a.time)} · {a.duration} min
                               </span>
                             </div>
                             <div className="my-appt-card__right">
