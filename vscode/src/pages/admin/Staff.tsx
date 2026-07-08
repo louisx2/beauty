@@ -764,7 +764,17 @@ export default function Staff() {
                 </div>
                 <div className="modal__field">
                   <label><Shield size={14} /> Rol</label>
-                  <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as StaffRole })}>
+                  <select
+                    value={form.role}
+                    onChange={(e) => {
+                      const newRole = e.target.value as StaffRole;
+                      setForm({
+                        ...form,
+                        role: newRole,
+                        serviceIds: newRole === 'receptionist' ? [] : form.serviceIds
+                      });
+                    }}
+                  >
                     {ROLES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
                   </select>
                 </div>
@@ -889,28 +899,30 @@ export default function Staff() {
               </div>
 
               {/* Services */}
-              <div className="modal__field">
-                <label>
-                  <Sparkles size={14} /> Servicios que Realiza
-                  <span className="staff-modal__hint">
-                    {form.serviceIds.length === 0
-                      ? ' — sin selección = puede hacer todos'
-                      : ` (${form.serviceIds.length} seleccionados)`}
-                  </span>
-                </label>
-                <div className="staff-services-picker">
-                  {services.filter((s) => s.active).map((s) => (
-                    <button
-                      key={s.id} type="button"
-                      className={`staff-service-btn ${form.serviceIds.includes(s.id) ? 'staff-service-btn--on' : ''}`}
-                      onClick={() => toggleService(s.id)}
-                    >
-                      {form.serviceIds.includes(s.id) ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                      {s.name}
-                    </button>
-                  ))}
+              {(form.role === 'specialist' || form.role === 'admin') && (
+                <div className="modal__field">
+                  <label>
+                    <Sparkles size={14} /> Servicios que Realiza
+                    <span className="staff-modal__hint">
+                      {form.serviceIds.length === 0
+                        ? ' — sin selección = puede hacer todos'
+                        : ` (${form.serviceIds.length} seleccionados)`}
+                    </span>
+                  </label>
+                  <div className="staff-services-picker">
+                    {services.filter((s) => s.active).map((s) => (
+                      <button
+                        key={s.id} type="button"
+                        className={`staff-service-btn ${form.serviceIds.includes(s.id) ? 'staff-service-btn--on' : ''}`}
+                        onClick={() => toggleService(s.id)}
+                      >
+                        {form.serviceIds.includes(s.id) ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="modal__actions">
                 <div style={{ flex: 1 }} />
