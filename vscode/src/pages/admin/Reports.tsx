@@ -5,6 +5,7 @@ import { useServiceStore } from '../../store/serviceStore';
 import { useClientStore } from '../../store/clientStore';
 import { useStaffStore } from '../../store/staffStore';
 import { toast } from 'react-hot-toast';
+import { useAuthStore } from '../../store/authStore';
 import {
   FileText, Download, DollarSign, Receipt,
   CalendarDays, Users, UserCog, Calendar, TrendingUp
@@ -14,6 +15,7 @@ import './Reports.css';
 function fmtPrice(p: number) { return `RD$ ${Math.round(p).toLocaleString('es-DO')}`; }
 
 export default function Reports() {
+  const { user } = useAuthStore();
   const { invoices, fetchAll: fetchBilling } = useBillingStore();
   const { appointments, fetchAppointments } = useAppointmentStore();
   const { clientPackages, services, fetchAll: fetchServices } = useServiceStore();
@@ -74,19 +76,25 @@ export default function Reports() {
 
   // Filter lists based on selected period
   const filteredAppointments = useMemo(() => {
+    let baseList = [];
     if (timePeriod === 'day') {
-      return appointments.filter(a => a.date === activeDate);
+      baseList = appointments.filter(a => a.date === activeDate);
     } else if (timePeriod === 'week') {
       const dates = getWeekRange(activeDate);
-      return appointments.filter(a => dates.includes(a.date));
+      baseList = appointments.filter(a => dates.includes(a.date));
     } else if (timePeriod === 'month') {
       const m = activeDate.slice(0, 7);
-      return appointments.filter(a => a.date.startsWith(m));
+      baseList = appointments.filter(a => a.date.startsWith(m));
     } else {
       const y = activeDate.slice(0, 4);
-      return appointments.filter(a => a.date.startsWith(y));
+      baseList = appointments.filter(a => a.date.startsWith(y));
     }
-  }, [appointments, timePeriod, activeDate]);
+
+    if (user?.role === 'specialist') {
+      return baseList.filter(a => a.employee.toLowerCase() === user.name.toLowerCase());
+    }
+    return baseList;
+  }, [appointments, timePeriod, activeDate, user]);
 
   const filteredInvoices = useMemo(() => {
     if (timePeriod === 'day') {
@@ -137,7 +145,11 @@ export default function Reports() {
 
   // Specialist Metrics
   const specialistStats = useMemo(() => {
-    return staff.map(emp => {
+    const targetStaff = user?.role === 'specialist'
+      ? staff.filter(emp => emp.name.toLowerCase() === user.name.toLowerCase())
+      : staff;
+
+    return targetStaff.map(emp => {
       const specAppts = filteredAppointments.filter(a => a.employee === emp.name && a.status === 'completed');
       let generatedRevenue = 0;
       specAppts.forEach(a => {
@@ -155,7 +167,7 @@ export default function Reports() {
         commissionPct: emp.commissionPct
       };
     }).sort((a, b) => b.revenue - a.revenue);
-  }, [staff, filteredAppointments, services]);
+  }, [staff, filteredAppointments, services, user]);
 
   // ── Advanced Stats Calculations ──
   
@@ -507,7 +519,11 @@ export default function Reports() {
       <div className="clients__header" style={{ marginBottom: 16 }}>
         <div>
           <h1 className="clients__title">Reportes & Estadísticas</h1>
-          <p className="clients__subtitle">Consulta el rendimiento general y comisiones del personal</p>
+          <p className="clients__subtitle">
+            {user?.role === 'specialist'
+              ? 'Consulta tu rendimiento individual y comisiones acumuladas'
+              : 'Consulta el rendimiento general y comisiones del personal'}
+          </p>
         </div>
       </div>
 
@@ -584,12 +600,14 @@ export default function Reports() {
         </div>
 
         <div className="reports__download-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button 
-            className={`reports__download-btn ${showAdvanced ? 'reports__download-btn--advanced-active' : 'reports__download-btn--advanced'}`}
-            onClick={() => setShowAdvanced(!showAdvanced)}
-          >
-            <TrendingUp size={16} /> {showAdvanced ? 'Vista General' : 'Vista Avanzada'}
-          </button>
+          {user?.role !== 'specialist' && (
+            <button 
+              className={`reports__download-btn ${showAdvanced ? 'reports__download-btn--advanced-active' : 'reports__download-btn--advanced'}`}
+              onClick={() => setShowAdvanced(!showAdvanced)}
+            >
+              <TrendingUp size={16} /> {showAdvanced ? 'Vista General' : 'Vista Avanzada'}
+            </button>
+          )}
           <button 
             className="reports__download-btn reports__download-btn--excel" 
             onClick={downloadExcel}
@@ -784,35 +802,37 @@ export default function Reports() {
       </div>
 
       {/* ── Packages Summary & DGII ── */}
-      <div className="reports__row">
-        <div className="reports__section">
-          <h2><Receipt size={20} /> Control de Paquetes Activos</h2>
-          <div className="reports__cards reports__cards--small">
-            <div className="report-card report-card--green">
-              <span>Activos</span>
-              <strong>{clientPackages.filter((c) => c.usedSessions < c.totalSessions).length}</strong>
-            </div>
-            <div className="report-card">
-              <span>Completados</span>
-              <strong>{clientPackages.filter((c) => c.usedSessions >= c.totalSessions).length}</strong>
-            </div>
-            <div className="report-card report-card--rose">
-              <span>Sesiones Usadas</span>
-              <strong>{clientPackages.reduce((a, c) => a + c.usedSessions, 0)}</strong>
+      {user?.role !== 'specialist' && (
+        <div className="reports__row">
+          <div className="reports__section">
+            <h2><Receipt size={20} /> Control de Paquetes Activos</h2>
+            <div className="reports__cards reports__cards--small">
+              <div className="report-card report-card--green">
+                <span>Activos</span>
+                <strong>{clientPackages.filter((c) => c.usedSessions < c.totalSessions).length}</strong>
+              </div>
+              <div className="report-card">
+                <span>Completados</span>
+                <strong>{clientPackages.filter((c) => c.usedSessions >= c.totalSessions).length}</strong>
+              </div>
+              <div className="report-card report-card--rose">
+                <span>Sesiones Usadas</span>
+                <strong>{clientPackages.reduce((a, c) => a + c.usedSessions, 0)}</strong>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="reports__section">
-          <h2><FileText size={20} /> Reportes DGII</h2>
-          <p className="reports__dgii-note">Genera los archivos de formato DGII para el periodo correspondiente.</p>
-          <div className="reports__dgii-buttons">
-            <button className="reports__dgii-btn" onClick={generate607} id="btn-dgii-607">
-              <Download size={16} /> Formato 607 — Ingresos ({activeDate.slice(0, 7)})
-            </button>
+          <div className="reports__section">
+            <h2><FileText size={20} /> Reportes DGII</h2>
+            <p className="reports__dgii-note">Genera los archivos de formato DGII para el periodo correspondiente.</p>
+            <div className="reports__dgii-buttons">
+              <button className="reports__dgii-btn" onClick={generate607} id="btn-dgii-607">
+                <Download size={16} /> Formato 607 — Ingresos ({activeDate.slice(0, 7)})
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
     </div>
   );

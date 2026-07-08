@@ -314,16 +314,23 @@ export default function AdminLayout() {
 
         <nav className="admin__nav">
           {user?.role === 'specialist' ? (
-            /* ── Specialist nav ── */
-            <div className="admin__nav-section">
-              <span className="admin__nav-label">Mi trabajo</span>
-              <NavLink to="/admin/mi-turno" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
-                <Scissors size={20} /><span>Mi Turno</span>
-              </NavLink>
-              <NavLink to="/admin/citas" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
-                <CalendarDays size={20} /><span>Mis Citas</span>
-              </NavLink>
-            </div>
+            <>
+              <div className="admin__nav-section">
+                <span className="admin__nav-label">Mi trabajo</span>
+                <NavLink to="/admin/mi-turno" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                  <Scissors size={20} /><span>Mi Turno</span>
+                </NavLink>
+                <NavLink to="/admin/citas" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                  <CalendarDays size={20} /><span>Mis Citas</span>
+                </NavLink>
+              </div>
+              <div className="admin__nav-section">
+                <span className="admin__nav-label">Análisis</span>
+                <NavLink to="/admin/reportes" className={({ isActive }) => `admin__nav-link ${isActive ? 'admin__nav-link--active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                  <BarChart3 size={20} /><span>Mis Reportes</span>
+                </NavLink>
+              </div>
+            </>
           ) : user?.role === 'receptionist' ? (
             /* ── Receptionist nav ── */
             <>

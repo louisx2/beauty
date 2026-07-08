@@ -111,11 +111,11 @@ supabase.auth.onAuthStateChange((_event, session) => {
     const u = session.user;
     const email = u.email || '';
     const fallbackName = u.user_metadata?.['name'] || email.split('@')[0] || 'Admin';
-    // Set authenticated state immediately — releases lock right away
+    // Set authenticated state immediately, but keep loading=true while fetching the true role
     useAuthStore.setState({
       user: { id: u.id, email, name: fallbackName, role: 'admin' },
       isAuthenticated: true,
-      loading: false,
+      loading: true,
     });
     // Enrich with real name/role from staff table AFTER lock is released
     setTimeout(() => enrichUserFromStaff(u.id, email), 0);
@@ -142,10 +142,13 @@ async function enrichUserFromStaff(userId: string, email: string) {
             name: data.name || current.name,
             role: (data.role as User['role']) || 'admin',
           },
+          loading: false,
         });
+        return;
       }
     }
   } catch {
     // Keep fallback name/role if staff lookup fails
   }
+  useAuthStore.setState({ loading: false });
 }
