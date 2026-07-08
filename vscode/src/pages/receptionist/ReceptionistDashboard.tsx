@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState, useCallback } from 'react';
+import { useMemo, useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppointmentStore, type Appointment, type AppointmentStatus } from '../../store/appointmentStore';
 import { useServiceStore } from '../../store/serviceStore';
@@ -121,6 +121,36 @@ export default function ReceptionistDashboard() {
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
   }, []);
+
+  // Solicitud de permiso para notificaciones nativas del sistema
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Detector de nuevas citas para lanzar notificaciones de sistema
+  const prevAppointmentsRef = useRef<Appointment[]>([]);
+
+  useEffect(() => {
+    if (appointments.length > 0 && prevAppointmentsRef.current.length > 0) {
+      const newAppts = appointments.filter(
+        a => !prevAppointmentsRef.current.some(pa => pa.id === a.id)
+      );
+
+      if (newAppts.length > 0) {
+        newAppts.forEach(a => {
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('¡Nueva Cita Registrada!', {
+              body: `${a.clientName} - ${a.service} a las ${format12h(a.time)}`,
+              icon: '/favicon.ico'
+            });
+          }
+        });
+      }
+    }
+    prevAppointmentsRef.current = appointments;
+  }, [appointments]);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -550,6 +580,30 @@ export default function ReceptionistDashboard() {
         {/* ══ SIDEBAR DERECHO ══ */}
         <div className="rec__col-side">
 
+          {/* Búsqueda rápida de clientes */}
+          <div className="rec__side-card">
+            <h3 className="rec__side-title"><Search size={15} /> Buscar Cliente</h3>
+            <input
+              className="rec__search-input"
+              placeholder="Nombre o teléfono..."
+              value={clientSearch}
+              onChange={e => setClientSearch(e.target.value)}
+            />
+            {clientSearch.length >= 2 && clientMatches.length > 0 && (
+              <div className="rec__search-results">
+                {clientMatches.map(c => (
+                  <div key={c.id} className="rec__search-result" onClick={() => navigate('/admin/clientes')}>
+                    <strong>{c.name}</strong>
+                    <span>{c.phone}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {clientSearch.length >= 2 && clientMatches.length === 0 && (
+              <p className="rec__search-none">No encontrado</p>
+            )}
+          </div>
+
           {/* Especialistas hoy */}
           <div className="rec__side-card">
             <h3 className="rec__side-title"><Users size={15} /> Especialistas</h3>
@@ -605,30 +659,6 @@ export default function ReceptionistDashboard() {
               })}
             </div>
           )}
-
-          {/* Búsqueda rápida de clientes */}
-          <div className="rec__side-card">
-            <h3 className="rec__side-title"><Search size={15} /> Buscar Cliente</h3>
-            <input
-              className="rec__search-input"
-              placeholder="Nombre o teléfono..."
-              value={clientSearch}
-              onChange={e => setClientSearch(e.target.value)}
-            />
-            {clientSearch.length >= 2 && clientMatches.length > 0 && (
-              <div className="rec__search-results">
-                {clientMatches.map(c => (
-                  <div key={c.id} className="rec__search-result" onClick={() => navigate('/admin/clientes')}>
-                    <strong>{c.name}</strong>
-                    <span>{c.phone}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {clientSearch.length >= 2 && clientMatches.length === 0 && (
-              <p className="rec__search-none">No encontrado</p>
-            )}
-          </div>
 
         </div>
       </div>
