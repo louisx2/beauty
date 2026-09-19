@@ -135,14 +135,28 @@ export default function Reports() {
 
   // CALCULATION EXPLANATION: Revenue generated ONLY by completed appointments in the selected period.
   // Sum of catalog prices for appointments with status = 'completed'.
+  /** Servicios de una cita, ya con precio resuelto. Una cita puede llevar
+   *  varios, cada uno de una especialista distinta. Las citas antiguas sin
+   *  lineas se tratan como un unico servicio. */
+  const serviciosDe = useMemo(() => {
+    const precioDe = (nombre: string, guardado: number) =>
+      guardado > 0 ? guardado : (services.find((sv) => sv.name === nombre)?.price ?? 0);
+
+    return (a: (typeof filteredAppointments)[number]) =>
+      (a.services.length > 0
+        ? a.services.map((l) => ({
+            nombre: l.serviceName,
+            empleada: l.employee,
+            precio: precioDe(l.serviceName, l.price),
+          }))
+        : [{ nombre: a.service, empleada: a.employee, precio: precioDe(a.service, 0) }]);
+  }, [services, filteredAppointments]);
+
   const totalRevenue = useMemo(() => {
     return filteredAppointments
       .filter(a => a.status === 'completed')
-      .reduce((acc, a) => {
-        const svc = services.find(s => s.name === a.service);
-        return acc + (svc ? svc.price : 0);
-      }, 0);
-  }, [filteredAppointments, services]);
+      .reduce((acc, a) => acc + serviciosDe(a).reduce((t, l) => t + l.precio, 0), 0);
+  }, [filteredAppointments, serviciosDe]);
 
   // Specialist Metrics
   const specialistStats = useMemo(() => {
@@ -151,24 +165,28 @@ export default function Reports() {
       : staff;
 
     return targetStaff.map(emp => {
-      const specAppts = filteredAppointments.filter(a => a.employee === emp.name && a.status === 'completed');
+      // Con varios servicios por cita, a cada una le toca lo que hizo ella.
       let generatedRevenue = 0;
-      specAppts.forEach(a => {
-        const svc = services.find(s => s.name === a.service);
-        if (svc) {
-          generatedRevenue += svc.price;
-        }
+      let citas = 0;
+      filteredAppointments.forEach(a => {
+        if (a.status !== 'completed') return;
+        const suyos = serviciosDe(a).filter(
+          (l) => l.empleada.toLowerCase() === emp.name.toLowerCase(),
+        );
+        if (suyos.length === 0) return;
+        citas++;
+        generatedRevenue += suyos.reduce((t, l) => t + l.precio, 0);
       });
       const commission = generatedRevenue * (emp.commissionPct / 100);
       return {
         name: emp.name,
-        completedAppts: specAppts.length,
+        completedAppts: citas,
         revenue: generatedRevenue,
         commission: commission,
         commissionPct: emp.commissionPct
       };
     }).sort((a, b) => b.revenue - a.revenue);
-  }, [staff, filteredAppointments, services, user]);
+  }, [staff, filteredAppointments, serviciosDe, user]);
 
   // ── Advanced Stats Calculations ──
   
@@ -177,21 +195,22 @@ export default function Reports() {
     const stats: Record<string, { count: number; revenue: number }> = {};
     filteredAppointments.forEach(a => {
       if (a.status !== 'completed') return;
-      const svc = services.find(s => s.name === a.service);
-      const category = svc ? svc.category : 'Otros';
-      const price = svc ? svc.price : 0;
-      if (!stats[category]) {
-        stats[category] = { count: 0, revenue: 0 };
-      }
-      stats[category].count++;
-      stats[category].revenue += price;
+      serviciosDe(a).forEach((l) => {
+        const svc = services.find(s => s.name === l.nombre);
+        const category = svc ? svc.category : 'Otros';
+        if (!stats[category]) {
+          stats[category] = { count: 0, revenue: 0 };
+        }
+        stats[category].count++;
+        stats[category].revenue += l.precio;
+      });
     });
     return Object.entries(stats).map(([category, data]) => ({
       category,
       count: data.count,
       revenue: data.revenue
     })).sort((a, b) => b.revenue - a.revenue);
-  }, [filteredAppointments, services]);
+  }, [filteredAppointments, services, serviciosDe]);
 
   const maxCategoryRevenue = useMemo(() => {
     return Math.max(...categoryStats.map(c => c.revenue), 1);

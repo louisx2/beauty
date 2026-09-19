@@ -376,3 +376,106 @@
   gap: 12px;
   margin-top: 24px;
 }
+/* ── Varios servicios en una reserva ────────────────────────────────────── */
+.booking__field--full {
+  grid-column: 1 / -1;
+}
+
+.booking__pick {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.booking__pick select {
+  width: 100%;
+  min-width: 0;
+}
+
+.booking__pick-remove {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(125, 90, 68, 0.25);
+  border-radius: 10px;
+  background: transparent;
+  color: #a8503a;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.booking__pick-remove:hover {
+  background: rgba(192, 104, 79, 0.1);
+}
+
+.booking__picks-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.booking__pick-add {
+  padding: 7px 12px;
+  border: 1px dashed rgba(125, 90, 68, 0.4);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--cocoa);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.booking__pick-add:hover {
+  background: rgba(178, 150, 125, 0.12);
+  border-style: solid;
+}
+
+.booking__picks-total {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* Reparto de la visita: a que hora y con quien va cada servicio */
+.booking__plan {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: rgba(178, 150, 125, 0.12);
+}
+
+.booking__plan-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cocoa);
+  margin-bottom: 2px;
+}
+
+.booking__plan-line {
+  font-size: 0.86rem;
+  color: var(--espresso);
+}
+
+.booking__plan-line em {
+  color: var(--muted);
+  font-style: normal;
+}
+
+@media (max-width: 640px) {
+  .booking__pick {
+    grid-template-columns: 1fr auto;
+  }
+  .booking__pick-staff {
+    grid-column: 1;
+  }
+}

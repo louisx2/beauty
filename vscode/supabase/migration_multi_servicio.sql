@@ -31,3 +31,11 @@
 --   triggers  appointments_sync_lines, appointment_services_sync_header
 --   borrado   constraint appointments_no_overlap (sustituido por
 --             appointment_services_no_overlap)
+
+-- Añadidos despues (mismas fechas):
+--   save_appointment(...)  guarda cita + servicios en UNA transaccion. El id se
+--     genera dentro en vez de usar RETURNING, porque un "insert ... returning"
+--     exige permiso de LECTURA y el rol anonimo (la web) solo tiene escritura.
+--   appointment_is_web(uuid)  usada por la politica de insercion anonima de
+--     lineas: comprobar el origen con una subconsulta fallaba, porque el rol
+--     anonimo tampoco puede leer appointments.

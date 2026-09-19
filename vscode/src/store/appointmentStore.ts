@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { Database, Json } from '../lib/database.types';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { playNotificationSound } from '../lib/sound';
@@ -12,6 +13,17 @@ export type AppointmentStatus =
   | 'completed'
   | 'cancelled'
   | 'no_show';
+
+/** Un servicio dentro de una cita. Cada uno con su especialista y su hora. */
+export interface AppointmentLine {
+  id?: string;
+  serviceId: string | null;
+  serviceName: string;
+  employee: string;
+  startTime: string;
+  duration: number;
+  price: number;
+}
 
 export interface Appointment {
   id: string;
@@ -28,6 +40,10 @@ export interface Appointment {
   source: string;
   createdAt: string;
   startedAt: string | null;  // timestamp cuando la especialista inició el servicio
+  /** Servicios de la cita. Las columnas service/employee/duration de arriba
+   *  son el resumen que mantiene la base: primer servicio, primera
+   *  especialista y duración total. */
+  services: AppointmentLine[];
 }
 
 function mapRow(r: Record<string, unknown>): Appointment {
@@ -46,7 +62,48 @@ function mapRow(r: Record<string, unknown>): Appointment {
     source: r.source as string,
     createdAt: r.created_at as string,
     startedAt: (r.started_at as string) ?? null,
+    services: ((r.appointment_services as Record<string, unknown>[]) ?? [])
+      .slice()
+      .sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0))
+      .map((l) => ({
+        id: l.id as string,
+        serviceId: (l.service_id as string) ?? null,
+        serviceName: l.service_name as string,
+        employee: l.employee as string,
+        startTime: String(l.start_time ?? '').slice(0, 5),
+        duration: Number(l.duration ?? 45),
+        price: Number(l.price ?? 0),
+      })),
   };
+}
+
+
+/** Servicios en el formato que espera save_appointment. Si la pantalla aun no
+ *  maneja lineas, se manda el servicio suelto de siempre como linea unica. */
+function lineasParaRpc(appt: {
+  services?: AppointmentLine[];
+  service?: string;
+  employee?: string;
+  duration?: number;
+}): Json {
+  const lineas = appt.services && appt.services.length > 0
+    ? appt.services
+    : [{
+        serviceId: null,
+        serviceName: appt.service ?? '',
+        employee: appt.employee ?? '',
+        startTime: '',
+        duration: appt.duration ?? 45,
+        price: 0,
+      } as AppointmentLine];
+
+  return lineas.map((l) => ({
+    service_id: l.serviceId,
+    service_name: l.serviceName,
+    employee: l.employee,
+    duration: l.duration,
+    price: l.price ?? 0,
+  }));
 }
 
 interface AppointmentState {
@@ -86,7 +143,7 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
     try {
       const { data, error } = await supabase
         .from('appointments')
-        .select('*')
+        .select('*, appointment_services(*)')
         .order('date', { ascending: false })
         .order('time', { ascending: false });
 
@@ -106,21 +163,30 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
 
   addAppointment: async (appt) => {
     try {
+      const { data: newId, error: rpcError } = await supabase.rpc('save_appointment', {
+        p_id: null,
+        p_client_id: null,
+        p_client_name: appt.clientName,
+        p_client_phone: appt.clientPhone,
+        p_date: appt.date,
+        p_time: appt.time,
+        p_status: appt.status,
+        p_notes: appt.notes ?? '',
+        p_source: appt.source,
+        p_services: lineasParaRpc(appt),
+      });
+
+      if (rpcError) {
+        console.error('[appointments] insert error:', rpcError);
+        set({ lastError: rpcError.code === '23P01' ? 'conflict' : 'unknown' });
+        return null;
+      }
+      set({ lastError: null });
+
       const { data, error } = await supabase
         .from('appointments')
-        .insert({
-          client_name: appt.clientName,
-          client_phone: appt.clientPhone,
-          service: appt.service,
-          employee: appt.employee,
-          date: appt.date,
-          time: appt.time,
-          duration: appt.duration,
-          status: appt.status,
-          notes: appt.notes ?? '',
-          source: appt.source,
-        })
-        .select()
+        .select('*, appointment_services(*)')
+        .eq('id', newId as string)
         .single();
 
       if (error) {
@@ -147,7 +213,7 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
 
   updateAppointment: async (id, updates) => {
     const oldAppt = get().appointments.find((a) => a.id === id);
-    const db: Record<string, unknown> = {};
+    const db: Database['public']['Tables']['appointments']['Update'] = {};
     if (updates.clientName !== undefined) db.client_name = updates.clientName;
     if (updates.clientPhone !== undefined) db.client_phone = updates.clientPhone;
     if (updates.service !== undefined) db.service = updates.service;
@@ -160,11 +226,35 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
     if (updates.source !== undefined) db.source = updates.source;
 
     try {
+      // Si la pantalla manda servicios, se regraba la cita entera en una sola
+      // transaccion: cabecera + lineas. Asi un choque de horario no deja la
+      // cita movida y los servicios en el sitio viejo.
+      if (updates.services !== undefined) {
+        const base = { ...(oldAppt as Appointment), ...updates } as Appointment;
+        const { error: rpcError } = await supabase.rpc('save_appointment', {
+          p_id: id,
+          p_client_id: base.client_id,
+          p_client_name: base.clientName,
+          p_client_phone: base.clientPhone,
+          p_date: base.date,
+          p_time: base.time,
+          p_status: base.status,
+          p_notes: base.notes ?? '',
+          p_source: base.source,
+          p_services: lineasParaRpc(base),
+        });
+        if (rpcError) {
+          console.error('[appointments] update error:', rpcError);
+          set({ lastError: rpcError.code === '23P01' ? 'conflict' : 'unknown' });
+          return false;
+        }
+      }
+
       const { data, error } = await supabase
         .from('appointments')
         .update(db)
         .eq('id', id)
-        .select()
+        .select('*, appointment_services(*)')
         .single();
 
       if (error) {
