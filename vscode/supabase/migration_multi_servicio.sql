@@ -1,0 +1,33 @@
+-- Citas con varios servicios. Aplicado en Supabase el 2026-09-19
+-- (migraciones: appointment_services_multi, appointment_services_sync,
+--  appointment_services_rls).
+--
+-- MODELO
+-- appointments  = cabecera: clienta, fecha, hora de inicio, estado.
+-- appointment_services = una linea por servicio, con SU especialista, SU hora
+--   y SU duracion, porque una misma visita puede repartirse entre dos personas.
+--
+-- Las columnas service / employee / duration de la cabecera se conservan como
+-- RESUMEN (servicios unidos con " + ", primera especialista, duracion total),
+-- y un trigger las mantiene al dia. Asi las pantallas que aun no conocen las
+-- lineas siguen funcionando igual.
+--
+-- CANDADO ANTI-DOBLE-RESERVA
+-- Se movio de la cabecera a las lineas. Antes ocupaba a la empleada durante
+-- toda la cita; con dos especialistas eso bloqueaba de mas (Carmen quedaba
+-- ocupada 90 min cuando solo trabaja los primeros 60).
+--
+-- SINCRONIZACION (triggers)
+--   cabecera -> lineas  : mover la cita de dia/hora recoloca las lineas una
+--                         detras de otra; cancelar o marcar no_show las
+--                         desactiva y libera los horarios.
+--   lineas -> cabecera  : recalcula el resumen (servicio, empleada, duracion).
+--
+-- El detalle completo de cada objeto esta en las migraciones de Supabase.
+-- Resumen de objetos creados:
+--   tabla     public.appointment_services (+ indices, RLS y politicas)
+--   funciones resync_appointment_lines, refresh_appointment_summary,
+--             staff_in_appointment, get_busy_slots (reescrita sobre lineas)
+--   triggers  appointments_sync_lines, appointment_services_sync_header
+--   borrado   constraint appointments_no_overlap (sustituido por
+--             appointment_services_no_overlap)
