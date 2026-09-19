@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ClientAutocomplete from '../../components/ClientAutocomplete';
+import { format12h } from '../../lib/timeFormat';
 import './SessionPackages.css';
 
 function fmtPrice(p: number) { return `RD$ ${p.toLocaleString('es-DO')}`; }
@@ -740,7 +741,7 @@ export default function SessionPackages() {
                     onChange={(e) => setSchedForm({ ...schedForm, time: e.target.value })}
                   >
                     {getAvailableHours(schedForm.date).map((h) => (
-                      <option key={h} value={h}>{h}</option>
+                      <option key={h} value={h}>{format12h(h)}</option>
                     ))}
                   </select>
                 </div>

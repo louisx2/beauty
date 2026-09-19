@@ -4,6 +4,7 @@ import {
   Sparkles, AlertCircle, CheckCircle2, Copy, ExternalLink,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { format12h } from '../lib/timeFormat';
 import { useSettingsStore } from '../store/settingsStore';
 import './Booking.css';
 
@@ -643,7 +644,7 @@ export default function Booking() {
                     className={`booking__slot ${form.time === time ? 'booking__slot--active' : ''}`}
                     onClick={() => setForm({ ...form, time })}
                   >
-                    {time}
+                    {format12h(time)}
                   </button>
                 ))}
               </div>

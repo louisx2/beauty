@@ -192,6 +192,45 @@ export type Database = {
         Insert: Partial<Database['public']['Tables']['settings']['Row']>;
         Update: Partial<Database['public']['Tables']['settings']['Row']>;
       };
+      schedule_blocks: {
+        Row: {
+          id: string;
+          staff_id: string | null;
+          start_date: string;
+          end_date: string;
+          start_time: string | null;
+          end_time: string | null;
+          reason: string;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['schedule_blocks']['Row'], 'id' | 'created_at'> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['schedule_blocks']['Insert']>;
+      };
     };
+    Views: {
+      /** Solo horarios: la pagina publica no debe ver el motivo del bloqueo. */
+      schedule_blocks_public: {
+        Row: {
+          id: string;
+          staff_id: string | null;
+          start_date: string;
+          end_date: string;
+          start_time: string | null;
+          end_time: string | null;
+        };
+      };
+    };
+    Functions: {
+      /** Horas ya ocupadas de una empleada en una fecha (lo puede leer el publico). */
+      get_busy_slots: {
+        Args: { p_date: string; p_employee: string };
+        Returns: { time: string; duration: number }[];
+      };
+    };
+    Enums: { [_ in never]: never };
+    CompositeTypes: { [_ in never]: never };
   };
 };

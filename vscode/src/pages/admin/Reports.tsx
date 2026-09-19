@@ -10,6 +10,7 @@ import {
   FileText, Download, DollarSign, Receipt,
   CalendarDays, Users, UserCog, Calendar, TrendingUp
 } from 'lucide-react';
+import { format12h } from '../../lib/timeFormat';
 import './Reports.css';
 
 function fmtPrice(p: number) { return `RD$ ${Math.round(p).toLocaleString('es-DO')}`; }
@@ -735,7 +736,7 @@ export default function Reports() {
                     <div style={{ background: 'rgba(255,255,255,0.04)', width: '100%', height: '50px', borderRadius: '4px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
                       <div style={{ background: 'linear-gradient(to top, var(--lavender-dark), var(--lavender))', width: '100%', height: `${Math.round((p.count / maxPeakCount) * 100)}%` }} />
                     </div>
-                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>{p.time}</span>
+                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>{format12h(p.time)}</span>
                   </div>
                 ))}
                 {peakHours.length === 0 && <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center', width: '100%', paddingBottom: '30px' }}>Sin datos de horas</div>}

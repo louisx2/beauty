@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { X, CalendarOff, Trash2, Plus } from 'lucide-react';
 import { useBlockStore } from '../store/blockStore';
 import { useStaffStore } from '../store/staffStore';
+import { format12h } from '../lib/timeFormat';
 import './ScheduleBlocksModal.css';
 
 interface Props {
@@ -215,7 +216,9 @@ export default function ScheduleBlocksModal({ onClose, defaultDate }: Props) {
                   <span className="blocks__dates">
                     {formatDate(b.startDate)}
                     {b.endDate !== b.startDate && ` → ${formatDate(b.endDate)}`}
-                    {b.startTime && b.endTime ? ` · ${b.startTime} a ${b.endTime}` : ' · todo el día'}
+                    {b.startTime && b.endTime
+                      ? ` · ${format12h(b.startTime)} a ${format12h(b.endTime)}`
+                      : ' · todo el día'}
                   </span>
                   {b.reason && <span className="blocks__reason">{b.reason}</span>}
                 </div>
