@@ -51,13 +51,10 @@
   height: 38px;
   border-radius: 12px;
   background: linear-gradient(135deg, var(--rose), var(--lavender));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Cormorant Garamond', serif;
-  font-weight: 700;
-  font-size: 1.2rem;
-  color: white;
+  /* Monograma de la marca en blanco; contain lo deja completo dentro del cuadro */
+  object-fit: contain;
+  padding: 6px;
+  flex-shrink: 0;
 }
 
 .admin__brand-name {

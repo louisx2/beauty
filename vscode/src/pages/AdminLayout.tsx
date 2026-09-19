@@ -293,7 +293,14 @@ export default function AdminLayout() {
       <aside className={`admin__sidebar ${sidebarOpen ? 'admin__sidebar--open' : ''}`}>
         <div className="admin__sidebar-header">
           <div className="admin__brand">
-            <span className="admin__brand-icon">N</span>
+            <img
+              src="/brand/icono-blanco.png"
+              alt=""
+              aria-hidden="true"
+              className="admin__brand-icon"
+              width={38}
+              height={38}
+            />
             <div>
               <span className="admin__brand-name">Anadsll</span>
               <span className="admin__brand-sub">
