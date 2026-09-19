@@ -2,9 +2,25 @@
 <html lang="es" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" id="fav-ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" id="fav-png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" id="fav-apple" />
+    <link rel="manifest" href="/manifest.webmanifest" id="app-manifest" />
+    <script>
+      // En app.midominio.com el sitio se instala como "Panel" con su propio
+      // icono (monograma blanco sobre marron), para que la dueña distinga en
+      // la pantalla del telefono la app de trabajo de la pagina publica.
+      (function () {
+        if (location.hostname.indexOf('app.') !== 0) return;
+        document.getElementById('app-manifest').href = '/manifest-panel.webmanifest';
+        document.getElementById('fav-apple').href = '/apple-touch-icon-panel.png';
+        document.getElementById('fav-png').href = '/icon-panel-192.png';
+        document.getElementById('fav-ico').href = '/icon-panel-192.png';
+        document.getElementById('fav-ico').type = 'image/png';
+        document.documentElement.setAttribute('data-panel-host', 'true');
+        document.title = 'Anadsll — Panel Administrativo';
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Anadsll Beauty Esthetic - Centro de estética premium para la mujer. Depilación láser, limpieza facial, cuidado corporal y más. Agenda tu cita por WhatsApp." />
     <meta name="keywords" content="estética, belleza, depilación láser, limpieza facial, cuidado de piel, salón de belleza, República Dominicana" />

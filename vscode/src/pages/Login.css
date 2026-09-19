@@ -46,13 +46,9 @@
   height: 64px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--rose), var(--lavender));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Cormorant Garamond', serif;
-  font-weight: 700;
-  font-size: 1.8rem;
-  color: white;
+  /* El monograma es mas alto que ancho: contain lo deja completo y centrado */
+  object-fit: contain;
+  padding: 10px;
   margin: 0 auto 16px;
   box-shadow: 0 8px 32px rgba(125, 90, 68, 0.3);
 }
