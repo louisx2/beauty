@@ -75,11 +75,7 @@ export default function MyAppointments() {
     setSearched(true);
 
     const { data, error } = await supabase
-      .from('appointments')
-      .select('*')
-      .eq('client_phone', cleanPhone)
-      .order('date', { ascending: false })
-      .order('time', { ascending: false });
+      .rpc('get_client_appointments', { p_phone: cleanPhone });
 
     if (error) {
       console.error('[my-appointments] search error:', error);
@@ -105,16 +101,20 @@ export default function MyAppointments() {
     setConfirmCancelId(null);
     setCancellingId(id);
 
-    const { error } = await supabase
-      .from('appointments')
-      .update({ status: 'cancelled' })
-      .eq('id', id)
-      .eq('client_phone', phone.trim()); // Safety: only cancel if phone matches
+    const { data: cancelled, error } = await supabase
+      .rpc('cancel_client_appointment', { p_id: id, p_phone: phone.trim() });
 
     if (error) {
       console.error('[my-appointments] cancel error:', error);
       toast.error(
         'No se pudo cancelar la cita. Por favor contáctanos por WhatsApp para ayudarte.'
+      );
+    } else if (cancelled === false) {
+      // La cita existe, pero la regla del salon no permite cancelarla sola:
+      // faltan menos de 12 horas, o ya esta cancelada o atendida.
+      toast.error(
+        'Esta cita ya no se puede cancelar en línea (faltan menos de 12 horas). Escríbenos por WhatsApp y te ayudamos.',
+        { duration: 6000 }
       );
     } else {
       setAppointments((prev) =>
