@@ -283,7 +283,7 @@ export default function Reports() {
     csv += `RESUMEN GENERAL\n`;
     csv += `Metrica;Cantidad / Monto\n`;
     csv += `Citas Completadas;${totalCompleted}\n`;
-    csv += `Citas Perdidas (No Asistio);${totalNoShow}\n`;
+    csv += `Citas Perdidas (No Asistió);${totalNoShow}\n`;
     csv += `Citas Canceladas;${totalCancelled}\n`;
     csv += `Clientes Nuevos;${totalNewClients}\n`;
     if (!isSpec) {
@@ -388,7 +388,7 @@ export default function Reports() {
           <h2>Resumen General</h2>
           <div class="grid">
             <div class="card"><span>Citas Completadas</span><strong>${totalCompleted}</strong></div>
-            <div class="card"><span>Citas Perdidas (No Asistio)</span><strong>${totalNoShow}</strong></div>
+            <div class="card"><span>Citas Perdidas (No Asistió)</span><strong>${totalNoShow}</strong></div>
             <div class="card"><span>Citas Canceladas</span><strong>${totalCancelled}</strong></div>
             <div class="card"><span>Clientes Nuevos</span><strong>${totalNewClients}</strong></div>
             ${user?.role !== 'specialist' ? `

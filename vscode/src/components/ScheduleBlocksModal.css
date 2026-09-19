@@ -9,7 +9,7 @@
   margin: 0 24px 4px;
   font-size: 0.85rem;
   line-height: 1.5;
-  color: var(--text-muted, #8a7a6e);
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .blocks__checkbox {
@@ -18,7 +18,7 @@
   gap: 10px;
   font-size: 0.9rem;
   cursor: pointer;
-  color: var(--text-main);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .blocks__checkbox input {
@@ -65,13 +65,13 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-muted, #8a7a6e);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .blocks__empty {
   margin: 0;
   font-size: 0.88rem;
-  color: var(--text-muted, #8a7a6e);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .blocks__item {
@@ -82,20 +82,20 @@
   padding: 12px 14px;
   margin-bottom: 8px;
   border-radius: 12px;
-  background: rgba(178, 150, 125, 0.12);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .blocks__item strong {
   display: block;
   font-size: 0.92rem;
-  color: var(--text-main);
+  color: #fff;
 }
 
 .blocks__dates,
 .blocks__reason {
   display: block;
   font-size: 0.8rem;
-  color: var(--text-muted, #8a7a6e);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .blocks__reason {
@@ -131,7 +131,7 @@
   padding: 10px 12px;
   border-radius: 10px;
   background: rgba(201, 169, 110, 0.16);
-  color: var(--text-main);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.85rem;
   line-height: 1.4;
 }
@@ -155,3 +155,25 @@
   color: #a8503a;
   font-weight: 500;
 }
+
+/* El icono del titulo iba en su propia linea */
+.blocks__modal .modal__header h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Tema claro */
+[data-theme="light"] .blocks__hint,
+[data-theme="light"] .blocks__list h3,
+[data-theme="light"] .blocks__empty,
+[data-theme="light"] .blocks__dates,
+[data-theme="light"] .blocks__reason { color: var(--muted); }
+
+[data-theme="light"] .blocks__checkbox,
+[data-theme="light"] .blocks__item strong,
+[data-theme="light"] .appts__block-warning { color: var(--espresso); }
+
+[data-theme="light"] .blocks__item { background: rgba(74, 52, 42, 0.05); }
+
+[data-theme="light"] .appts__block-warning--clash { color: #a8503a; }

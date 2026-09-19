@@ -84,7 +84,7 @@ const STATUS_CONFIG: Record<AppointmentStatus, { label: string; class: string; i
   in_progress: { label: 'En Proceso', class: 'badge--blue', icon: <PlayCircle size={14} /> },
   completed: { label: 'Completada', class: 'badge--emerald', icon: <CheckCircle2 size={14} /> },
   cancelled: { label: 'Cancelada', class: 'badge--red', icon: <XCircle size={14} /> },
-  no_show: { label: 'No Asistio', class: 'badge--gray', icon: <Ban size={14} /> },
+  no_show: { label: 'No Asistió', class: 'badge--gray', icon: <Ban size={14} /> },
 };
 
 const STATUS_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
@@ -228,7 +228,9 @@ export default function Appointments() {
     const hit = isBlocked(blocks, member?.id ?? null, form.date, timeToMinutes(form.time), form.duration || 45);
     if (!hit) return null;
     const quien = hit.staffId ? form.employee : 'el salón';
-    const cuando = hit.startTime && hit.endTime ? `de ${hit.startTime} a ${hit.endTime}` : 'todo el día';
+    const cuando = hit.startTime && hit.endTime
+      ? `de ${format12h(hit.startTime)} a ${format12h(hit.endTime)}`
+      : 'todo el día';
     return `Ojo: ${quien} tiene bloqueado ese horario (${cuando})${hit.reason ? ` — ${hit.reason}` : ''}.`;
   }, [blocks, form.date, form.time, form.employee, form.duration, staff]);
 
@@ -411,8 +413,8 @@ export default function Appointments() {
       {/* Header */}
       <div className="appts__header">
         <div>
-          <h1 className="appts__title">Gestion de Citas</h1>
-          <p className="appts__subtitle">Agenda y administra todas las citas del salon</p>
+          <h1 className="appts__title">Gestión de Citas</h1>
+          <p className="appts__subtitle">Agenda y administra todas las citas del salón</p>
         </div>
         <div className="appts__header-actions">
           <button className="appts__block-btn" onClick={() => setShowBlocksModal(true)} id="btn-block-schedule">
@@ -444,7 +446,7 @@ export default function Appointments() {
         </div>
 
         <div className="appts__view-toggle">
-          <button className={`appts__view-btn ${view === 'day' ? 'appts__view-btn--active' : ''}`} onClick={() => setView('day')}>Da</button>
+          <button className={`appts__view-btn ${view === 'day' ? 'appts__view-btn--active' : ''}`} onClick={() => setView('day')}>Día</button>
           <button className={`appts__view-btn ${view === 'week' ? 'appts__view-btn--active' : ''}`} onClick={() => setView('week')}>Semana</button>
           <button className={`appts__view-btn ${view === 'all' ? 'appts__view-btn--active' : ''}`} onClick={() => setView('all')}>Todo</button>
         </div>
@@ -540,7 +542,7 @@ export default function Appointments() {
         {filteredAppointments.length === 0 ? (
           <div className="appts__empty">
             <Calendar size={40} />
-            <p>No hay citas {view === 'day' ? 'para este da' : view === 'week' ? 'esta semana' : 'registradas'}</p>
+            <p>No hay citas {view === 'day' ? 'para este día' : view === 'week' ? 'esta semana' : 'registradas'}</p>
           </div>
         ) : (
           filteredAppointments.map((appt) => (
@@ -631,7 +633,7 @@ export default function Appointments() {
                     <button
                       className="appt-card__action-btn appt-card__action-btn--dianger"
                       onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'no_show'); notifyStatusChange(appt, 'no_show'); }}
-                      title="No Asistio"
+                      title="No Asistió"
                     >
                       <Ban size={16} />
                     </button>
@@ -697,7 +699,7 @@ export default function Appointments() {
                   {apptErrors.clientName && <span className="field-error"><AlertCircle size={12} /> {apptErrors.clientName}</span>}
                 </div>
                 <div className="modal__field">
-                  <label><Phone size={14} /> Telfono *</label>
+                  <label><Phone size={14} /> Teléfono *</label>
                   <input
                     type="tel"
                     placeholder="829-000-0000"
@@ -747,7 +749,7 @@ export default function Appointments() {
                   </select>
                 </div>
                 <div className="modal__field">
-                  <label><Clock size={14} /> Duracin</label>
+                  <label><Clock size={14} /> Duración</label>
                   <select value={form.duration} onChange={(e) => setForm({ ...form, duration: Number(e.target.value) })}>
                     <option value={30}>30 min</option>
                     <option value={45}>45 min</option>
@@ -761,7 +763,7 @@ export default function Appointments() {
               <div className="modal__field">
                 <label><FileText size={14} /> Notas</label>
                 <textarea
-                  placeholder="Observaciones, alergias, sesin #..."
+                  placeholder="Observaciones, alergias, sesión #..."
                   rows={3}
                   value={form.notes || ''}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}

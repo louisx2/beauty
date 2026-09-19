@@ -626,7 +626,7 @@ export default function Booking() {
               </div>
             ) : isDayOff ? (
               <div className="booking__alert">
-                <AlertCircle size={16} /> {selectedStaff.name} no trabaja este dia.
+                <AlertCircle size={16} /> {selectedStaff.name} no trabaja este día.
               </div>
             ) : loadingSlots ? (
               <div className="booking__loading">Buscando horarios disponibles...</div>
