@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /$
+Allow: /reservar
+# El portal de la clienta y el panel no deben salir en Google
+Disallow: /mis-citas
+Disallow: /admin
+
+Sitemap: https://anadsllbeautyesthetic.com/sitemap.xml
