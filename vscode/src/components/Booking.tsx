@@ -134,11 +134,7 @@ export default function Booking() {
     setForm((prev) => ({ ...prev, time: '' }));
 
     supabase
-      .from('appointments')
-      .select('time, duration, status')
-      .eq('date', form.date)
-      .eq('employee', staffMember.name)
-      .neq('status', 'cancelled')
+      .rpc('get_busy_slots', { p_date: form.date, p_employee: staffMember.name })
       .then(({ data }) => {
         setExistingAppts((data as ExistingAppt[]) ?? []);
         setLoadingSlots(false);
@@ -250,7 +246,25 @@ export default function Booking() {
     setBookingError('');
 
     try {
-      const { data: appt, error } = await supabase
+      // La lista de horarios se cargo hace rato: alguien pudo tomar la hora
+      // mientras la clienta llenaba el formulario. Se relee antes de guardar.
+      const { data: fresh } = await supabase
+        .rpc('get_busy_slots', { p_date: form.date, p_employee: selectedStaff.name });
+
+      const wanted = timeToMinutes(form.time);
+      const taken = (fresh as ExistingAppt[] | null)?.some((a) => {
+        const start = timeToMinutes(a.time);
+        return wanted < start + (a.duration ?? 45) && wanted + effectiveDuration > start;
+      });
+
+      if (taken) {
+        setExistingAppts((fresh as ExistingAppt[]) ?? []);
+        setForm((prev) => ({ ...prev, time: '' }));
+        setBookingError('Ese horario se acaba de ocupar. Por favor elige otra hora.');
+        return;
+      }
+
+      const { error } = await supabase
         .from('appointments')
         .insert({
           client_name: form.name.trim(),
@@ -263,15 +277,20 @@ export default function Booking() {
           status: 'pending',
           notes: form.notes.trim() || '',
           source: 'web',
-        })
-        .select()
-        .single();
+        });
 
-      if (error || !appt) {
+      if (error) {
         console.error('[booking] insert error:', error);
-        setBookingError(
-          'Hubo un problema al guardar tu solicitud. Por favor intenta de nuevo o contactanos por WhatsApp.'
-        );
+        // 23P01 = la base rechazo la cita porque otra persona tomo ese horario
+        // en el mismo instante. Es el unico caso que la clienta puede resolver.
+        if (error?.code === '23P01') {
+          setForm((prev) => ({ ...prev, time: '' }));
+          setBookingError('Ese horario se acaba de ocupar. Por favor elige otra hora.');
+        } else {
+          setBookingError(
+            'Hubo un problema al guardar tu solicitud. Por favor intenta de nuevo o contactanos por WhatsApp.'
+          );
+        }
         return;
       }
 

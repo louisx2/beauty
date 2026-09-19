@@ -202,6 +202,24 @@ export default function Appointments() {
   const { blocks, fetchBlocks } = useBlockStore();
   useEffect(() => { fetchBlocks().catch(() => {}); }, [fetchBlocks]);
 
+  // Aviso cuando la hora elegida ya la tiene ocupada esa empleada.
+  // La base lo impide igual, pero es mejor verlo antes de guardar.
+  const overlapWarning = useMemo(() => {
+    if (!form.date || !form.time || !form.employee) return null;
+    const start = timeToMinutes(form.time);
+    const end = start + (form.duration || 45);
+    const clash = appointments.find((a) => {
+      if (a.id === editingId) return false;
+      if (a.date !== form.date) return false;
+      if (a.employee.toLowerCase() !== form.employee.toLowerCase()) return false;
+      if (a.status === 'cancelled' || a.status === 'no_show') return false;
+      const aStart = timeToMinutes(a.time);
+      return start < aStart + (a.duration || 45) && end > aStart;
+    });
+    if (!clash) return null;
+    return `${form.employee} ya tiene a ${clash.clientName} a las ${format12h(clash.time)} (${clash.service}).`;
+  }, [appointments, editingId, form.date, form.time, form.employee, form.duration]);
+
   // Aviso cuando la cita que se esta creando cae en un horario bloqueado.
   // Es solo una advertencia: la recepcionista puede tener una razon para agendar igual.
   const blockedWarning = useMemo(() => {
@@ -310,6 +328,13 @@ export default function Appointments() {
     }
   }, [location.search, appointments, navigate]);
 
+  // La base rechaza dos citas encimadas para la misma empleada; el mensaje
+  // tecnico no le dice nada a la recepcionista, asi que se traduce.
+  const conflictMessage = () =>
+    useAppointmentStore.getState().lastError === 'conflict'
+      ? 'Esa empleada ya tiene una cita a esa hora. Elige otra hora u otra empleada.'
+      : '';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validateAppt(form, !!editingId);
@@ -330,7 +355,7 @@ export default function Appointments() {
           toast.success('Cita actualizada correctamente');
           setShowModal(false);
         } else {
-          toast.error('No se pudo actualizar la cita. Intenta de nuevo.');
+          toast.error(conflictMessage() || 'No se pudo actualizar la cita. Intenta de nuevo.');
         }
       } else {
         const created = await addAppointment(payload);
@@ -338,7 +363,7 @@ export default function Appointments() {
           toast.success('Cita creada correctamente');
           setShowModal(false);
         } else {
-          toast.error('No se pudo crear la cita. Intenta de nuevo.');
+          toast.error(conflictMessage() || 'No se pudo crear la cita. Intenta de nuevo.');
         }
       }
     } catch (error) {
@@ -742,6 +767,12 @@ export default function Appointments() {
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 />
               </div>
+
+              {overlapWarning && (
+                <p className="appts__block-warning appts__block-warning--clash">
+                  <AlertCircle size={16} /> {overlapWarning} No se puede guardar encima.
+                </p>
+              )}
 
               {blockedWarning && (
                 <p className="appts__block-warning">

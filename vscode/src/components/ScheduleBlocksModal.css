@@ -147,3 +147,11 @@
     margin-right: 0;
   }
 }
+
+/* Choque con otra cita: la base lo rechaza, asi que se avisa mas fuerte
+   que un simple bloqueo de horario. */
+.appts__block-warning--clash {
+  background: rgba(192, 104, 79, 0.16);
+  color: #a8503a;
+  font-weight: 500;
+}
