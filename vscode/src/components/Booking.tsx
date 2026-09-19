@@ -34,6 +34,14 @@ interface SessionPackage {
   };
 }
 
+interface PublicBlock {
+  staff_id: string | null;
+  start_date: string;
+  end_date: string;
+  start_time: string | null;
+  end_time: string | null;
+}
+
 interface ExistingAppt {
   time: string;
   duration: number;
@@ -82,6 +90,7 @@ export default function Booking() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [blocks, setBlocks] = useState<PublicBlock[]>([]);
   const [success, setSuccess] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [whatsappMsg, setWhatsappMsg] = useState('');
@@ -134,6 +143,15 @@ export default function Booking() {
         setExistingAppts((data as ExistingAppt[]) ?? []);
         setLoadingSlots(false);
       });
+
+    // Bloqueos de horario: vacaciones, dia libre, almuerzo o cierre del salon.
+    // La vista publica solo expone los horarios, nunca el motivo.
+    supabase
+      .from('schedule_blocks_public')
+      .select('staff_id, start_date, end_date, start_time, end_time')
+      .lte('start_date', form.date)
+      .gte('end_date', form.date)
+      .then(({ data }) => setBlocks((data as PublicBlock[]) ?? []));
   }, [form.date, form.staffId, staffList]);
 
   const selectedService = services.find((s) => s.id === form.serviceId);
@@ -186,20 +204,38 @@ export default function Booking() {
           const apptEnd = apptStart + (a.duration ?? 45);
           return cursor < apptEnd && cursor + duration > apptStart;
         });
-        if (!overlap) slots.push(minutesToTime(cursor));
+        // Un bloqueo sin horas tapa el dia completo; uno con horas, solo ese tramo.
+        const blocked = blocks.some((b) => {
+          if (b.staff_id && b.staff_id !== selectedStaff.id) return false;
+          if (!b.start_time || !b.end_time) return true;
+          const bStart = timeToMinutes(b.start_time.slice(0, 5));
+          const bEnd = timeToMinutes(b.end_time.slice(0, 5));
+          return cursor < bEnd && cursor + duration > bStart;
+        });
+        if (!overlap && !blocked) slots.push(minutesToTime(cursor));
       }
       cursor += 30;
     }
 
     return slots;
-  }, [effectiveServiceId, selectedStaff, form.date, existingAppts, effectiveDuration]);
+  }, [effectiveServiceId, selectedStaff, form.date, existingAppts, effectiveDuration, blocks]);
+
+  // Dia no laborable: por horario fijo de la especialista, o por un bloqueo de dia completo
+  const fullDayBlocked = Boolean(
+    selectedStaff &&
+      blocks.some(
+        (b) => (!b.staff_id || b.staff_id === selectedStaff.id) && !b.start_time && !b.end_time
+      )
+  );
 
   const isDayOff =
-    form.date &&
-    selectedStaff &&
-    !(selectedStaff.working_days ?? []).includes(
-      WEEKDAYS[new Date(`${form.date}T12:00:00`).getDay()]
-    );
+    Boolean(
+      form.date &&
+        selectedStaff &&
+        !(selectedStaff.working_days ?? []).includes(
+          WEEKDAYS[new Date(`${form.date}T12:00:00`).getDay()]
+        )
+    ) || fullDayBlocked;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

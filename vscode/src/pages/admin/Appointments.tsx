@@ -31,6 +31,7 @@ import {
   Ban,
   Edit2,
   CalendarClock,
+  CalendarOff,
   Trash2,
   Save,
 } from 'lucide-react';
@@ -38,6 +39,8 @@ import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
 import { notifyStatusChange } from '../../lib/whatsapp';
 import SaveClientModal from '../../components/SaveClientModal';
+import ScheduleBlocksModal from '../../components/ScheduleBlocksModal';
+import { useBlockStore, isBlocked, timeToMinutes } from '../../store/blockStore';
 import './Appointments.css';
 
 //  Formatters & validators 
@@ -193,6 +196,23 @@ export default function Appointments() {
   const [submitting, setSubmitting] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState<string | null>(null);
   const [savingClientFor, setSavingClientFor] = useState<Appointment | null>(null);
+  const [showBlocksModal, setShowBlocksModal] = useState(false);
+
+  // Bloqueos de horario (vacaciones, dia libre, almuerzo, feriados)
+  const { blocks, fetchBlocks } = useBlockStore();
+  useEffect(() => { fetchBlocks().catch(() => {}); }, [fetchBlocks]);
+
+  // Aviso cuando la cita que se esta creando cae en un horario bloqueado.
+  // Es solo una advertencia: la recepcionista puede tener una razon para agendar igual.
+  const blockedWarning = useMemo(() => {
+    if (!form.date || !form.time || !form.employee) return null;
+    const member = staff.find((m) => m.name === form.employee);
+    const hit = isBlocked(blocks, member?.id ?? null, form.date, timeToMinutes(form.time), form.duration || 45);
+    if (!hit) return null;
+    const quien = hit.staffId ? form.employee : 'el salón';
+    const cuando = hit.startTime && hit.endTime ? `de ${hit.startTime} a ${hit.endTime}` : 'todo el día';
+    return `Ojo: ${quien} tiene bloqueado ese horario (${cuando})${hit.reason ? ` — ${hit.reason}` : ''}.`;
+  }, [blocks, form.date, form.time, form.employee, form.duration, staff]);
 
   // Filtered appointments
   const filteredAppointments = useMemo(() => {
@@ -369,9 +389,14 @@ export default function Appointments() {
           <h1 className="appts__title">Gestion de Citas</h1>
           <p className="appts__subtitle">Agenda y administra todas las citas del salon</p>
         </div>
-        <button className="appts__add-btn" onClick={openCreate} id="btn-new-appointment">
-          <Plus size={18} /> Nueva Cita
-        </button>
+        <div className="appts__header-actions">
+          <button className="appts__block-btn" onClick={() => setShowBlocksModal(true)} id="btn-block-schedule">
+            <CalendarOff size={18} /> Bloquear horario
+          </button>
+          <button className="appts__add-btn" onClick={openCreate} id="btn-new-appointment">
+            <Plus size={18} /> Nueva Cita
+          </button>
+        </div>
       </div>
 
       {/* Date Navigation + View Toggle */}
@@ -718,6 +743,12 @@ export default function Appointments() {
                 />
               </div>
 
+              {blockedWarning && (
+                <p className="appts__block-warning">
+                  <CalendarOff size={16} /> {blockedWarning}
+                </p>
+              )}
+
               <div className="modal__actions">
                 {editingId && (
                   <button
@@ -750,6 +781,10 @@ export default function Appointments() {
 
       {savingClientFor && (
         <SaveClientModal appointment={savingClientFor} onClose={() => setSavingClientFor(null)} />
+      )}
+
+      {showBlocksModal && (
+        <ScheduleBlocksModal defaultDate={selectedDate} onClose={() => setShowBlocksModal(false)} />
       )}
     </div>
   );

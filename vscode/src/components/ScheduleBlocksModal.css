@@ -1,0 +1,149 @@
+/* Bloqueos de horario. El formulario reutiliza .modal__field / .modal__row,
+   asi que aqui solo va lo propio de esta pantalla. */
+
+.blocks__modal {
+  max-width: 560px;
+}
+
+.blocks__hint {
+  margin: 0 24px 4px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-muted, #8a7a6e);
+}
+
+.blocks__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: var(--text-main);
+}
+
+.blocks__checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--cocoa);
+  cursor: pointer;
+}
+
+.blocks__submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--cocoa), var(--cocoa-dark));
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.blocks__submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(125, 90, 68, 0.28);
+}
+
+.blocks__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.blocks__list {
+  padding: 4px 24px 24px;
+}
+
+.blocks__list h3 {
+  margin: 0 0 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted, #8a7a6e);
+}
+
+.blocks__empty {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted, #8a7a6e);
+}
+
+.blocks__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: rgba(178, 150, 125, 0.12);
+}
+
+.blocks__item strong {
+  display: block;
+  font-size: 0.92rem;
+  color: var(--text-main);
+}
+
+.blocks__dates,
+.blocks__reason {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted, #8a7a6e);
+}
+
+.blocks__reason {
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.blocks__delete {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #c0684f;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.blocks__delete:hover {
+  background: rgba(192, 104, 79, 0.14);
+}
+
+/* Aviso dentro del formulario de cita cuando la hora elegida esta bloqueada */
+.appts__block-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(201, 169, 110, 0.16);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .blocks__hint,
+  .blocks__list {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .blocks__hint {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
