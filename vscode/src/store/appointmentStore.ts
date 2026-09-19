@@ -247,7 +247,7 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
         const appt = get().appointments.find(a => a.id === id);
         
         // Auto-discount package session if client has an active package matching this service name
-        if (appt) {
+        if (appt && appt.client_id) {
           try {
             const { data: pkgs } = await supabase
               .from('client_packages')
