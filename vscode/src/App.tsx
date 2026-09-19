@@ -40,12 +40,18 @@ function AdminFallback() {
   );
 }
 
+// En app.midominio.com la raiz abre el panel en vez de la landing,
+// asi el equipo entra directo a trabajar. En el dominio normal no cambia nada.
+const isPanelHost =
+  typeof window !== 'undefined' && window.location.hostname.startsWith('app.');
+const homePath = isPanelHost ? '/admin' : '/';
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         {/* Public: Landing Page */}
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={isPanelHost ? <Navigate to="/admin" replace /> : <LandingPage />} />
         <Route path="/reservar" element={<BookingPage />} />
         <Route path="/mis-citas" element={<ClientPortal />} />
 
@@ -75,7 +81,7 @@ export default function App() {
         </Route>
 
         {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to={homePath} replace />} />
       </Routes>
     </BrowserRouter>
   );

@@ -4,6 +4,7 @@ import {
   Sparkles, AlertCircle, CheckCircle2, Copy, ExternalLink,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { format12h } from '../lib/timeFormat';
 import { useSettingsStore } from '../store/settingsStore';
 import './Booking.css';
 
@@ -32,6 +33,14 @@ interface SessionPackage {
     duration: number;
     name: string;
   };
+}
+
+interface PublicBlock {
+  staff_id: string | null;
+  start_date: string;
+  end_date: string;
+  start_time: string | null;
+  end_time: string | null;
 }
 
 interface ExistingAppt {
@@ -82,6 +91,7 @@ export default function Booking() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [blocks, setBlocks] = useState<PublicBlock[]>([]);
   const [success, setSuccess] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [whatsappMsg, setWhatsappMsg] = useState('');
@@ -125,15 +135,20 @@ export default function Booking() {
     setForm((prev) => ({ ...prev, time: '' }));
 
     supabase
-      .from('appointments')
-      .select('time, duration, status')
-      .eq('date', form.date)
-      .eq('employee', staffMember.name)
-      .neq('status', 'cancelled')
+      .rpc('get_busy_slots', { p_date: form.date, p_employee: staffMember.name })
       .then(({ data }) => {
         setExistingAppts((data as ExistingAppt[]) ?? []);
         setLoadingSlots(false);
       });
+
+    // Bloqueos de horario: vacaciones, dia libre, almuerzo o cierre del salon.
+    // La vista publica solo expone los horarios, nunca el motivo.
+    supabase
+      .from('schedule_blocks_public')
+      .select('staff_id, start_date, end_date, start_time, end_time')
+      .lte('start_date', form.date)
+      .gte('end_date', form.date)
+      .then(({ data }) => setBlocks((data as PublicBlock[]) ?? []));
   }, [form.date, form.staffId, staffList]);
 
   const selectedService = services.find((s) => s.id === form.serviceId);
@@ -186,20 +201,38 @@ export default function Booking() {
           const apptEnd = apptStart + (a.duration ?? 45);
           return cursor < apptEnd && cursor + duration > apptStart;
         });
-        if (!overlap) slots.push(minutesToTime(cursor));
+        // Un bloqueo sin horas tapa el dia completo; uno con horas, solo ese tramo.
+        const blocked = blocks.some((b) => {
+          if (b.staff_id && b.staff_id !== selectedStaff.id) return false;
+          if (!b.start_time || !b.end_time) return true;
+          const bStart = timeToMinutes(b.start_time.slice(0, 5));
+          const bEnd = timeToMinutes(b.end_time.slice(0, 5));
+          return cursor < bEnd && cursor + duration > bStart;
+        });
+        if (!overlap && !blocked) slots.push(minutesToTime(cursor));
       }
       cursor += 30;
     }
 
     return slots;
-  }, [effectiveServiceId, selectedStaff, form.date, existingAppts, effectiveDuration]);
+  }, [effectiveServiceId, selectedStaff, form.date, existingAppts, effectiveDuration, blocks]);
+
+  // Dia no laborable: por horario fijo de la especialista, o por un bloqueo de dia completo
+  const fullDayBlocked = Boolean(
+    selectedStaff &&
+      blocks.some(
+        (b) => (!b.staff_id || b.staff_id === selectedStaff.id) && !b.start_time && !b.end_time
+      )
+  );
 
   const isDayOff =
-    form.date &&
-    selectedStaff &&
-    !(selectedStaff.working_days ?? []).includes(
-      WEEKDAYS[new Date(`${form.date}T12:00:00`).getDay()]
-    );
+    Boolean(
+      form.date &&
+        selectedStaff &&
+        !(selectedStaff.working_days ?? []).includes(
+          WEEKDAYS[new Date(`${form.date}T12:00:00`).getDay()]
+        )
+    ) || fullDayBlocked;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,7 +247,25 @@ export default function Booking() {
     setBookingError('');
 
     try {
-      const { data: appt, error } = await supabase
+      // La lista de horarios se cargo hace rato: alguien pudo tomar la hora
+      // mientras la clienta llenaba el formulario. Se relee antes de guardar.
+      const { data: fresh } = await supabase
+        .rpc('get_busy_slots', { p_date: form.date, p_employee: selectedStaff.name });
+
+      const wanted = timeToMinutes(form.time);
+      const taken = (fresh as ExistingAppt[] | null)?.some((a) => {
+        const start = timeToMinutes(a.time);
+        return wanted < start + (a.duration ?? 45) && wanted + effectiveDuration > start;
+      });
+
+      if (taken) {
+        setExistingAppts((fresh as ExistingAppt[]) ?? []);
+        setForm((prev) => ({ ...prev, time: '' }));
+        setBookingError('Ese horario se acaba de ocupar. Por favor elige otra hora.');
+        return;
+      }
+
+      const { error } = await supabase
         .from('appointments')
         .insert({
           client_name: form.name.trim(),
@@ -227,15 +278,20 @@ export default function Booking() {
           status: 'pending',
           notes: form.notes.trim() || '',
           source: 'web',
-        })
-        .select()
-        .single();
+        });
 
-      if (error || !appt) {
+      if (error) {
         console.error('[booking] insert error:', error);
-        setBookingError(
-          'Hubo un problema al guardar tu solicitud. Por favor intenta de nuevo o contactanos por WhatsApp.'
-        );
+        // 23P01 = la base rechazo la cita porque otra persona tomo ese horario
+        // en el mismo instante. Es el unico caso que la clienta puede resolver.
+        if (error?.code === '23P01') {
+          setForm((prev) => ({ ...prev, time: '' }));
+          setBookingError('Ese horario se acaba de ocupar. Por favor elige otra hora.');
+        } else {
+          setBookingError(
+            'Hubo un problema al guardar tu solicitud. Por favor intenta de nuevo o contactanos por WhatsApp.'
+          );
+        }
         return;
       }
 
@@ -570,7 +626,7 @@ export default function Booking() {
               </div>
             ) : isDayOff ? (
               <div className="booking__alert">
-                <AlertCircle size={16} /> {selectedStaff.name} no trabaja este dia.
+                <AlertCircle size={16} /> {selectedStaff.name} no trabaja este día.
               </div>
             ) : loadingSlots ? (
               <div className="booking__loading">Buscando horarios disponibles...</div>
@@ -588,7 +644,7 @@ export default function Booking() {
                     className={`booking__slot ${form.time === time ? 'booking__slot--active' : ''}`}
                     onClick={() => setForm({ ...form, time })}
                   >
-                    {time}
+                    {format12h(time)}
                   </button>
                 ))}
               </div>

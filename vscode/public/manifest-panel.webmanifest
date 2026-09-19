@@ -1,0 +1,17 @@
+{
+  "name": "Anadsll Panel",
+  "short_name": "Panel",
+  "description": "Agenda, clientas y reportes de Anadsll Beauty Esthetic.",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#7d5a45",
+  "theme_color": "#7d5a45",
+  "lang": "es",
+  "icons": [
+    { "src": "/icon-panel-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-panel-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-panel-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

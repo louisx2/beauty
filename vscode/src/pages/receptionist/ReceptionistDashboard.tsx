@@ -91,7 +91,7 @@ export default function ReceptionistDashboard() {
   const navigate = useNavigate();
 
   const { appointments, fetchAppointments, updateStatus, addAppointment } = useAppointmentStore();
-  const { services, staff: staffList, fetchAll: fetchServices } = useServiceStore();
+  const { services, fetchAll: fetchServices } = useServiceStore();
   const { staff, fetchStaff } = useStaffStore();
   const { clients, fetchClients } = useClientStore();
 

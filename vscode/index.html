@@ -2,14 +2,88 @@
 <html lang="es" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" id="fav-ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" id="fav-png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" id="fav-apple" />
+    <link rel="manifest" href="/manifest.webmanifest" id="app-manifest" />
+    <script>
+      // En app.midominio.com el sitio se instala como "Panel" con su propio
+      // icono (monograma blanco sobre marron), para que la dueña distinga en
+      // la pantalla del telefono la app de trabajo de la pagina publica.
+      (function () {
+        if (location.hostname.indexOf('app.') !== 0) return;
+        document.getElementById('app-manifest').href = '/manifest-panel.webmanifest';
+        document.getElementById('fav-apple').href = '/apple-touch-icon-panel.png';
+        document.getElementById('fav-png').href = '/icon-panel-192.png';
+        document.getElementById('fav-ico').href = '/icon-panel-192.png';
+        document.getElementById('fav-ico').type = 'image/png';
+        document.documentElement.setAttribute('data-panel-host', 'true');
+        document.title = 'Anadsll — Panel Administrativo';
+        // El panel de trabajo no debe aparecer en Google
+        var noindex = document.createElement('meta');
+        noindex.name = 'robots';
+        noindex.content = 'noindex, nofollow';
+        document.head.appendChild(noindex);
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Anadsll Beauty Esthetic - Centro de estética premium para la mujer. Depilación láser, limpieza facial, cuidado corporal y más. Agenda tu cita por WhatsApp." />
-    <meta name="keywords" content="estética, belleza, depilación láser, limpieza facial, cuidado de piel, salón de belleza, República Dominicana" />
+    <meta name="description" content="Centro de estética en San José de Ocoa: depilación láser, limpieza facial, tratamientos corporales y medicina estética. Reserva tu cita en línea." />
     <meta name="theme-color" content="#8a6a4f" />
-    <title>Anadsll Beauty Esthetic | Centro de Estética Premium</title>
+    <link rel="canonical" href="https://anadsllbeautyesthetic.com/" />
+    <title>Anadsll Beauty Esthetic | Depilación láser y estética en San José de Ocoa</title>
+
+    <!-- Vista previa al compartir el enlace (WhatsApp, Instagram, Facebook) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Anadsll Beauty Esthetic" />
+    <meta property="og:title" content="Anadsll Beauty Esthetic | Centro de estética en San José de Ocoa" />
+    <meta property="og:description" content="Depilación láser, limpieza facial, tratamientos corporales y medicina estética. Reserva tu cita en línea." />
+    <meta property="og:url" content="https://anadsllbeautyesthetic.com/" />
+    <meta property="og:image" content="https://anadsllbeautyesthetic.com/lobby.jpg" />
+    <meta property="og:locale" content="es_DO" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Datos estructurados: le dicen a Google que esto es un negocio local
+         con direccion, horario y servicios. Es lo que alimenta el mapa. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BeautySalon",
+        "name": "Anadsll Beauty Esthetic",
+        "url": "https://anadsllbeautyesthetic.com/",
+        "image": "https://anadsllbeautyesthetic.com/lobby.jpg",
+        "logo": "https://anadsllbeautyesthetic.com/icon-512.png",
+        "telephone": "+1-829-322-4014",
+        "priceRange": "$$",
+        "currenciesAccepted": "DOP",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "C/ Altagracia #65, Pueblo Abajo",
+          "addressLocality": "San José de Ocoa",
+          "addressRegion": "San José de Ocoa",
+          "addressCountry": "DO"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 18.544172,
+          "longitude": -70.5060794
+        },
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            "opens": "09:00",
+            "closes": "19:00"
+          }
+        ],
+        "sameAs": ["https://www.instagram.com/anadsllbeautyesthetic.rd"],
+        "makesOffer": [
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Depilación láser" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Limpieza facial profunda" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Tratamientos corporales" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Medicina estética" } }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -61,7 +61,7 @@ export default function Dashboard() {
     return {
       citasHoy: todays.length,
       ingresosMes: mInvoices.reduce((acc, inv) => acc + inv.total, 0),
-      clientasActivas: clients.filter(c => c.active).length,
+      clientasActivas: clients.length,
       paquetesActivos: clientPackages.filter(p => p.status === 'active').length,
       serviciosMes: appointments.filter(a => a.date.startsWith(thisMonth)).length,
       todaysAppts: todays.sort((a, b) => a.time.localeCompare(b.time)),
@@ -140,7 +140,7 @@ export default function Dashboard() {
               <div className="bento-card__badge bento-card__badge--neutral">Total</div>
             </div>
             <div className="bento-card__value">{stats.clientasActivas}</div>
-            <div className="bento-card__label">Clientas Activas</div>
+            <div className="bento-card__label">Clientas Registradas</div>
           </div>
 
           {/* Card 4 */}

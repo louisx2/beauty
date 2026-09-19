@@ -10,6 +10,7 @@ import {
   FileText, Download, DollarSign, Receipt,
   CalendarDays, Users, UserCog, Calendar, TrendingUp
 } from 'lucide-react';
+import { format12h } from '../../lib/timeFormat';
 import './Reports.css';
 
 function fmtPrice(p: number) { return `RD$ ${Math.round(p).toLocaleString('es-DO')}`; }
@@ -282,7 +283,7 @@ export default function Reports() {
     csv += `RESUMEN GENERAL\n`;
     csv += `Metrica;Cantidad / Monto\n`;
     csv += `Citas Completadas;${totalCompleted}\n`;
-    csv += `Citas Perdidas (No Asistio);${totalNoShow}\n`;
+    csv += `Citas Perdidas (No Asistió);${totalNoShow}\n`;
     csv += `Citas Canceladas;${totalCancelled}\n`;
     csv += `Clientes Nuevos;${totalNewClients}\n`;
     if (!isSpec) {
@@ -387,7 +388,7 @@ export default function Reports() {
           <h2>Resumen General</h2>
           <div class="grid">
             <div class="card"><span>Citas Completadas</span><strong>${totalCompleted}</strong></div>
-            <div class="card"><span>Citas Perdidas (No Asistio)</span><strong>${totalNoShow}</strong></div>
+            <div class="card"><span>Citas Perdidas (No Asistió)</span><strong>${totalNoShow}</strong></div>
             <div class="card"><span>Citas Canceladas</span><strong>${totalCancelled}</strong></div>
             <div class="card"><span>Clientes Nuevos</span><strong>${totalNewClients}</strong></div>
             ${user?.role !== 'specialist' ? `
@@ -735,7 +736,7 @@ export default function Reports() {
                     <div style={{ background: 'rgba(255,255,255,0.04)', width: '100%', height: '50px', borderRadius: '4px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
                       <div style={{ background: 'linear-gradient(to top, var(--lavender-dark), var(--lavender))', width: '100%', height: `${Math.round((p.count / maxPeakCount) * 100)}%` }} />
                     </div>
-                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>{p.time}</span>
+                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>{format12h(p.time)}</span>
                   </div>
                 ))}
                 {peakHours.length === 0 && <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center', width: '100%', paddingBottom: '30px' }}>Sin datos de horas</div>}

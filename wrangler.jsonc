@@ -2,6 +2,15 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "beauty",
   "compatibility_date": "2026-05-15",
+  // Dominio propio del salon. Cloudflare crea el DNS y el SSL solo.
+  // workers_dev se mantiene encendido para no perder beauty.loui-s.workers.dev
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "anadsllbeautyesthetic.com", "custom_domain": true },
+    { "pattern": "www.anadsllbeautyesthetic.com", "custom_domain": true },
+    // Panel de trabajo: la raiz de este host abre /admin directamente
+    { "pattern": "app.anadsllbeautyesthetic.com", "custom_domain": true }
+  ],
   "observability": {
     "enabled": true
   },

@@ -52,6 +52,8 @@ function mapRow(r: Record<string, unknown>): Appointment {
 interface AppointmentState {
   appointments: Appointment[];
   loading: boolean;
+  /** 'conflict' cuando la base rechazo la cita por chocar con otra. */
+  lastError: 'conflict' | 'unknown' | null;
   fetchAppointments: () => Promise<void>;
   addAppointment: (appt: Omit<Appointment, 'id' | 'createdAt' | 'client_id'>) => Promise<Appointment | null>;
   updateAppointment: (id: string, data: Partial<Appointment>) => Promise<boolean>;
@@ -72,6 +74,7 @@ interface AppointmentState {
 export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
   appointments: [],
   loading: false,
+  lastError: null,
   _channel: null,
   completedApptForNextSession: null,
 
@@ -122,8 +125,10 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
 
       if (error) {
         console.error('[appointments] insert error:', error);
+        set({ lastError: error.code === '23P01' ? 'conflict' : 'unknown' });
         return null;
       }
+      set({ lastError: null });
 
       const mapped = mapRow(data as Record<string, unknown>);
       set((s) => ({ appointments: [...s.appointments, mapped] }));
@@ -164,8 +169,10 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
 
       if (error) {
         console.error('[appointments] update error:', error);
+        set({ lastError: error.code === '23P01' ? 'conflict' : 'unknown' });
         return false;
       }
+      set({ lastError: null });
 
       const mapped = mapRow(data as Record<string, unknown>);
       set((s) => ({
@@ -240,7 +247,7 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
         const appt = get().appointments.find(a => a.id === id);
         
         // Auto-discount package session if client has an active package matching this service name
-        if (appt) {
+        if (appt && appt.client_id) {
           try {
             const { data: pkgs } = await supabase
               .from('client_packages')

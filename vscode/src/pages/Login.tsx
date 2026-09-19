@@ -97,7 +97,13 @@ export default function Login() {
       <div className="login__card glass">
         <div className="login__header">
           <div className="login__logo">
-            <span className="login__logo-icon">N</span>
+            <img
+              src="/brand/icono-blanco.png"
+              alt="Anadsll Beauty Esthetic"
+              className="login__logo-icon"
+              width={64}
+              height={64}
+            />
           </div>
           <h1 className="login__title">Anadsll</h1>
           <p className="login__subtitle">Beauty Esthetic — Panel Administrativo</p>
@@ -174,11 +180,6 @@ export default function Login() {
             )}
           </button>
         </form>
-
-        <div className="login__demo">
-          <p>Credenciales de prueba:</p>
-          <code>admin@anadsll.com / admin123</code>
-        </div>
       </div>
     </div>
   );

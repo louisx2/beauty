@@ -31,6 +31,7 @@ import {
   Ban,
   Edit2,
   CalendarClock,
+  CalendarOff,
   Trash2,
   Save,
 } from 'lucide-react';
@@ -38,6 +39,8 @@ import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
 import { notifyStatusChange } from '../../lib/whatsapp';
 import SaveClientModal from '../../components/SaveClientModal';
+import ScheduleBlocksModal from '../../components/ScheduleBlocksModal';
+import { useBlockStore, isBlocked, timeToMinutes } from '../../store/blockStore';
 import './Appointments.css';
 
 //  Formatters & validators 
@@ -81,7 +84,7 @@ const STATUS_CONFIG: Record<AppointmentStatus, { label: string; class: string; i
   in_progress: { label: 'En Proceso', class: 'badge--blue', icon: <PlayCircle size={14} /> },
   completed: { label: 'Completada', class: 'badge--emerald', icon: <CheckCircle2 size={14} /> },
   cancelled: { label: 'Cancelada', class: 'badge--red', icon: <XCircle size={14} /> },
-  no_show: { label: 'No Asistio', class: 'badge--gray', icon: <Ban size={14} /> },
+  no_show: { label: 'No Asistió', class: 'badge--gray', icon: <Ban size={14} /> },
 };
 
 const STATUS_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
@@ -193,6 +196,43 @@ export default function Appointments() {
   const [submitting, setSubmitting] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState<string | null>(null);
   const [savingClientFor, setSavingClientFor] = useState<Appointment | null>(null);
+  const [showBlocksModal, setShowBlocksModal] = useState(false);
+
+  // Bloqueos de horario (vacaciones, dia libre, almuerzo, feriados)
+  const { blocks, fetchBlocks } = useBlockStore();
+  useEffect(() => { fetchBlocks().catch(() => {}); }, [fetchBlocks]);
+
+  // Aviso cuando la hora elegida ya la tiene ocupada esa empleada.
+  // La base lo impide igual, pero es mejor verlo antes de guardar.
+  const overlapWarning = useMemo(() => {
+    if (!form.date || !form.time || !form.employee) return null;
+    const start = timeToMinutes(form.time);
+    const end = start + (form.duration || 45);
+    const clash = appointments.find((a) => {
+      if (a.id === editingId) return false;
+      if (a.date !== form.date) return false;
+      if (a.employee.toLowerCase() !== form.employee.toLowerCase()) return false;
+      if (a.status === 'cancelled' || a.status === 'no_show') return false;
+      const aStart = timeToMinutes(a.time);
+      return start < aStart + (a.duration || 45) && end > aStart;
+    });
+    if (!clash) return null;
+    return `${form.employee} ya tiene a ${clash.clientName} a las ${format12h(clash.time)} (${clash.service}).`;
+  }, [appointments, editingId, form.date, form.time, form.employee, form.duration]);
+
+  // Aviso cuando la cita que se esta creando cae en un horario bloqueado.
+  // Es solo una advertencia: la recepcionista puede tener una razon para agendar igual.
+  const blockedWarning = useMemo(() => {
+    if (!form.date || !form.time || !form.employee) return null;
+    const member = staff.find((m) => m.name === form.employee);
+    const hit = isBlocked(blocks, member?.id ?? null, form.date, timeToMinutes(form.time), form.duration || 45);
+    if (!hit) return null;
+    const quien = hit.staffId ? form.employee : 'el salón';
+    const cuando = hit.startTime && hit.endTime
+      ? `de ${format12h(hit.startTime)} a ${format12h(hit.endTime)}`
+      : 'todo el día';
+    return `Ojo: ${quien} tiene bloqueado ese horario (${cuando})${hit.reason ? ` — ${hit.reason}` : ''}.`;
+  }, [blocks, form.date, form.time, form.employee, form.duration, staff]);
 
   // Filtered appointments
   const filteredAppointments = useMemo(() => {
@@ -290,6 +330,13 @@ export default function Appointments() {
     }
   }, [location.search, appointments, navigate]);
 
+  // La base rechaza dos citas encimadas para la misma empleada; el mensaje
+  // tecnico no le dice nada a la recepcionista, asi que se traduce.
+  const conflictMessage = () =>
+    useAppointmentStore.getState().lastError === 'conflict'
+      ? 'Esa empleada ya tiene una cita a esa hora. Elige otra hora u otra empleada.'
+      : '';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validateAppt(form, !!editingId);
@@ -310,7 +357,7 @@ export default function Appointments() {
           toast.success('Cita actualizada correctamente');
           setShowModal(false);
         } else {
-          toast.error('No se pudo actualizar la cita. Intenta de nuevo.');
+          toast.error(conflictMessage() || 'No se pudo actualizar la cita. Intenta de nuevo.');
         }
       } else {
         const created = await addAppointment(payload);
@@ -318,7 +365,7 @@ export default function Appointments() {
           toast.success('Cita creada correctamente');
           setShowModal(false);
         } else {
-          toast.error('No se pudo crear la cita. Intenta de nuevo.');
+          toast.error(conflictMessage() || 'No se pudo crear la cita. Intenta de nuevo.');
         }
       }
     } catch (error) {
@@ -366,12 +413,17 @@ export default function Appointments() {
       {/* Header */}
       <div className="appts__header">
         <div>
-          <h1 className="appts__title">Gestion de Citas</h1>
-          <p className="appts__subtitle">Agenda y administra todas las citas del salon</p>
+          <h1 className="appts__title">Gestión de Citas</h1>
+          <p className="appts__subtitle">Agenda y administra todas las citas del salón</p>
         </div>
-        <button className="appts__add-btn" onClick={openCreate} id="btn-new-appointment">
-          <Plus size={18} /> Nueva Cita
-        </button>
+        <div className="appts__header-actions">
+          <button className="appts__block-btn" onClick={() => setShowBlocksModal(true)} id="btn-block-schedule">
+            <CalendarOff size={18} /> Bloquear horario
+          </button>
+          <button className="appts__add-btn" onClick={openCreate} id="btn-new-appointment">
+            <Plus size={18} /> Nueva Cita
+          </button>
+        </div>
       </div>
 
       {/* Date Navigation + View Toggle */}
@@ -394,7 +446,7 @@ export default function Appointments() {
         </div>
 
         <div className="appts__view-toggle">
-          <button className={`appts__view-btn ${view === 'day' ? 'appts__view-btn--active' : ''}`} onClick={() => setView('day')}>Da</button>
+          <button className={`appts__view-btn ${view === 'day' ? 'appts__view-btn--active' : ''}`} onClick={() => setView('day')}>Día</button>
           <button className={`appts__view-btn ${view === 'week' ? 'appts__view-btn--active' : ''}`} onClick={() => setView('week')}>Semana</button>
           <button className={`appts__view-btn ${view === 'all' ? 'appts__view-btn--active' : ''}`} onClick={() => setView('all')}>Todo</button>
         </div>
@@ -490,7 +542,7 @@ export default function Appointments() {
         {filteredAppointments.length === 0 ? (
           <div className="appts__empty">
             <Calendar size={40} />
-            <p>No hay citas {view === 'day' ? 'para este da' : view === 'week' ? 'esta semana' : 'registradas'}</p>
+            <p>No hay citas {view === 'day' ? 'para este día' : view === 'week' ? 'esta semana' : 'registradas'}</p>
           </div>
         ) : (
           filteredAppointments.map((appt) => (
@@ -581,7 +633,7 @@ export default function Appointments() {
                     <button
                       className="appt-card__action-btn appt-card__action-btn--dianger"
                       onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'no_show'); notifyStatusChange(appt, 'no_show'); }}
-                      title="No Asistio"
+                      title="No Asistió"
                     >
                       <Ban size={16} />
                     </button>
@@ -647,7 +699,7 @@ export default function Appointments() {
                   {apptErrors.clientName && <span className="field-error"><AlertCircle size={12} /> {apptErrors.clientName}</span>}
                 </div>
                 <div className="modal__field">
-                  <label><Phone size={14} /> Telfono *</label>
+                  <label><Phone size={14} /> Teléfono *</label>
                   <input
                     type="tel"
                     placeholder="829-000-0000"
@@ -697,7 +749,7 @@ export default function Appointments() {
                   </select>
                 </div>
                 <div className="modal__field">
-                  <label><Clock size={14} /> Duracin</label>
+                  <label><Clock size={14} /> Duración</label>
                   <select value={form.duration} onChange={(e) => setForm({ ...form, duration: Number(e.target.value) })}>
                     <option value={30}>30 min</option>
                     <option value={45}>45 min</option>
@@ -711,12 +763,24 @@ export default function Appointments() {
               <div className="modal__field">
                 <label><FileText size={14} /> Notas</label>
                 <textarea
-                  placeholder="Observaciones, alergias, sesin #..."
+                  placeholder="Observaciones, alergias, sesión #..."
                   rows={3}
                   value={form.notes || ''}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 />
               </div>
+
+              {overlapWarning && (
+                <p className="appts__block-warning appts__block-warning--clash">
+                  <AlertCircle size={16} /> {overlapWarning} No se puede guardar encima.
+                </p>
+              )}
+
+              {blockedWarning && (
+                <p className="appts__block-warning">
+                  <CalendarOff size={16} /> {blockedWarning}
+                </p>
+              )}
 
               <div className="modal__actions">
                 {editingId && (
@@ -750,6 +814,10 @@ export default function Appointments() {
 
       {savingClientFor && (
         <SaveClientModal appointment={savingClientFor} onClose={() => setSavingClientFor(null)} />
+      )}
+
+      {showBlocksModal && (
+        <ScheduleBlocksModal defaultDate={selectedDate} onClose={() => setShowBlocksModal(false)} />
       )}
     </div>
   );

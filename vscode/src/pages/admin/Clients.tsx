@@ -9,6 +9,7 @@ import {
   Package,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { format12h } from '../../lib/timeFormat';
 import './Clients.css';
 
 const SKIN_TYPES = ['Normal', 'Seca', 'Grasa', 'Mixta', 'Sensible'];
@@ -492,7 +493,7 @@ export default function Clients() {
                               </div>
                               <p className="history-timeline__meta">
                                 <span>Especialista: <strong>{a.employee}</strong></span>
-                                <span>Hora: {a.time}</span>
+                                <span>Hora: {format12h(a.time)}</span>
                               </p>
                               {a.notes && <p className="history-timeline__notes">Nota: {a.notes}</p>}
                             </div>

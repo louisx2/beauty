@@ -226,7 +226,7 @@ export default function SpecialistView() {
             </div>
             <div className="spec-card__meta">
               <Clock size={14} />
-              {inProgress.time} · {inProgress.duration} min
+              {format12h(inProgress.time)} · {inProgress.duration} min
               {inProgress.clientPhone && (
                 <a
                   href={waLink(inProgress.clientPhone, inProgress.clientName)}
@@ -318,7 +318,7 @@ export default function SpecialistView() {
             </div>
             <div className="spec-card__meta">
               <Clock size={14} />
-              {nextUp.time} · {nextUp.duration} min
+              {format12h(nextUp.time)} · {nextUp.duration} min
               {nextMinutes !== null && nextMinutes > 0 && (
                 <span className="spec-card__countdown-chip">
                   en {nextMinutes} min
