@@ -174,11 +174,6 @@ export default function Login() {
             )}
           </button>
         </form>
-
-        <div className="login__demo">
-          <p>Credenciales de prueba:</p>
-          <code>admin@anadsll.com / admin123</code>
-        </div>
       </div>
     </div>
   );
