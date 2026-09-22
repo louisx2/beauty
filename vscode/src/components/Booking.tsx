@@ -385,6 +385,7 @@ export default function Booking() {
     setSuccess(false);
     setBookingError('');
     setForm({ name: '', phone: '', serviceId: '', packageId: '', staffId: '', date: '', time: '', notes: '' });
+    setPicks([{ serviceId: '', staffId: '' }]);
   };
 
   if (success) {
@@ -575,6 +576,7 @@ export default function Booking() {
                   className={`booking__type-toggle-btn ${bookingType === 'service' ? 'active' : ''}`}
                   onClick={() => {
                     setBookingType('service');
+                    setPicks([{ serviceId: '', staffId: '' }]);
                     setForm({ ...form, packageId: '', staffId: '', date: '', time: '' });
                   }}
                 >
@@ -585,6 +587,7 @@ export default function Booking() {
                   className={`booking__type-toggle-btn ${bookingType === 'package' ? 'active' : ''}`}
                   onClick={() => {
                     setBookingType('package');
+                    setPicks([{ serviceId: '', staffId: '' }]);
                     setForm({ ...form, serviceId: '', staffId: '', date: '', time: '' });
                   }}
                 >
@@ -708,7 +711,9 @@ export default function Booking() {
                 type="date"
                 id="booking-date"
                 required
-                disabled={!form.staffId}
+                // La especialista se elige por servicio (o "cualquiera"), asi que
+                // basta con tener al menos un servicio o paquete elegido.
+                disabled={elegidos.length === 0}
                 min={getTodayStr()}
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value, time: '' })}
