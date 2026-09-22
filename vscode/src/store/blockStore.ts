@@ -30,6 +30,11 @@ function mapRow(r: any): ScheduleBlock {
   };
 }
 
+export function minutesToTime(min: number): string {
+  const h = Math.floor(min / 60), m = min % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 export function timeToMinutes(t: string): number {
   const [h, m] = t.split(':').map(Number);
   return h * 60 + (m || 0);

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   useAppointmentStore,
   type Appointment,
+  type AppointmentLine,
   type AppointmentStatus,
 } from '../../store/appointmentStore';
 import { useStaffStore } from '../../store/staffStore';
@@ -40,7 +41,7 @@ import { format12h } from '../../lib/timeFormat';
 import { notifyStatusChange } from '../../lib/whatsapp';
 import SaveClientModal from '../../components/SaveClientModal';
 import ScheduleBlocksModal from '../../components/ScheduleBlocksModal';
-import { useBlockStore, isBlocked, timeToMinutes } from '../../store/blockStore';
+import { useBlockStore, isBlocked, timeToMinutes, minutesToTime } from '../../store/blockStore';
 import './Appointments.css';
 
 //  Formatters & validators 
@@ -68,8 +69,8 @@ function validateAppt(form: typeof emptyForm, isEditing: boolean): ApptErrors {
   } else if (form.clientPhone.replace(/\D/g, '').length < 10) {
     e.clientPhone = 'Teléfono inválido (10 dígitos)';
   }
-  if (!form.service) e.service = 'Selecciona un servicio';
-  if (!form.employee) e.employee = 'Selecciona una empleada';
+  if (form.services.some((l) => !l.serviceName)) e.service = 'Cada servicio debe estar seleccionado';
+  if (form.services.some((l) => !l.employee)) e.employee = 'Cada servicio necesita una empleada';
   if (!form.date) {
     e.date = 'La fecha es requerida';
   } else if (!isEditing && form.date < getToday()) {
@@ -143,6 +144,15 @@ function getWeekDates(dateStr: string): string[] {
   });
 }
 
+const lineaVacia = (): AppointmentLine => ({
+  serviceId: null,
+  serviceName: '',
+  employee: '',
+  startTime: '',
+  duration: 45,
+  price: 0,
+});
+
 const emptyForm: Omit<Appointment, 'id' | 'createdAt'> = {
   client_id: null,
   clientName: '',
@@ -155,7 +165,21 @@ const emptyForm: Omit<Appointment, 'id' | 'createdAt'> = {
   status: 'pending',
   notes: '',
   source: 'manual',
+  startedAt: null,
+  services: [lineaVacia()],
 };
+
+/** Reparte las horas de inicio en cadena: cada servicio empieza cuando
+ *  termina el anterior. */
+function conHorarios(services: AppointmentLine[], inicio: string): AppointmentLine[] {
+  let cursor = timeToMinutes(inicio);
+  return services.map((l) => {
+    const h = Math.floor(cursor / 60), m = cursor % 60;
+    const startTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    cursor += l.duration || 45;
+    return { ...l, startTime };
+  });
+}
 
 export default function Appointments() {
   const location = useLocation();
@@ -202,37 +226,106 @@ export default function Appointments() {
   const { blocks, fetchBlocks } = useBlockStore();
   useEffect(() => { fetchBlocks().catch(() => {}); }, [fetchBlocks]);
 
+  // ── Servicios de la cita ──────────────────────────────────────────────
+  // Cada servicio arranca cuando termina el anterior, contando desde la hora
+  // de la cita. El total y la hora de fin se recalculan solos.
+  const lineasConHora = useMemo(
+    () => conHorarios(form.services, form.time),
+    [form.services, form.time],
+  );
+  const duracionTotal = useMemo(
+    () => form.services.reduce((t, l) => t + (l.duration || 0), 0),
+    [form.services],
+  );
+  const precioTotal = useMemo(
+    () => form.services.reduce((t, l) => t + (l.price || 0), 0),
+    [form.services],
+  );
+  const horaFin = useMemo(
+    () => minutesToTime(timeToMinutes(form.time) + duracionTotal),
+    [form.time, duracionTotal],
+  );
+
+  const actualizarLinea = (i: number, cambios: Partial<AppointmentLine>) => {
+    setForm((f) => ({
+      ...f,
+      services: f.services.map((l, idx) => (idx === i ? { ...l, ...cambios } : l)),
+    }));
+    setApptErrors((e) => ({ ...e, service: undefined, employee: undefined }));
+  };
+
+  // Al elegir el servicio se traen su duracion y su precio del catalogo, y se
+  // propone la primera empleada que lo sepa hacer.
+  const cambiarLinea = (i: number, nombreServicio: string) => {
+    const cat = services.find((sv) => sv.name === nombreServicio);
+    const yaTiene = form.services[i]?.employee;
+    const quienPuede = cat
+      ? staff.filter((m) => m.active && (m.serviceIds.length === 0 || m.serviceIds.includes(cat.id)))
+      : [];
+    actualizarLinea(i, {
+      serviceName: nombreServicio,
+      serviceId: cat?.id ?? null,
+      duration: cat?.duration ?? 45,
+      price: cat?.price ?? 0,
+      employee: yaTiene || (quienPuede.length === 1 ? quienPuede[0].name : yaTiene || ''),
+    });
+  };
+
+  const agregarLinea = () => {
+    setForm((f) => ({ ...f, services: [...f.services, lineaVacia()] }));
+  };
+
+  const quitarLinea = (i: number) => {
+    setForm((f) => ({ ...f, services: f.services.filter((_, idx) => idx !== i) }));
+  };
+
   // Aviso cuando la hora elegida ya la tiene ocupada esa empleada.
   // La base lo impide igual, pero es mejor verlo antes de guardar.
   const overlapWarning = useMemo(() => {
-    if (!form.date || !form.time || !form.employee) return null;
-    const start = timeToMinutes(form.time);
-    const end = start + (form.duration || 45);
-    const clash = appointments.find((a) => {
-      if (a.id === editingId) return false;
-      if (a.date !== form.date) return false;
-      if (a.employee.toLowerCase() !== form.employee.toLowerCase()) return false;
-      if (a.status === 'cancelled' || a.status === 'no_show') return false;
-      const aStart = timeToMinutes(a.time);
-      return start < aStart + (a.duration || 45) && end > aStart;
-    });
-    if (!clash) return null;
-    return `${form.employee} ya tiene a ${clash.clientName} a las ${format12h(clash.time)} (${clash.service}).`;
-  }, [appointments, editingId, form.date, form.time, form.employee, form.duration]);
+    if (!form.date) return null;
+    // Cada servicio ocupa a SU empleada en SU tramo, asi que se revisan todos.
+    for (const linea of lineasConHora) {
+      if (!linea.employee) continue;
+      const start = timeToMinutes(linea.startTime);
+      const end = start + (linea.duration || 45);
+      const clash = appointments.find((a) => {
+        if (a.id === editingId) return false;
+        if (a.date !== form.date) return false;
+        if (a.status === 'cancelled' || a.status === 'no_show') return false;
+        // Se compara contra cada servicio de la otra cita, no contra el bloque entero
+        const otras = a.services.length > 0
+          ? a.services
+          : [{ employee: a.employee, startTime: a.time, duration: a.duration } as AppointmentLine];
+        return otras.some((o) => {
+          if (o.employee.toLowerCase() !== linea.employee.toLowerCase()) return false;
+          const oStart = timeToMinutes(o.startTime);
+          return start < oStart + (o.duration || 45) && end > oStart;
+        });
+      });
+      if (clash) {
+        return `${linea.employee} ya tiene a ${clash.clientName} a las ${format12h(clash.time)} (${clash.service}).`;
+      }
+    }
+    return null;
+  }, [appointments, editingId, form.date, lineasConHora]);
 
-  // Aviso cuando la cita que se esta creando cae en un horario bloqueado.
+  // Aviso cuando algun servicio cae en un horario bloqueado.
   // Es solo una advertencia: la recepcionista puede tener una razon para agendar igual.
   const blockedWarning = useMemo(() => {
-    if (!form.date || !form.time || !form.employee) return null;
-    const member = staff.find((m) => m.name === form.employee);
-    const hit = isBlocked(blocks, member?.id ?? null, form.date, timeToMinutes(form.time), form.duration || 45);
-    if (!hit) return null;
-    const quien = hit.staffId ? form.employee : 'el salón';
-    const cuando = hit.startTime && hit.endTime
-      ? `de ${format12h(hit.startTime)} a ${format12h(hit.endTime)}`
-      : 'todo el día';
-    return `Ojo: ${quien} tiene bloqueado ese horario (${cuando})${hit.reason ? ` — ${hit.reason}` : ''}.`;
-  }, [blocks, form.date, form.time, form.employee, form.duration, staff]);
+    if (!form.date) return null;
+    for (const linea of lineasConHora) {
+      if (!linea.employee) continue;
+      const member = staff.find((m) => m.name === linea.employee);
+      const hit = isBlocked(blocks, member?.id ?? null, form.date, timeToMinutes(linea.startTime), linea.duration || 45);
+      if (!hit) continue;
+      const quien = hit.staffId ? linea.employee : 'el salón';
+      const cuando = hit.startTime && hit.endTime
+        ? `de ${format12h(hit.startTime)} a ${format12h(hit.endTime)}`
+        : 'todo el día';
+      return `Ojo: ${quien} tiene bloqueado ese horario (${cuando})${hit.reason ? ` — ${hit.reason}` : ''}.`;
+    }
+    return null;
+  }, [blocks, form.date, lineasConHora, staff]);
 
   // Filtered appointments
   const filteredAppointments = useMemo(() => {
@@ -310,6 +403,17 @@ export default function Appointments() {
       status: appt.status,
       notes: appt.notes,
       source: appt.source,
+      startedAt: appt.startedAt,
+      services: appt.services.length > 0
+        ? appt.services.map((l) => ({ ...l }))
+        : [{
+            serviceId: null,
+            serviceName: appt.service,
+            employee: appt.employee,
+            startTime: appt.time,
+            duration: appt.duration,
+            price: 0,
+          }],
     });
     setApptErrors({});
     setShowModal(true);
@@ -343,7 +447,17 @@ export default function Appointments() {
     if (Object.keys(errs).length > 0) { setApptErrors(errs); return; }
     setSubmitting(true);
     try {
-      const payload = { ...form, clientName: form.clientName.trim(), clientPhone: form.clientPhone.trim() };
+      // El resumen (servicio, empleada, duracion) lo recalcula la base a partir
+      // de las lineas; aqui se manda coherente para la vista optimista.
+      const payload = {
+        ...form,
+        clientName: form.clientName.trim(),
+        clientPhone: form.clientPhone.trim(),
+        services: lineasConHora,
+        service: form.services.map((l) => l.serviceName).join(' + '),
+        employee: form.services[0]?.employee ?? '',
+        duration: duracionTotal,
+      };
       if (editingId) {
         const original = appointments.find((a) => a.id === editingId);
         if (original && (original.date !== payload.date || original.time !== payload.time)) {
@@ -397,6 +511,17 @@ export default function Appointments() {
       status: appt.status,
       notes: appt.notes,
       source: appt.source,
+      startedAt: appt.startedAt,
+      services: appt.services.length > 0
+        ? appt.services.map((l) => ({ ...l }))
+        : [{
+            serviceId: null,
+            serviceName: appt.service,
+            employee: appt.employee,
+            startTime: appt.time,
+            duration: appt.duration,
+            price: 0,
+          }],
     });
     setShowModal(true);
   };
@@ -592,11 +717,30 @@ export default function Appointments() {
                   </div>
                 </div>
 
-                <div className="appt-card__details">
-                  <span><Sparkles size={13} /> {appt.service}</span>
-                  <span><User size={13} /> {appt.employee}</span>
-                  {(view === 'week' || view === 'all') && <span><Calendar size={13} /> {new Date(appt.date + 'T12:00:00').toLocaleDateString('es-DO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>}
-                </div>
+                {appt.services.length > 1 ? (
+                  /* Varios servicios: se listan con su hora y quien lo hace,
+                     porque pueden ser especialistas distintas. */
+                  <div className="appt-card__services">
+                    {appt.services.map((l, i) => (
+                      <span className="appt-card__service-line" key={l.id ?? i}>
+                        <span className="appt-card__service-time">{format12h(l.startTime)}</span>
+                        <Sparkles size={12} /> {l.serviceName}
+                        <span className="appt-card__service-staff"><User size={12} /> {l.employee}</span>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="appt-card__details">
+                    <span><Sparkles size={13} /> {appt.service}</span>
+                    <span><User size={13} /> {appt.employee}</span>
+                  </div>
+                )}
+
+                {(view === 'week' || view === 'all') && (
+                  <div className="appt-card__details">
+                    <span><Calendar size={13} /> {new Date(appt.date + 'T12:00:00').toLocaleDateString('es-DO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                  </div>
+                )}
 
                 {appt.notes && (
                   <div className="appt-card__notes">
@@ -713,20 +857,67 @@ export default function Appointments() {
               </div>
 
               <div className="modal__field">
-                <label><Sparkles size={14} /> Servicio *</label>
-                <select value={form.service} className={apptErrors.service ? 'input--error' : ''} onChange={(e) => { setForm({ ...form, service: e.target.value }); setApptErrors({ ...apptErrors, service: undefined }); }}>
-                  <option value="">Seleccionar servicio</option>
-                  {activeServices.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                {apptErrors.service && <span className="field-error"><AlertCircle size={12} /> {apptErrors.service}</span>}
-              </div>
+                <label><Sparkles size={14} /> Servicios *</label>
 
-              <div className="modal__field">
-                <label><User size={14} /> Empleada *</label>
-                <select value={form.employee} className={apptErrors.employee ? 'input--error' : ''} onChange={(e) => { setForm({ ...form, employee: e.target.value }); setApptErrors({ ...apptErrors, employee: undefined }); }}>
-                  <option value="">Seleccionar empleada</option>
-                  {activeEmployees.map((e) => <option key={e} value={e}>{e}</option>)}
-                </select>
+                <div className="appt-lines">
+                  {lineasConHora.map((linea, i) => (
+                    <div className="appt-line" key={i}>
+                      <span className="appt-line__time">{format12h(linea.startTime)}</span>
+
+                      <select
+                        className={`appt-line__service ${apptErrors.service && !linea.serviceName ? 'input--error' : ''}`}
+                        value={linea.serviceName}
+                        onChange={(e) => cambiarLinea(i, e.target.value)}
+                      >
+                        <option value="">Seleccionar servicio</option>
+                        {activeServices.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+
+                      <select
+                        className={`appt-line__staff ${apptErrors.employee && !linea.employee ? 'input--error' : ''}`}
+                        value={linea.employee}
+                        onChange={(e) => actualizarLinea(i, { employee: e.target.value })}
+                      >
+                        <option value="">¿Quién lo hace?</option>
+                        {activeEmployees.map((e) => <option key={e} value={e}>{e}</option>)}
+                      </select>
+
+                      <select
+                        className="appt-line__dur"
+                        value={linea.duration}
+                        onChange={(e) => actualizarLinea(i, { duration: Number(e.target.value) })}
+                      >
+                        {[15, 20, 25, 30, 45, 60, 75, 90, 120, 150].map((d) => (
+                          <option key={d} value={d}>{d} min</option>
+                        ))}
+                      </select>
+
+                      {form.services.length > 1 && (
+                        <button
+                          type="button"
+                          className="appt-line__remove"
+                          onClick={() => quitarLinea(i)}
+                          aria-label="Quitar servicio"
+                          title="Quitar servicio"
+                        >
+                          <X size={15} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="appt-lines__footer">
+                  <button type="button" className="appt-lines__add" onClick={agregarLinea}>
+                    <Plus size={14} /> Agregar servicio
+                  </button>
+                  <span className="appt-lines__total">
+                    {duracionTotal} min · termina {format12h(horaFin)}
+                    {precioTotal > 0 && ` · RD$ ${precioTotal.toLocaleString('es-DO')}`}
+                  </span>
+                </div>
+
+                {apptErrors.service && <span className="field-error"><AlertCircle size={12} /> {apptErrors.service}</span>}
                 {apptErrors.employee && <span className="field-error"><AlertCircle size={12} /> {apptErrors.employee}</span>}
               </div>
 
@@ -746,16 +937,6 @@ export default function Appointments() {
                   <label><Clock size={14} /> Hora</label>
                   <select value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })}>
                     {getAvailableHours(form.date).map((h) => <option key={h} value={h}>{format12h(h)}</option>)}
-                  </select>
-                </div>
-                <div className="modal__field">
-                  <label><Clock size={14} /> Duración</label>
-                  <select value={form.duration} onChange={(e) => setForm({ ...form, duration: Number(e.target.value) })}>
-                    <option value={30}>30 min</option>
-                    <option value={45}>45 min</option>
-                    <option value={60}>60 min</option>
-                    <option value={90}>90 min</option>
-                    <option value={120}>120 min</option>
                   </select>
                 </div>
               </div>

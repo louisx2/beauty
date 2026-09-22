@@ -110,6 +110,20 @@ supabase.auth.onAuthStateChange((_event, session) => {
   if (session?.user) {
     const u = session.user;
     const email = u.email || '';
+
+    // Refresco de token de una sesion que YA estaba abierta (pasa sola cada
+    // cierto rato y al volver a la pestaña). Aqui no hay nada que cargar: si
+    // volvemos a poner loading=true, ProtectedRoute muestra "Cargando panel"
+    // y desmonta el panel entero, borrando lo que la usuaria este escribiendo
+    // (una cita a medio llenar, por ejemplo). Tampoco se debe reescribir el
+    // usuario con el rol de respaldo, o una especialista veria por un instante
+    // el menu de administradora.
+    const current = useAuthStore.getState().user;
+    if (current && current.id === u.id) {
+      useAuthStore.setState({ isAuthenticated: true, loading: false });
+      return;
+    }
+
     const fallbackName = u.user_metadata?.['name'] || email.split('@')[0] || 'Admin';
     // Set authenticated state immediately, but keep loading=true while fetching the true role
     useAuthStore.setState({

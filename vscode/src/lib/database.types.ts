@@ -18,6 +18,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointment_services: {
+        Row: {
+          active: boolean
+          appointment_id: string
+          created_at: string
+          date: string
+          duration: number
+          employee: string
+          id: string
+          price: number
+          service_id: string | null
+          service_name: string
+          sort_order: number
+          start_time: string
+        }
+        Insert: {
+          active?: boolean
+          appointment_id: string
+          created_at?: string
+          date: string
+          duration?: number
+          employee: string
+          id?: string
+          price?: number
+          service_id?: string | null
+          service_name: string
+          sort_order?: number
+          start_time: string
+        }
+        Update: {
+          active?: boolean
+          appointment_id?: string
+          created_at?: string
+          date?: string
+          duration?: number
+          employee?: string
+          id?: string
+          price?: number
+          service_id?: string | null
+          service_name?: string
+          sort_order?: number
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_services_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           client_email: string | null
@@ -683,6 +736,21 @@ export type Database = {
           id: string
           last_sign_in_at: string
         }[]
+      }
+      save_appointment: {
+        Args: {
+          p_id: string | null
+          p_client_id: string | null
+          p_client_name: string
+          p_client_phone: string
+          p_date: string
+          p_time: string
+          p_status: string
+          p_notes: string
+          p_source: string
+          p_services: Json
+        }
+        Returns: string
       }
       staff_name: { Args: never; Returns: string }
       staff_role: { Args: never; Returns: string }

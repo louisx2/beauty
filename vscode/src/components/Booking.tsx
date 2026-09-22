@@ -80,7 +80,12 @@ export default function Booking() {
   const [services, setServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<SessionPackage[]>([]);
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
-  const [existingAppts, setExistingAppts] = useState<ExistingAppt[]>([]);
+  /** Un servicio elegido por la clienta. staffId vacio = "cualquiera disponible". */
+  const [picks, setPicks] = useState<{ serviceId: string; staffId: string }[]>([
+    { serviceId: '', staffId: '' },
+  ]);
+  /** Horas ya ocupadas de cada especialista ese dia. */
+  const [busyByStaff, setBusyByStaff] = useState<Record<string, ExistingAppt[]>>({});
 
   const [bookingType, setBookingType] = useState<'service' | 'package'>('service');
   const [form, setForm] = useState({
@@ -124,22 +129,24 @@ export default function Booking() {
     loadData();
   }, []);
 
-  // Reload taken slots whenever date or staff changes
+  // Al cambiar el dia se trae la agenda ocupada de TODAS las especialistas:
+  // una cita puede repartirse entre varias, asi que hay que saber de todas.
   useEffect(() => {
-    if (!form.date || !form.staffId) return;
-
-    const staffMember = staffList.find((s) => s.id === form.staffId);
-    if (!staffMember) return;
+    if (!form.date || staffList.length === 0) return;
 
     setLoadingSlots(true);
     setForm((prev) => ({ ...prev, time: '' }));
 
-    supabase
-      .rpc('get_busy_slots', { p_date: form.date, p_employee: staffMember.name })
-      .then(({ data }) => {
-        setExistingAppts((data as ExistingAppt[]) ?? []);
-        setLoadingSlots(false);
-      });
+    Promise.all(
+      staffList.map((m) =>
+        supabase
+          .rpc('get_busy_slots', { p_date: form.date, p_employee: m.name })
+          .then(({ data }) => [m.id, (data as ExistingAppt[]) ?? []] as const),
+      ),
+    ).then((pares) => {
+      setBusyByStaff(Object.fromEntries(pares));
+      setLoadingSlots(false);
+    });
 
     // Bloqueos de horario: vacaciones, dia libre, almuerzo o cierre del salon.
     // La vista publica solo expone los horarios, nunca el motivo.
@@ -149,94 +156,127 @@ export default function Booking() {
       .lte('start_date', form.date)
       .gte('end_date', form.date)
       .then(({ data }) => setBlocks((data as PublicBlock[]) ?? []));
-  }, [form.date, form.staffId, staffList]);
+  }, [form.date, staffList]);
 
-  const selectedService = services.find((s) => s.id === form.serviceId);
   const selectedPkg = packages.find((p) => p.id === form.packageId);
-  const selectedStaff = staffList.find((s) => s.id === form.staffId);
 
-  const effectiveServiceId = bookingType === 'package' ? selectedPkg?.service_id : form.serviceId;
-  const effectiveServiceName = bookingType === 'package' ? `Paquete: ${selectedPkg?.name}` : selectedService?.name;
-  const effectiveDuration = bookingType === 'package' ? selectedPkg?.services?.duration : selectedService?.duration;
+  /** Servicios de esta reserva, en orden. Un paquete cuenta como uno solo. */
+  const elegidos = useMemo(() => {
+    if (bookingType === 'package') {
+      if (!selectedPkg) return [];
+      return [{
+        serviceId: selectedPkg.service_id,
+        staffId: picks[0]?.staffId ?? '',
+        nombre: `Paquete: ${selectedPkg.name}`,
+        duracion: selectedPkg.services?.duration ?? 45,
+      }];
+    }
+    return picks
+      .filter((p) => p.serviceId)
+      .map((p) => {
+        const sv = services.find((x) => x.id === p.serviceId);
+        return {
+          serviceId: p.serviceId,
+          staffId: p.staffId,
+          nombre: sv?.name ?? '',
+          duracion: sv?.duration ?? 45,
+        };
+      });
+  }, [bookingType, selectedPkg, picks, services]);
 
-  // Only show staff who can perform the selected service
-  const availableStaff = useMemo(() => {
-    if (!effectiveServiceId) return [];
-    return staffList.filter((s) => {
-      const ids = s.service_ids ?? [];
-      return ids.length === 0 || ids.includes(effectiveServiceId);
+  const duracionTotal = elegidos.reduce((t, e) => t + e.duracion, 0);
+
+  /** Quien puede hacer un servicio. Primero quienes lo tienen asignado en su
+   *  catalogo; despues quienes no tienen catalogo (la dueña, que puede todo),
+   *  para no cargarle a ella el trabajo que cubre el equipo. */
+  const quienPuede = (serviceId: string) => {
+    const propias = staffList.filter((m) => (m.service_ids ?? []).includes(serviceId));
+    const comodin = staffList.filter((m) => (m.service_ids ?? []).length === 0);
+    return [...propias, ...comodin];
+  };
+
+  /** ¿Esta libre esa persona en ese tramo? Mira su horario de trabajo, sus
+   *  citas y los bloqueos (vacaciones, almuerzo, feriado del salon). */
+  const estaLibre = (m: StaffMember, desde: number, dur: number, dia: string) => {
+    const dayName = WEEKDAYS[new Date(`${dia}T12:00:00`).getDay()];
+    if (!(m.working_days ?? []).includes(dayName)) return false;
+    if (desde < timeToMinutes(m.working_start)) return false;
+    if (desde + dur > timeToMinutes(m.working_end)) return false;
+
+    const ocupada = (busyByStaff[m.id] ?? []).some((a) => {
+      const ini = timeToMinutes(String(a.time).slice(0, 5));
+      return desde < ini + (a.duration ?? 45) && desde + dur > ini;
     });
-  }, [effectiveServiceId, staffList]);
+    if (ocupada) return false;
 
-  // Build list of available time slots
-  const availableSlots = useMemo(() => {
-    if (!effectiveServiceId || !selectedStaff || !form.date) return [];
+    return !blocks.some((b) => {
+      if (b.staff_id && b.staff_id !== m.id) return false;
+      if (!b.start_time || !b.end_time) return true;
+      const bIni = timeToMinutes(b.start_time.slice(0, 5));
+      const bFin = timeToMinutes(b.end_time.slice(0, 5));
+      return desde < bFin && desde + dur > bIni;
+    });
+  };
 
-    const dateObj = new Date(`${form.date}T12:00:00`);
-    const dayName = WEEKDAYS[dateObj.getDay()];
-    const workingDays = selectedStaff.working_days ?? [];
+  /** Intenta repartir todos los servicios en cadena desde una hora dada.
+   *  Devuelve quien hace cada uno, o null si no cabe. */
+  const repartirDesde = (inicio: number, dia: string) => {
+    let cursor = inicio;
+    const plan: { serviceId: string; nombre: string; duracion: number; staff: StaffMember }[] = [];
+    const ocupadasAqui: Record<string, number[][]> = {};
 
-    if (!workingDays.includes(dayName)) return [];
+    for (const e of elegidos) {
+      const candidatas = e.staffId
+        ? staffList.filter((m) => m.id === e.staffId)
+        : quienPuede(e.serviceId);
 
-    const startMin = timeToMinutes(selectedStaff.working_start);
-    const endMin = timeToMinutes(selectedStaff.working_end);
-    const duration = effectiveDuration ?? 45;
+      const libre = candidatas.find((m) => {
+        if (!estaLibre(m, cursor, e.duracion, dia)) return false;
+        // Tampoco puede estar haciendo otro servicio de ESTA misma cita
+        return !(ocupadasAqui[m.id] ?? []).some(([a, b]) => cursor < b && cursor + e.duracion > a);
+      });
 
-    // For today, never show slots that have already started (with 15-min buffer)
-    const today = getTodayStr();
-    let nowBuffer = 0;
-    if (form.date === today) {
+      if (!libre) return null;
+      (ocupadasAqui[libre.id] ??= []).push([cursor, cursor + e.duracion]);
+      plan.push({ serviceId: e.serviceId, nombre: e.nombre, duracion: e.duracion, staff: libre });
+      cursor += e.duracion;
+    }
+    return plan;
+  };
+
+  /** Horas a las que cabe la visita completa, con el reparto ya resuelto. */
+  const slotsConPlan = useMemo(() => {
+    if (elegidos.length === 0 || !form.date || duracionTotal === 0) return [];
+
+    const apertura = Math.min(...staffList.map((m) => timeToMinutes(m.working_start)), 9 * 60);
+    const cierre = Math.max(...staffList.map((m) => timeToMinutes(m.working_end)), 18 * 60);
+
+    // Hoy nunca se ofrecen horas que ya pasaron (con 15 minutos de margen)
+    let desdeAhora = 0;
+    if (form.date === getTodayStr()) {
       const now = new Date();
-      nowBuffer = now.getHours() * 60 + now.getMinutes() + 15;
+      desdeAhora = now.getHours() * 60 + now.getMinutes() + 15;
     }
 
-    const slots: string[] = [];
-    let cursor = startMin;
-
-    while (cursor + duration <= endMin) {
-      // Skip past slots for today
-      if (cursor >= nowBuffer) {
-        const overlap = existingAppts.some((a) => {
-          const apptStart = timeToMinutes(a.time);
-          const apptEnd = apptStart + (a.duration ?? 45);
-          return cursor < apptEnd && cursor + duration > apptStart;
-        });
-        // Un bloqueo sin horas tapa el dia completo; uno con horas, solo ese tramo.
-        const blocked = blocks.some((b) => {
-          if (b.staff_id && b.staff_id !== selectedStaff.id) return false;
-          if (!b.start_time || !b.end_time) return true;
-          const bStart = timeToMinutes(b.start_time.slice(0, 5));
-          const bEnd = timeToMinutes(b.end_time.slice(0, 5));
-          return cursor < bEnd && cursor + duration > bStart;
-        });
-        if (!overlap && !blocked) slots.push(minutesToTime(cursor));
-      }
-      cursor += 30;
+    const salida: { hora: string; plan: NonNullable<ReturnType<typeof repartirDesde>> }[] = [];
+    for (let cursor = apertura; cursor + duracionTotal <= cierre; cursor += 30) {
+      if (cursor < desdeAhora) continue;
+      const plan = repartirDesde(cursor, form.date);
+      if (plan) salida.push({ hora: minutesToTime(cursor), plan });
     }
+    return salida;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [elegidos, form.date, duracionTotal, staffList, busyByStaff, blocks]);
 
-    return slots;
-  }, [effectiveServiceId, selectedStaff, form.date, existingAppts, effectiveDuration, blocks]);
+  const availableSlots = useMemo(() => slotsConPlan.map((s) => s.hora), [slotsConPlan]);
+  const planElegido = slotsConPlan.find((s) => s.hora === form.time)?.plan ?? null;
 
-  // Dia no laborable: por horario fijo de la especialista, o por un bloqueo de dia completo
-  const fullDayBlocked = Boolean(
-    selectedStaff &&
-      blocks.some(
-        (b) => (!b.staff_id || b.staff_id === selectedStaff.id) && !b.start_time && !b.end_time
-      )
-  );
-
-  const isDayOff =
-    Boolean(
-      form.date &&
-        selectedStaff &&
-        !(selectedStaff.working_days ?? []).includes(
-          WEEKDAYS[new Date(`${form.date}T12:00:00`).getDay()]
-        )
-    ) || fullDayBlocked;
+  // No hay ni un hueco en todo el dia: o nadie trabaja, o esta todo tomado
+  const isDayOff = Boolean(form.date) && elegidos.length > 0 && slotsConPlan.length === 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!effectiveServiceName || !effectiveDuration || !selectedStaff || !form.time) return;
+    if (!planElegido || !form.time) return;
 
     if (form.date < getTodayStr()) {
       setBookingError('No puedes reservar una cita en una fecha pasada.');
@@ -249,36 +289,52 @@ export default function Booking() {
     try {
       // La lista de horarios se cargo hace rato: alguien pudo tomar la hora
       // mientras la clienta llenaba el formulario. Se relee antes de guardar.
-      const { data: fresh } = await supabase
-        .rpc('get_busy_slots', { p_date: form.date, p_employee: selectedStaff.name });
+      const frescos = await Promise.all(
+        planElegido.map((linea) =>
+          supabase
+            .rpc('get_busy_slots', { p_date: form.date, p_employee: linea.staff.name })
+            .then(({ data }) => [linea.staff.id, (data as ExistingAppt[]) ?? []] as const),
+        ),
+      );
+      const agendaFresca = Object.fromEntries(frescos);
 
-      const wanted = timeToMinutes(form.time);
-      const taken = (fresh as ExistingAppt[] | null)?.some((a) => {
-        const start = timeToMinutes(a.time);
-        return wanted < start + (a.duration ?? 45) && wanted + effectiveDuration > start;
+      let cursor = timeToMinutes(form.time);
+      const seOcupo = planElegido.some((linea) => {
+        const choca = (agendaFresca[linea.staff.id] ?? []).some((a) => {
+          const ini = timeToMinutes(String(a.time).slice(0, 5));
+          return cursor < ini + (a.duration ?? 45) && cursor + linea.duracion > ini;
+        });
+        cursor += linea.duracion;
+        return choca;
       });
 
-      if (taken) {
-        setExistingAppts((fresh as ExistingAppt[]) ?? []);
+      if (seOcupo) {
+        setBusyByStaff((prev) => ({ ...prev, ...agendaFresca }));
         setForm((prev) => ({ ...prev, time: '' }));
         setBookingError('Ese horario se acaba de ocupar. Por favor elige otra hora.');
         return;
       }
 
-      const { error } = await supabase
-        .from('appointments')
-        .insert({
-          client_name: form.name.trim(),
-          client_phone: form.phone.trim(),
-          service: effectiveServiceName,
-          employee: selectedStaff.name,
-          date: form.date,
-          time: form.time,
-          duration: effectiveDuration,
-          status: 'pending',
-          notes: form.notes.trim() || '',
-          source: 'web',
-        });
+      // Cita y servicios en una sola transaccion: si un servicio choca, no
+      // queda una cita a medias.
+      const { error } = await supabase.rpc('save_appointment', {
+        p_id: null,
+        p_client_id: null,
+        p_client_name: form.name.trim(),
+        p_client_phone: form.phone.trim(),
+        p_date: form.date,
+        p_time: form.time,
+        p_status: 'pending',
+        p_notes: form.notes.trim() || '',
+        p_source: 'web',
+        p_services: planElegido.map((linea) => ({
+          service_id: bookingType === 'package' ? null : linea.serviceId,
+          service_name: linea.nombre,
+          employee: linea.staff.name,
+          duration: linea.duracion,
+          price: 0,
+        })),
+      });
 
       if (error) {
         console.error('[booking] insert error:', error);
@@ -295,16 +351,20 @@ export default function Booking() {
         return;
       }
 
+      const detalle = planElegido
+        .map((l) => `- ${l.nombre} con ${l.staff.name}`)
+        .join('\n');
+
       const waMsg =
         `Hola, acabo de reservar una cita:\n\n` +
         `Nombre: ${form.name}\n` +
         `Telefono: ${form.phone}\n` +
-        `Servicio: ${effectiveServiceName}\n` +
-        `Con: ${selectedStaff.name}\n` +
+        `${planElegido.length > 1 ? 'Servicios' : 'Servicio'}:\n${detalle}\n` +
         `Fecha: ${form.date}\n` +
-        `Hora: ${form.time}\n` +
+        `Hora: ${format12h(form.time)}\n` +
         `Notas: ${form.notes.trim() || 'Ninguna'}\n\n` +
         `Adjunto el comprobante de deposito para confirmar mi cita.`;
+
       setWhatsappMsg(waMsg);
       setSuccess(true);
       // WhatsApp NOT opened automatically — client clicks the button manually
@@ -323,6 +383,7 @@ export default function Booking() {
     setSuccess(false);
     setBookingError('');
     setForm({ name: '', phone: '', serviceId: '', packageId: '', staffId: '', date: '', time: '', notes: '' });
+    setPicks([{ serviceId: '', staffId: '' }]);
   };
 
   if (success) {
@@ -513,16 +574,18 @@ export default function Booking() {
                   className={`booking__type-toggle-btn ${bookingType === 'service' ? 'active' : ''}`}
                   onClick={() => {
                     setBookingType('service');
+                    setPicks([{ serviceId: '', staffId: '' }]);
                     setForm({ ...form, packageId: '', staffId: '', date: '', time: '' });
                   }}
                 >
-                  Servicio Individual
+                  Servicios
                 </button>
                 <button
                   type="button"
                   className={`booking__type-toggle-btn ${bookingType === 'package' ? 'active' : ''}`}
                   onClick={() => {
                     setBookingType('package');
+                    setPicks([{ serviceId: '', staffId: '' }]);
                     setForm({ ...form, serviceId: '', staffId: '', date: '', time: '' });
                   }}
                 >
@@ -534,26 +597,88 @@ export default function Booking() {
 
           {/* Service / Package & Staff */}
           <div className="booking__row">
-            <div className="booking__field" style={{ display: bookingType === 'service' ? undefined : 'none' }}>
+            <div className="booking__field booking__field--full" style={{ display: bookingType === 'service' ? undefined : 'none' }}>
               <label htmlFor="booking-service">
-                <Sparkles size={16} /> Servicio
+                <Sparkles size={16} /> Servicios
               </label>
-              <select
-                id="booking-service"
-                required={bookingType === 'service'}
-                value={form.serviceId}
-                onChange={(e) =>
-                  setForm({ ...form, serviceId: e.target.value, staffId: '', date: '', time: '' })
-                }
-              >
-                <option value="">Selecciona un servicio</option>
-                {services.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.duration} min)
-                  </option>
-                ))}
-              </select>
+
+              {picks.map((pick, i) => {
+                const sv = services.find((x) => x.id === pick.serviceId);
+                const posibles = pick.serviceId
+                  ? staffList.filter((m) => {
+                      const ids = m.service_ids ?? [];
+                      return ids.length === 0 || ids.includes(pick.serviceId);
+                    })
+                  : [];
+                return (
+                  <div className="booking__pick" key={i}>
+                    <select
+                      id={i === 0 ? 'booking-service' : `booking-service-${i}`}
+                      required={bookingType === 'service' && i === 0}
+                      value={pick.serviceId}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setPicks((ps) => ps.map((p, idx) => (idx === i ? { serviceId: v, staffId: '' } : p)));
+                        setForm((f) => ({ ...f, time: '' }));
+                      }}
+                    >
+                      <option value="">Selecciona un servicio</option>
+                      {services.map((x) => (
+                        <option key={x.id} value={x.id}>
+                          {x.name} ({x.duration} min)
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      className="booking__pick-staff"
+                      value={pick.staffId}
+                      disabled={!pick.serviceId}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setPicks((ps) => ps.map((p, idx) => (idx === i ? { ...p, staffId: v } : p)));
+                        setForm((f) => ({ ...f, time: '' }));
+                      }}
+                    >
+                      <option value="">Cualquier especialista</option>
+                      {posibles.map((m) => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+
+                    {picks.length > 1 && (
+                      <button
+                        type="button"
+                        className="booking__pick-remove"
+                        onClick={() => {
+                          setPicks((ps) => ps.filter((_, idx) => idx !== i));
+                          setForm((f) => ({ ...f, time: '' }));
+                        }}
+                        aria-label={`Quitar ${sv?.name ?? 'servicio'}`}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+
+              <div className="booking__picks-footer">
+                <button
+                  type="button"
+                  className="booking__pick-add"
+                  onClick={() => setPicks((ps) => [...ps, { serviceId: '', staffId: '' }])}
+                >
+                  + Agregar otro servicio
+                </button>
+                {duracionTotal > 0 && (
+                  <span className="booking__picks-total">
+                    {duracionTotal} min en total
+                  </span>
+                )}
+              </div>
             </div>
+
             <div className="booking__field" style={{ display: bookingType === 'package' ? undefined : 'none' }}>
               <label htmlFor="booking-package">
                 <Sparkles size={16} /> Paquete
@@ -562,9 +687,10 @@ export default function Booking() {
                 id="booking-package"
                 required={bookingType === 'package'}
                 value={form.packageId}
-                onChange={(e) =>
-                  setForm({ ...form, packageId: e.target.value, staffId: '', date: '', time: '' })
-                }
+                onChange={(e) => {
+                  setPicks([{ serviceId: '', staffId: '' }]);
+                  setForm({ ...form, packageId: e.target.value, time: '' });
+                }}
               >
                 <option value="">Selecciona un paquete</option>
                 {packages.map((p) => (
@@ -575,23 +701,30 @@ export default function Booking() {
               </select>
             </div>
 
-            <div className="booking__field">
-              <label htmlFor="booking-staff">
+            <div className="booking__field" style={{ display: bookingType === 'package' ? undefined : 'none' }}>
+              <label htmlFor="booking-package-staff">
                 <User size={16} /> Especialista
               </label>
               <select
-                id="booking-staff"
-                required
-                disabled={!effectiveServiceId}
-                value={form.staffId}
-                onChange={(e) => setForm({ ...form, staffId: e.target.value, date: '', time: '' })}
+                id="booking-package-staff"
+                value={picks[0]?.staffId ?? ''}
+                disabled={!selectedPkg}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setPicks([{ serviceId: '', staffId: v }]);
+                  setForm((f) => ({ ...f, time: '' }));
+                }}
               >
-                <option value="">Selecciona especialista</option>
-                {availableStaff.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
+                <option value="">Cualquier especialista</option>
+                {selectedPkg &&
+                  staffList
+                    .filter((m) => {
+                      const ids = m.service_ids ?? [];
+                      return ids.length === 0 || ids.includes(selectedPkg.service_id);
+                    })
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
               </select>
             </div>
           </div>
@@ -606,7 +739,9 @@ export default function Booking() {
                 type="date"
                 id="booking-date"
                 required
-                disabled={!form.staffId}
+                // La especialista se elige por servicio (o "cualquiera"), asi que
+                // basta con tener al menos un servicio o paquete elegido.
+                disabled={elegidos.length === 0}
                 min={getTodayStr()}
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value, time: '' })}
@@ -620,20 +755,18 @@ export default function Booking() {
               <Clock size={16} /> Horas Disponibles
             </label>
 
-            {!(form.date && selectedStaff) ? (
+            {!(form.date && elegidos.length > 0) ? (
               <div className="booking__alert" style={{ background: 'transparent', border: '1px dashed #cbd5e1', color: '#64748b', justifyContent: 'center', marginTop: '4px' }}>
-                Selecciona especialista y fecha para ver los horarios.
-              </div>
-            ) : isDayOff ? (
-              <div className="booking__alert">
-                <AlertCircle size={16} /> {selectedStaff.name} no trabaja este día.
+                Elige los servicios y la fecha para ver los horarios.
               </div>
             ) : loadingSlots ? (
               <div className="booking__loading">Buscando horarios disponibles...</div>
-            ) : availableSlots.length === 0 ? (
+            ) : isDayOff ? (
               <div className="booking__alert">
-                <AlertCircle size={16} /> No hay horarios libres para esta fecha. Prueba otro
-                dia.
+                <AlertCircle size={16} />{' '}
+                {elegidos.length > 1
+                  ? 'Ese día no hay un hueco donde quepan todos los servicios seguidos. Prueba otra fecha o quita alguno.'
+                  : 'No hay horarios libres para esta fecha. Prueba otro día.'}
               </div>
             ) : (
               <div className="booking__slots">
@@ -650,6 +783,22 @@ export default function Booking() {
               </div>
             )}
           </div>
+
+          {planElegido && planElegido.length > 1 && (
+            <div className="booking__plan">
+              <span className="booking__plan-title">Tu visita quedaría así</span>
+              {planElegido.map((l, idx) => {
+                const inicio = timeToMinutes(form.time) +
+                  planElegido.slice(0, idx).reduce((t, x) => t + x.duracion, 0);
+                return (
+                  <span className="booking__plan-line" key={idx}>
+                    <strong>{format12h(minutesToTime(inicio))}</strong> {l.nombre}
+                    <em> con {l.staff.name}</em>
+                  </span>
+                );
+              })}
+            </div>
+          )}
 
           <div className="booking__field">
             <label htmlFor="booking-notes">📝 Notas adicionales</label>
