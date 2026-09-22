@@ -80,7 +80,6 @@ export default function Booking() {
   const [services, setServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<SessionPackage[]>([]);
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
-  const [existingAppts, setExistingAppts] = useState<ExistingAppt[]>([]);
   /** Un servicio elegido por la clienta. staffId vacio = "cualquiera disponible". */
   const [picks, setPicks] = useState<{ serviceId: string; staffId: string }[]>([
     { serviceId: '', staffId: '' },
@@ -146,7 +145,6 @@ export default function Booking() {
       ),
     ).then((pares) => {
       setBusyByStaff(Object.fromEntries(pares));
-      setExistingAppts(pares.flatMap(([, v]) => v));
       setLoadingSlots(false);
     });
 
@@ -580,7 +578,7 @@ export default function Booking() {
                     setForm({ ...form, packageId: '', staffId: '', date: '', time: '' });
                   }}
                 >
-                  Servicio Individual
+                  Servicios
                 </button>
                 <button
                   type="button"
@@ -689,7 +687,10 @@ export default function Booking() {
                 id="booking-package"
                 required={bookingType === 'package'}
                 value={form.packageId}
-                onChange={(e) => setForm({ ...form, packageId: e.target.value, date: '', time: '' })}
+                onChange={(e) => {
+                  setPicks([{ serviceId: '', staffId: '' }]);
+                  setForm({ ...form, packageId: e.target.value, time: '' });
+                }}
               >
                 <option value="">Selecciona un paquete</option>
                 {packages.map((p) => (
@@ -697,6 +698,33 @@ export default function Booking() {
                     {p.name} ({p.services?.duration} min/sesión)
                   </option>
                 ))}
+              </select>
+            </div>
+
+            <div className="booking__field" style={{ display: bookingType === 'package' ? undefined : 'none' }}>
+              <label htmlFor="booking-package-staff">
+                <User size={16} /> Especialista
+              </label>
+              <select
+                id="booking-package-staff"
+                value={picks[0]?.staffId ?? ''}
+                disabled={!selectedPkg}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setPicks([{ serviceId: '', staffId: v }]);
+                  setForm((f) => ({ ...f, time: '' }));
+                }}
+              >
+                <option value="">Cualquier especialista</option>
+                {selectedPkg &&
+                  staffList
+                    .filter((m) => {
+                      const ids = m.service_ids ?? [];
+                      return ids.length === 0 || ids.includes(selectedPkg.service_id);
+                    })
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
               </select>
             </div>
           </div>
