@@ -62,7 +62,7 @@
   .s-cat-fam{ font:500 11px var(--s-f-body); letter-spacing:.2em; text-transform:uppercase; color:var(--s-faint); margin:22px 0 8px }
   .s-cat-nav > div:first-child .s-cat-fam{ margin-top:0 }
   .s-cat-btn{ display:flex; justify-content:space-between; align-items:center; gap:10px; width:100%; min-height:44px; text-align:left; background:none; border:0; padding:9px 14px; border-radius:10px; font-size:15px; color:var(--s-soft); transition:background-color .3s, color .3s }
-  .s-cat-btn small{ font-size:12px; opacity:.7 }
+  .s-cat-btn small{ font-size:12px }
   .s-cat-btn.is-on{ background:var(--s-chip-on); color:var(--s-chip-on-fg) }
   .s-cat-panel{ min-width:0; min-height:520px; padding:34px 36px 36px; border-radius:26px; background:var(--s-surface); border:1px solid var(--s-surface-line) }
   .s-cp-top{ display:grid; grid-template-columns:1fr 130px; gap:28px; align-items:start; margin-bottom:26px }
