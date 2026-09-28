@@ -41,7 +41,7 @@ export default function SiteLayout({ children, conSecciones = false, secciones, 
   useEffect(() => {
     const color = tema === 'claro' ? '#FBF8F3' : '#2A1E17';
     const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    const antesMeta = meta?.content;
+    const antesMeta = meta?.getAttribute('data-original') ?? meta?.content;
     const html = document.documentElement;
     if (meta) meta.content = color;
     html.style.backgroundColor = color;

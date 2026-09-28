@@ -28,7 +28,7 @@
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Centro de estética en San José de Ocoa: depilación láser, limpieza facial, tratamientos corporales y medicina estética. Reserva tu cita en línea." />
-    <meta name="theme-color" content="#8a6a4f" />
+    <meta name="theme-color" content="#8a6a4f" data-original="#8a6a4f" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <script>
@@ -40,6 +40,8 @@
         var t = null;
         try { t = localStorage.getItem('anadsll-site-tema'); } catch (e) {}
         document.documentElement.style.backgroundColor = t === 'claro' ? '#FBF8F3' : '#2A1E17';
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', t === 'claro' ? '#FBF8F3' : '#2A1E17');
       })();
     </script>
     <link rel="canonical" href="https://anadsllbeautyesthetic.com/" />
