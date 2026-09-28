@@ -1,0 +1,15 @@
+/* siempre marrón: colores fijos de la marca, no las variables del tema */
+.s-cta{ position:relative; overflow:hidden; padding:72px 0; text-align:center; background:var(--s-listones-oscuro); color:#F5F1EA }
+.s-cta .s-eyebrow, .s-cta .s-display em{ color:#B2967D }
+.s-cta .s-lead{ margin:0 auto 38px; color:rgba(245,241,234,.72) }
+.s-cta .s-btn-solid{ background:#B2967D; color:#2A1E17 }
+.s-cta .s-btn-line{ color:#F5F1EA }
+.s-cta-mono{ position:absolute; left:50%; top:50%; height:130%; transform:translate(-50%,-50%); opacity:.05; pointer-events:none; filter:brightness(0) invert(1) }
+.s-cta-in{ position:relative }
+.s-cta-in .s-eyebrow{ margin-bottom:22px }
+.s-cta-in h2{ margin-bottom:20px }
+.s-cta-btns{ display:flex; justify-content:center; flex-wrap:wrap; gap:14px }
+.s-cta-btns .s-btn{ width:100% }
+@media (min-width: 761px){ .s-cta{ padding:92px 0 } .s-cta-btns .s-btn{ width:auto } }
+@media (min-width: 1101px){ .s-cta{ padding:120px 0 } }
+@media (hover: hover){ .s-cta .s-btn-solid:hover{ background:#CDB8A2 } }

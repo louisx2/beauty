@@ -8,10 +8,15 @@ import Packages from '../site/landing/Packages';
 import About from '../site/landing/About';
 import Philosophy from '../site/landing/Philosophy';
 import Testimonials from '../site/landing/Testimonials';
+import CtaBand from '../site/landing/CtaBand';
+import Contact from '../site/landing/Contact';
 import { usePaquetesPublicos, useServiciosPublicos } from '../site/landing/useDatosPublicos';
 import { testimonios } from '../config/testimonios';
 
-/** Página principal (spec §5). Solo lista en el menú las secciones que existen. */
+/**
+ * Página principal (spec §5). Solo lista en el menú las secciones que existen: Paquetes aparece si hay
+ * paquetes activos y Opiniones si hay testimonios. El equipo llega en la Fase 4.
+ */
 export default function LandingPage() {
   const servicios = useServiciosPublicos();
   const { paquetes } = usePaquetesPublicos();
@@ -22,6 +27,7 @@ export default function LandingPage() {
     ...(conPaquetes ? ['s-paquetes'] : []),
     's-nosotros',
     ...(conOpiniones ? ['s-opiniones'] : []),
+    's-contacto',
   ];
   return (
     <SiteLayout conSecciones secciones={secciones}>
@@ -32,6 +38,8 @@ export default function LandingPage() {
       <About />
       <Philosophy />
       <Testimonials />
+      <CtaBand />
+      <Contact />
     </SiteLayout>
   );
 }

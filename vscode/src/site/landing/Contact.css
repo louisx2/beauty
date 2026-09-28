@@ -1,0 +1,24 @@
+.s-contact{ background:var(--s-bg-alt) }
+.s-contact-in{ display:grid; grid-template-columns:1fr; gap:44px; align-items:center }
+.s-contact .s-eyebrow{ margin-bottom:18px }
+.s-contact h2{ margin-bottom:30px }
+.s-ct-list{ list-style:none; margin:0 0 34px; padding:0 }
+.s-ct-list li{ display:grid; grid-template-columns:1fr; gap:4px; padding:15px 0; border-bottom:1px solid var(--s-line); font-size:15.5px }
+.s-ct-list li span{ padding-top:4px; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--s-accent) }
+/* enlaces de teléfono e Instagram con zona táctil de 44 px sin mover el texto */
+.s-ct-list a{ display:inline-block; margin:-10px 0; padding:10px 0 }
+.s-ct-btns{ display:flex; flex-wrap:wrap; gap:12px }
+.s-ct-btns .s-btn{ width:100% }
+/* mapa: esquinas redondeadas que Safari/iPad respeta, sin filtros que lo deformen */
+.s-ct-mapa{ position:relative; overflow:hidden; aspect-ratio:4/3.4; border-radius:22px; border:1px solid var(--s-surface-line); box-shadow:var(--s-shadow); isolation:isolate; -webkit-mask-image:-webkit-radial-gradient(white, black); transform:translateZ(0) }
+.s-ct-mapa iframe{ position:absolute; inset:0; display:block; width:100%; height:100%; border:0 }
+@media (min-width: 761px){
+  .s-contact-in{ gap:40px }
+  .s-ct-list li{ grid-template-columns:110px 1fr; gap:16px }
+  .s-ct-btns .s-btn{ width:auto }
+  .s-ct-mapa{ aspect-ratio:16/10; border-radius:28px }
+}
+@media (min-width: 1101px){
+  .s-contact-in{ grid-template-columns:1fr 1.1fr; gap:64px }
+  .s-ct-mapa{ aspect-ratio:1/1 }
+}
