@@ -16,8 +16,14 @@ export function useIrAlHash(): void {
   useEffect(() => {
     if (!hash) return;
     const id = decodeURIComponent(hash.slice(1));
-    // espera a que la página pinte sus secciones
-    const t = window.setTimeout(() => irASeccion(id), 60);
+    // la sección puede tardar en pintarse (datos, carga diferida): reintenta hasta ~2 s
+    let intentos = 0;
+    let t = 0;
+    const probar = () => {
+      if (id === 's-inicio' || document.getElementById(id)) { irASeccion(id); return; }
+      if (++intentos < 40) t = window.setTimeout(probar, 50);
+    };
+    t = window.setTimeout(probar, 60);
     return () => window.clearTimeout(t);
   }, [hash]);
 }
