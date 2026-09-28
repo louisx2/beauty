@@ -39,6 +39,16 @@ la fase anterior.
 que cambia lo que ve la clienta, se crea y se sube la etiqueta git `diseno-anterior` en `main`. Los
 componentes viejos se mueven a `src/legacy/` en lugar de borrarse (spec §8).
 
+**Lo que dejó la Fase 1 para la Fase 2** (de la revisión final):
+- `useIrAlHash()` ya lo llama `SiteLayout`; la página principal NO debe llamarlo otra vez.
+- `SECCIONES` es fija, pero Equipo (sin nadie marcado para la web) y Opiniones (lista vacía) se ocultan por
+  datos: el menú, las secciones de la barra y las pestañas deben filtrar las que no existen en la página.
+- Sección activa: en pantallas bajas (celular acostado) la línea debe ser `max(0.33·alto, barra + 57)`, y al
+  llegar al fondo de la página se marca la última sección (Contacto es corta y puede no cruzar la línea).
+- Destello color lino antes de que cargue el JS en `/`: fondo inicial en `index.html` y `theme-color` por tema.
+- Revisar en el teléfono de Louis si el pie del menú se parte en dos filas; si pasa, las áreas táctiles de
+  WhatsApp/Instagram se solapan y hay que dar más separación vertical a `.s-menu-info`.
+
 **Notas de la base de datos** (ver la memoria `roles-y-rls`):
 - anon solo lee columnas autorizadas de `staff` y `schedule_blocks`. Toda consulta pública debe nombrar
   sus columnas, y una columna nueva necesita su propio `grant select (col) ... to anon`.
