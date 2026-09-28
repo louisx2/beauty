@@ -786,4 +786,5 @@ h1, h2, h3 {
   color: #1f2937 !important;
 }
 
-
+/* quien pide menos movimiento no recibe desplazamientos suaves */
+@media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto } }

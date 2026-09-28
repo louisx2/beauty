@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 const suave = (): ScrollBehavior =>
-  window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
 
 /** Baja hasta una sección de la página actual; Inicio vuelve arriba del todo. */
 export function irASeccion(id: string): void {
@@ -15,7 +15,8 @@ export function useIrAlHash(): void {
   const { hash } = useLocation();
   useEffect(() => {
     if (!hash) return;
-    const id = decodeURIComponent(hash.slice(1));
+    let id: string;
+    try { id = decodeURIComponent(hash.slice(1)); } catch { return; } // un "#%" mal formado no tumba la página
     // la sección puede tardar en pintarse (datos, carga diferida): reintenta hasta ~2 s
     let intentos = 0;
     let t = 0;

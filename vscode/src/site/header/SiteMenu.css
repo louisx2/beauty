@@ -28,6 +28,8 @@
 .s-ml-here{ margin-left:auto; display:none; align-items:center; gap:9px; font:500 9.5px var(--s-f-body); letter-spacing:.14em; text-transform:uppercase; color:var(--s-accent); white-space:nowrap }
 .s-ml-here::before{ content:""; width:6px; height:6px; border-radius:50%; background:currentColor; box-shadow:0 0 0 4px color-mix(in srgb, var(--s-accent) 25%, transparent); animation:s-pulso 2.4s ease-in-out infinite }
 @keyframes s-pulso{ 50%{ box-shadow:0 0 0 7px color-mix(in srgb, var(--s-accent) 8%, transparent) } }
+/* con el menú cerrado el pulso no corre */
+.s-menu:not(.is-open) .s-ml-here::before{ animation:none }
 .s-menu-list a.is-on .s-ml-here{ display:inline-flex }
 .s-ml-arrow{ margin-left:auto; font:400 18px var(--s-f-body); color:var(--s-accent); opacity:0; transform:translateX(-10px) }
 .s-menu-list a.is-on .s-ml-arrow{ display:none }
