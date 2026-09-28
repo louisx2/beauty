@@ -52,6 +52,7 @@ export default function NextSessionModal() {
     setSubmitting(true);
     try {
       const payload = {
+        client_id: appt.client_id,
         clientName: appt.clientName,
         clientPhone: appt.clientPhone,
         service: appt.service,

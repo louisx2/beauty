@@ -5,6 +5,8 @@ import { toast } from 'react-hot-toast';
 import { playNotificationSound } from '../lib/sound';
 import { useNotificationStore } from './notificationStore';
 import { useServiceStore } from './serviceStore';
+import { sesionesADescontar } from '../lib/packageMatch';
+import type { SaldoPaquete } from '../lib/packageMatch';
 
 export type AppointmentStatus =
   | 'pending'
@@ -106,13 +108,67 @@ function lineasParaRpc(appt: {
   }));
 }
 
+/** Descuenta las sesiones de paquete que consume una cita recien completada.
+ *  La clienta se relee de la base porque pudo quedar enlazada por telefono
+ *  despues de que se cargo la agenda. */
+async function descontarSesionesDePaquete(appt: Appointment) {
+  const { data: fila } = await supabase
+    .from('appointments')
+    .select('client_id')
+    .eq('id', appt.id)
+    .maybeSingle();
+  const clientId = fila?.client_id ?? appt.client_id;
+  if (!clientId) return;
+
+  const { data: pkgs, error } = await supabase
+    .from('client_packages')
+    .select('id, used_sessions, total_sessions, session_packages ( name, service_id, services ( name ) )')
+    .eq('client_id', clientId)
+    .eq('status', 'active');
+  if (error || !pkgs || pkgs.length === 0) return;
+
+  const saldos: SaldoPaquete[] = pkgs.map((p) => ({
+    id: p.id,
+    packageName: p.session_packages?.name ?? '',
+    serviceId: p.session_packages?.service_id ?? null,
+    serviceName: p.session_packages?.services?.name ?? null,
+    used: p.used_sessions,
+    total: p.total_sessions,
+  }));
+  const lineas = appt.services.length > 0
+    ? appt.services
+    : [{ serviceId: null, serviceName: appt.service }];
+
+  const ids = sesionesADescontar(lineas, saldos);
+  for (const saldo of saldos) {
+    const cuantas = ids.filter((x) => x === saldo.id).length;
+    if (cuantas === 0) continue;
+    const usadas = saldo.used + cuantas;
+    const { error: updErr } = await supabase
+      .from('client_packages')
+      .update({ used_sessions: usadas, status: usadas >= saldo.total ? 'completed' : 'active' })
+      .eq('id', saldo.id);
+    if (!updErr) {
+      toast.success(`Sesión descontada del paquete: ${saldo.packageName} (${usadas}/${saldo.total})`);
+    }
+  }
+  if (ids.length > 0) await useServiceStore.getState().fetchAll();
+}
+
 interface AppointmentState {
   appointments: Appointment[];
   loading: boolean;
   /** 'conflict' cuando la base rechazo la cita por chocar con otra. */
   lastError: 'conflict' | 'unknown' | null;
   fetchAppointments: () => Promise<void>;
-  addAppointment: (appt: Omit<Appointment, 'id' | 'createdAt' | 'client_id'>) => Promise<Appointment | null>;
+  /** Sin `services` se guarda el servicio suelto como linea unica (lineasParaRpc). */
+  addAppointment: (
+    appt: Omit<Appointment, 'id' | 'createdAt' | 'client_id' | 'services' | 'startedAt'> & {
+      client_id?: string | null;
+      services?: AppointmentLine[];
+      startedAt?: string | null;
+    }
+  ) => Promise<Appointment | null>;
   updateAppointment: (id: string, data: Partial<Appointment>) => Promise<boolean>;
   updateStatus: (id: string, status: AppointmentStatus) => Promise<boolean>;
   deleteAppointment: (id: string) => Promise<boolean>;
@@ -165,7 +221,8 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
     try {
       const { data: newId, error: rpcError } = await supabase.rpc('save_appointment', {
         p_id: null,
-        p_client_id: null,
+        // Si no viene, la base la enlaza sola por telefono (trigger link_client_by_phone)
+        p_client_id: appt.client_id ?? null,
         p_client_name: appt.clientName,
         p_client_phone: appt.clientPhone,
         p_date: appt.date,
@@ -214,6 +271,7 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
   updateAppointment: async (id, updates) => {
     const oldAppt = get().appointments.find((a) => a.id === id);
     const db: Database['public']['Tables']['appointments']['Update'] = {};
+    if (updates.client_id !== undefined) db.client_id = updates.client_id;
     if (updates.clientName !== undefined) db.client_name = updates.clientName;
     if (updates.clientPhone !== undefined) db.client_phone = updates.clientPhone;
     if (updates.service !== undefined) db.service = updates.service;
@@ -335,52 +393,10 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
 
       if (status === 'completed') {
         const appt = get().appointments.find(a => a.id === id);
-        
-        // Auto-discount package session if client has an active package matching this service name
-        if (appt && appt.client_id) {
+
+        if (appt) {
           try {
-            const { data: pkgs } = await supabase
-              .from('client_packages')
-              .select(`
-                id, 
-                used_sessions, 
-                total_sessions, 
-                status,
-                session_packages (
-                  name,
-                  services (
-                    name
-                  )
-                )
-              `)
-              .eq('client_id', appt.client_id)
-              .eq('status', 'active');
-
-            if (pkgs && pkgs.length > 0) {
-              const matchingPkg = pkgs.find(p => {
-                const svcName = p.session_packages?.services?.name;
-                return svcName && svcName.toLowerCase().trim() === appt.service.toLowerCase().trim() && p.used_sessions < p.total_sessions;
-              });
-
-              if (matchingPkg) {
-                const nextUsed = matchingPkg.used_sessions + 1;
-                const nextStatus = nextUsed >= matchingPkg.total_sessions ? 'completed' : 'active';
-                
-                const { error: updErr } = await supabase
-                  .from('client_packages')
-                  .update({ 
-                    used_sessions: nextUsed,
-                    status: nextStatus
-                  })
-                  .eq('id', matchingPkg.id);
-                  
-                if (!updErr) {
-                  toast.success(`Sesión descontada del paquete: ${matchingPkg.session_packages.name} (${nextUsed}/${matchingPkg.total_sessions})`);
-                  // Refresh the service store to sync active packages list
-                  await useServiceStore.getState().fetchAll();
-                }
-              }
-            }
+            await descontarSesionesDePaquete(appt);
           } catch (pkgErr) {
             console.error('Error auto-discounting package session:', pkgErr);
           }
