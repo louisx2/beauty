@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { seccionActiva } from './secciones';
+import { lineaDeSeccion, seccionActiva } from './secciones';
 
 /** Qué sección [data-spy] cruza el tercio de la pantalla y si ya se bajó (barra sólida). */
 export function useScrollSpy(activo: boolean): { activa: string | null; solida: boolean } {
@@ -16,7 +16,9 @@ export function useScrollSpy(activo: boolean): { activa: string | null; solida: 
         id: el.dataset.spy || el.id,
         top: el.getBoundingClientRect().top,
       }));
-      setActiva(seccionActiva(marcas, window.innerHeight * 0.33));
+      const barra = document.querySelector('.s-nav-in')?.getBoundingClientRect().height ?? 64;
+      const alFondo = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      setActiva(seccionActiva(marcas, lineaDeSeccion(window.innerHeight, barra), alFondo));
     };
     const alMover = () => { if (!raf) raf = requestAnimationFrame(medir); };
     medir();

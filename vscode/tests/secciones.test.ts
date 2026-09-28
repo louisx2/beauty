@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SECCIONES, seccionActiva } from '../src/site/header/secciones.ts';
+import { SECCIONES, lineaDeSeccion, seccionActiva, seccionesVisibles } from '../src/site/header/secciones.ts';
 
 const marcas = [
   { id: 's-inicio', top: -900 },
@@ -30,4 +30,18 @@ test('filosofía reporta Nosotros: dos marcas con el mismo id', () => {
 
 test('sin secciones en la página: null', () => {
   assert.equal(seccionActiva([], 300), null);
+});
+
+test('al llegar al fondo de la página manda la última sección (Contacto es corta)', () => {
+  assert.equal(seccionActiva(marcas, 260, true), 's-nosotros');
+});
+
+test('línea de la sección activa: un tercio de la pantalla, o debajo de la barra en pantallas bajas', () => {
+  assert.equal(lineaDeSeccion(900, 74), 297);
+  assert.equal(lineaDeSeccion(360, 64), 121);
+});
+
+test('secciones visibles: solo las que la página tiene; sin lista, todas', () => {
+  assert.deepEqual(seccionesVisibles(['s-inicio', 's-contacto']).map((s) => s.id), ['s-inicio', 's-contacto']);
+  assert.equal(seccionesVisibles().length, 7);
 });

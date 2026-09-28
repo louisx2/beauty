@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as EventoTeclado, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import MenuButton from './MenuButton';
-import { SECCIONES } from './secciones';
+import type { Seccion } from './secciones';
 import type { Punto } from './menuOrigen';
 import { clicEspecial } from './navegacion';
 import type { Tema } from '../theme/tema';
@@ -13,6 +13,8 @@ interface Props {
   abierto: boolean;
   origen: Punto;
   activa: string | null;
+  /** secciones que la página tiene (en otras páginas, todas) */
+  secciones: Seccion[];
   tema: Tema;
   onTema: (t: Tema) => void;
   onCerrar: () => void;
@@ -23,7 +25,7 @@ const Luna = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 const Sol = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>);
 
 /** Se abre en círculo desde el botón; las secciones suben una tras otra (spec §4.3). */
-export default function SiteMenu({ abierto, origen, activa, tema, onTema, onCerrar, onIr }: Props) {
+export default function SiteMenu({ abierto, origen, activa, secciones, tema, onTema, onCerrar, onIr }: Props) {
   const panel = useRef<HTMLDivElement>(null);
   const cerrar = useRef<HTMLButtonElement>(null);
   const radioOscuro = useRef<HTMLButtonElement>(null);
@@ -87,7 +89,7 @@ export default function SiteMenu({ abierto, origen, activa, tema, onTema, onCerr
 
       <div className="s-wrap s-menu-body">
         <nav className="s-menu-list" aria-label="Secciones">
-          {SECCIONES.map((s, i) => (
+          {secciones.map((s, i) => (
             <a key={s.id} href={`/#${s.id}`} style={{ '--i': i } as CSSProperties}
               className={activa === s.id ? 'is-on' : ''} aria-current={activa === s.id ? 'true' : undefined}
               onClick={irA(s.id)}>
