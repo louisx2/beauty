@@ -1,0 +1,21 @@
+.s-menu-btn{
+  position:relative; display:inline-flex; align-items:center; gap:10px;
+  height:40px; padding:0 4px 0 14px; border-radius:999px;
+  border:1px solid transparent; background:transparent; color:var(--s-text);
+  font:500 11px var(--s-f-body); letter-spacing:.24em; text-transform:uppercase;
+  -webkit-tap-highlight-color:transparent; transition:border-color .45s, background-color .45s;
+}
+@media (min-width: 761px){ .s-menu-btn{ height:42px; padding-left:16px } }
+/* las dos palabras en la misma celda: el ancho es el de la más larga y ninguna se corta */
+.s-mb-label{ display:grid; justify-items:end; height:13px; line-height:13px; overflow:hidden }
+.s-mb-label > span{ grid-area:1 / 1; transition:transform .6s var(--s-ease-x) }
+.s-mb-close{ transform:translateY(110%) }
+.s-menu-btn.is-x .s-mb-open{ transform:translateY(-110%) }
+.s-menu-btn.is-x .s-mb-close{ transform:none }
+.s-mb-lines{ position:relative; width:34px; height:34px; flex-shrink:0 }
+.s-mb-lines i{ position:absolute; right:7px; top:50%; height:1px; background:currentColor; transition:transform .6s var(--s-ease-x), width .5s var(--s-ease-x) }
+.s-mb-lines i:nth-child(1){ width:20px; transform:translateY(-4px) }
+.s-mb-lines i:nth-child(2){ width:12px; transform:translateY(4px) }
+.s-menu-btn.is-x .s-mb-lines i:nth-child(1){ width:20px; transform:rotate(45deg) }
+.s-menu-btn.is-x .s-mb-lines i:nth-child(2){ width:20px; transform:rotate(-45deg) }
+@media (hover:hover){ .s-menu-btn:hover .s-mb-lines i:nth-child(2){ width:20px } }
