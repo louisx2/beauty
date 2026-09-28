@@ -1,0 +1,15 @@
+.s-main section{ scroll-margin-top:calc(var(--s-nav-h) + 56px) }
+/* main recibe el foco de "Saltar al contenido" (tabIndex -1): sin anillo alrededor de toda la página */
+.s-main:focus{ outline:none }
+.s-foot{ background:#1f1611; color:rgba(245,241,234,.55) }
+.s-foot-in{ display:flex; flex-direction:column; align-items:center; gap:16px; padding:28px 20px 96px; font-size:13px; text-align:center }
+.s-foot-in img{ height:62px; width:auto }
+@media (min-width: 761px){
+  .s-foot-in{ flex-direction:row; justify-content:space-between; padding:30px 36px; text-align:left }
+  .s-foot-in img{ height:58px }
+}
+.s-wa{ position:fixed; right:14px; bottom:14px; z-index:30; width:50px; height:50px; border-radius:50%; display:grid; place-items:center; background:var(--s-btn-bg); color:var(--s-btn-fg); box-shadow:0 14px 30px -10px rgba(0,0,0,.45); transition:transform .3s, background-color .6s, color .6s }
+.s-wa svg{ width:25px; height:25px }
+.s-wa.is-elevado{ bottom:92px }
+@media (min-width: 761px){ .s-wa{ right:20px; bottom:20px; width:54px; height:54px } .s-wa.is-elevado{ bottom:96px } }
+@media (hover:hover){ .s-wa:hover{ transform:scale(1.07) } }

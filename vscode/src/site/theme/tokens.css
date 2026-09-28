@@ -1,0 +1,93 @@
+/* Sistema visual de la web de la clienta (spec §3). Todo cuelga de .site: el panel no se entera. */
+.site{
+  --s-camel:#B2967D; --s-camel-l:#CDB8A2; --s-cocoa:#7D5A44; --s-cocoa-d:#654735;
+  --s-khaki:#D7C9B8; --s-linen:#F5F1EA; --s-crema:#FBF8F3; --s-choco:#2A1E17;
+  --s-f-display:'Playfair Display', Georgia, serif;
+  --s-f-body:'Outfit', system-ui, sans-serif;
+  --s-nav-h:64px;
+  --s-ease:cubic-bezier(.2,.7,.2,1);
+  --s-ease-io:cubic-bezier(.65,0,.35,1);
+  --s-ease-x:cubic-bezier(.7,0,.2,1);
+  /* textura de listones, como la pared del salón */
+  --s-listones-oscuro:
+    linear-gradient(180deg, rgba(0,0,0,.28), rgba(0,0,0,0) 28%, rgba(0,0,0,0) 72%, rgba(0,0,0,.34)),
+    repeating-linear-gradient(90deg, #271c15 0px, #3b2b21 17px, #2c2018 34px, #231912 36px);
+  --s-listones-lino:
+    linear-gradient(180deg, rgba(245,241,234,.2), rgba(245,241,234,.85)),
+    repeating-linear-gradient(90deg, #f7f3ed 0px, #ebe3d9 24px, #f7f3ed 48px);
+  position:relative;
+  min-height:100vh;
+  background:var(--s-bg);
+  color:var(--s-text);
+  font-family:var(--s-f-body);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:clip;
+}
+@media (min-width: 761px){ .site{ --s-nav-h:70px } }
+@media (min-width: 1101px){ .site{ --s-nav-h:74px } }
+
+.site[data-site-tema="oscuro"]{
+  color-scheme:dark;
+  --s-bg:#2A1E17; --s-bg-alt:#33251C; --s-tex:var(--s-listones-oscuro);
+  --s-text:#F5F1EA; --s-soft:rgba(245,241,234,.72); --s-faint:rgba(245,241,234,.45); --s-accent:#B2967D;
+  --s-surface:rgba(245,241,234,.06); --s-surface-line:rgba(178,150,125,.24); --s-line:rgba(178,150,125,.24);
+  --s-btn-bg:#B2967D; --s-btn-fg:#2A1E17; --s-btn-hover:#CDB8A2;
+  --s-chip-on:#F5F1EA; --s-chip-on-fg:#2A1E17; --s-arch-bg:#3A2A20;
+  --s-nav-bg:rgba(34,24,18,.9); --s-menu-bg:var(--s-listones-oscuro);
+  --s-shadow:0 30px 60px -30px rgba(0,0,0,.7);
+}
+.site[data-site-tema="claro"]{
+  color-scheme:light;
+  --s-bg:#FBF8F3; --s-bg-alt:#F5F1EA; --s-tex:var(--s-listones-lino);
+  --s-text:#2A1E17; --s-soft:#76665A; --s-faint:#A29487; --s-accent:#7D5A44;
+  --s-surface:#FFFFFF; --s-surface-line:rgba(125,90,68,.1); --s-line:rgba(125,90,68,.18);
+  --s-btn-bg:#7D5A44; --s-btn-fg:#FFFFFF; --s-btn-hover:#654735;
+  --s-chip-on:#2A1E17; --s-chip-on-fg:#F5F1EA; --s-arch-bg:#D7C9B8;
+  --s-nav-bg:rgba(251,248,243,.92); --s-menu-bg:var(--s-listones-lino);
+  --s-shadow:0 26px 50px -30px rgba(42,30,23,.4);
+}
+/* fondo de la página fuera de .site (la franja al estirar en iOS) con el color del tema; el panel no tiene .site */
+body:has(.site[data-site-tema="oscuro"]){ background:#2A1E17 }
+body:has(.site[data-site-tema="claro"]){ background:#FBF8F3 }
+
+/* reinicios con :where(.site): especificidad mínima, así cualquier clase s-* les gana */
+:where(.site) *, :where(.site) *::before, :where(.site) *::after{ box-sizing:border-box }
+:where(.site) img{ display:block; max-width:100% }
+:where(.site) a{ color:inherit; text-decoration:none }
+:where(.site) button{ font:inherit; color:inherit; cursor:pointer }
+/* el CSS global pone Cormorant en h1–h3; aquí mandan Playfair y el tema (empata y gana por orden) */
+:where(.site) :is(h1,h2,h3,h4){ font-family:var(--s-f-display); font-weight:400; margin:0 }
+/* sin border-radius: el contorno ya sigue el radio del elemento */
+:where(.site) :focus-visible{ outline:2px solid var(--s-accent); outline-offset:3px }
+
+.s-wrap{ max-width:1180px; margin:0 auto; padding:0 20px }
+@media (min-width: 761px){ .s-wrap{ padding:0 36px } }
+@media (min-width: 1101px){ .s-wrap{ padding:0 56px } }
+
+.s-eyebrow{ font:500 12px/1.2 var(--s-f-body); letter-spacing:.24em; text-transform:uppercase; color:var(--s-accent) }
+.s-display{ font-family:var(--s-f-display); font-weight:400; letter-spacing:-.01em; line-height:1.05 }
+.s-display em{ font-style:italic; color:var(--s-accent) }
+.s-lead{ font-size:15.5px; line-height:1.7; color:var(--s-soft); font-weight:300; max-width:32em }
+@media (min-width: 761px){ .s-lead{ font-size:17px } }
+
+.s-btn{ display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:48px; padding:0 26px; border-radius:999px; border:0; font:500 15px var(--s-f-body); white-space:nowrap; transition:transform .35s var(--s-ease), background-color .35s, box-shadow .35s }
+.s-btn-solid{ background:var(--s-btn-bg); color:var(--s-btn-fg) }
+.s-btn-line{ background:transparent; color:var(--s-text); border:1px solid currentColor }
+.s-ar{ display:inline-block; transition:transform .35s var(--s-ease) }
+@media (hover:hover){
+  .s-btn:hover .s-ar{ transform:translateX(5px) }
+  .s-btn-solid:hover{ background:var(--s-btn-hover); transform:translateY(-2px); box-shadow:var(--s-shadow) }
+  .s-btn-line:hover{ transform:translateY(-2px) }
+}
+
+.s-skip{ position:absolute; left:12px; top:-80px; z-index:100; padding:10px 16px; border-radius:10px; background:var(--s-btn-bg); color:var(--s-btn-fg); transition:top .2s }
+.s-skip:focus{ top:12px }
+.s-main--pad{ padding-top:var(--s-nav-h) }
+
+@media (prefers-reduced-motion: reduce){
+  .site *, .site *::before, .site *::after{
+    animation-duration:.01ms !important; animation-iteration-count:1 !important;
+    transition-duration:.01ms !important; scroll-behavior:auto !important;
+    transition-delay:0s !important; animation-delay:0s !important;
+  }
+}
