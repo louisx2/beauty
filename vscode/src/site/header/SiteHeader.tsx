@@ -48,12 +48,14 @@ function Pestanas({ activa, onIr }: { activa: string | null; onIr: (id: string) 
   const fila = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const f = fila.current, el = f?.querySelector<HTMLElement>('.is-on');
-    if (f && el) f.scrollTo({ left: el.offsetLeft - f.clientWidth / 2 + el.offsetWidth / 2, behavior: 'smooth' });
+    const reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (f && el) f.scrollTo({ left: el.offsetLeft - f.clientWidth / 2 + el.offsetWidth / 2, behavior: reducir ? 'auto' : 'smooth' });
   }, [activa]);
   return (
     <div className="s-chips" ref={fila}>
       {SECCIONES.map((s) => (
-        <button key={s.id} type="button" className={`s-chip ${activa === s.id ? 'is-on' : ''}`} onClick={() => onIr(s.id)}>
+        <button key={s.id} type="button" className={`s-chip ${activa === s.id ? 'is-on' : ''}`} onClick={() => onIr(s.id)}
+          aria-current={activa === s.id ? 'true' : undefined}>
           {s.etiqueta}
         </button>
       ))}
