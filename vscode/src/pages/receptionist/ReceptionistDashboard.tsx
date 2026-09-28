@@ -274,6 +274,7 @@ export default function ReceptionistDashboard() {
     }
     setBookSaving(true);
     const result = await addAppointment({
+      client_id: form.clientId || null,
       clientName: form.clientName,
       clientPhone: form.clientPhone,
       service: form.service,

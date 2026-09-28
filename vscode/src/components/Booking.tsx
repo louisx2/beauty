@@ -328,7 +328,8 @@ export default function Booking() {
         p_notes: form.notes.trim() || '',
         p_source: 'web',
         p_services: planElegido.map((linea) => ({
-          service_id: bookingType === 'package' ? null : linea.serviceId,
+          // En paquetes es el servicio del paquete: con eso se descuenta la sesion al completar
+          service_id: linea.serviceId,
           service_name: linea.nombre,
           employee: linea.staff.name,
           duration: linea.duracion,
