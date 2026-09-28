@@ -1,6 +1,6 @@
 // primero los tokens: los CSS de los componentes se emiten después y les ganan por orden
 import './theme/tokens.css';
-import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SiteHeader from './header/SiteHeader';
 import SiteMenu from './header/SiteMenu';
@@ -21,7 +21,18 @@ export default function SiteLayout({ children, conSecciones = false, whatsappEle
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [origen, setOrigen] = useState<Punto>({ x: 0, y: 0 });
   const abridor = useRef<HTMLButtonElement | null>(null);
+  const botonMenu = useRef<HTMLButtonElement>(null);
   const navigate = useNavigate();
+
+  // con el menú cerrado el círculo de 0 px ya está sobre MENÚ: al abrir solo crece (también tras girar)
+  useLayoutEffect(() => {
+    const medir = () => {
+      if (botonMenu.current) setOrigen(origenDesdeBoton(botonMenu.current.getBoundingClientRect()));
+    };
+    medir();
+    window.addEventListener('resize', medir);
+    return () => window.removeEventListener('resize', medir);
+  }, []);
 
   const abrirMenu = useCallback((boton: HTMLButtonElement) => {
     abridor.current = boton;
@@ -43,7 +54,7 @@ export default function SiteLayout({ children, conSecciones = false, whatsappEle
   return (
     <div className="site" data-site-tema={tema}>
       <a className="s-skip" href="#s-contenido">Saltar al contenido</a>
-      <SiteHeader conSecciones={conSecciones} activa={activa} solida={solida} menuAbierto={menuAbierto} onAbrirMenu={abrirMenu} onIr={ir} />
+      <SiteHeader conSecciones={conSecciones} activa={activa} solida={solida} menuAbierto={menuAbierto} onAbrirMenu={abrirMenu} onIr={ir} botonRef={botonMenu} />
       <SiteMenu abierto={menuAbierto} origen={origen} activa={activa} tema={tema} onTema={setTema} onCerrar={cerrarMenu} onIr={ir} />
       <main id="s-contenido" className={conSecciones ? 's-main' : 's-main s-main--pad'}>{children}</main>
       <SiteFooter />

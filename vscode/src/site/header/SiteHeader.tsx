@@ -1,4 +1,4 @@
-import { useEffect, useRef, type MouseEvent } from 'react';
+import { useEffect, useRef, type MouseEvent, type RefObject } from 'react';
 import MenuButton from './MenuButton';
 import { SECCIONES } from './secciones';
 import { LOGO, LOGO_CLARO } from '../brand';
@@ -11,11 +11,14 @@ interface Props {
   menuAbierto: boolean;
   onAbrirMenu: (boton: HTMLButtonElement) => void;
   onIr: (id: string) => void;
+  /** si viene, es la ref del botón MENÚ (el contenedor lo mide para el origen del círculo) */
+  botonRef?: RefObject<HTMLButtonElement | null>;
 }
 
 /** Celular/tableta: logo | MENÚ (+ pestañas al bajar). Computadora: logo | secciones centradas | MENÚ. */
-export default function SiteHeader({ conSecciones, activa, solida, menuAbierto, onAbrirMenu, onIr }: Props) {
-  const boton = useRef<HTMLButtonElement>(null);
+export default function SiteHeader({ conSecciones, activa, solida, menuAbierto, onAbrirMenu, onIr, botonRef }: Props) {
+  const botonPropio = useRef<HTMLButtonElement>(null);
+  const boton = botonRef ?? botonPropio;
   const ir = (id: string) => (e: MouseEvent) => { e.preventDefault(); onIr(id); };
 
   return (
