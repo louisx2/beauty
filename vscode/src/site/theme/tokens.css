@@ -34,6 +34,7 @@
   --s-btn-bg:#B2967D; --s-btn-fg:#2A1E17; --s-btn-hover:#CDB8A2;
   --s-chip-on:#F5F1EA; --s-chip-on-fg:#2A1E17; --s-arch-bg:#3A2A20;
   --s-nav-bg:rgba(34,24,18,.9); --s-menu-bg:var(--s-listones-oscuro);
+  --s-surface-hover:rgba(245,241,234,.1); --s-float-bg:rgba(42,30,23,.86); --s-float-line:rgba(178,150,125,.35); --s-seal-bg:#2A1E17;
   --s-shadow:0 30px 60px -30px rgba(0,0,0,.7);
 }
 .site[data-site-tema="claro"]{
@@ -44,6 +45,7 @@
   --s-btn-bg:#7D5A44; --s-btn-fg:#FFFFFF; --s-btn-hover:#654735;
   --s-chip-on:#2A1E17; --s-chip-on-fg:#F5F1EA; --s-arch-bg:#D7C9B8;
   --s-nav-bg:rgba(251,248,243,.92); --s-menu-bg:var(--s-listones-lino);
+  --s-surface-hover:#FFFFFF; --s-float-bg:#FFFFFF; --s-float-line:rgba(125,90,68,.08); --s-seal-bg:#FBF8F3;
   --s-shadow:0 26px 50px -30px rgba(42,30,23,.4);
 }
 /* fondo de la página fuera de .site (la franja al estirar en iOS) con el color del tema; el panel no tiene .site */

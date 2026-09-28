@@ -1,0 +1,7 @@
+.s-sello{ position:absolute; width:104px; height:104px; border-radius:50%; display:grid; place-items:center; background:var(--s-seal-bg); box-shadow:var(--s-shadow) }
+.s-sello svg{ position:absolute; inset:0; width:100%; height:100%; animation:s-girar 26s linear infinite }
+.s-sello text{ font:500 9.4px var(--s-f-body); letter-spacing:.2em; text-transform:uppercase; fill:var(--s-accent) }
+.s-sello img{ position:relative; width:30px }
+.site[data-site-tema="oscuro"] .s-sello img{ filter:brightness(0) invert(.92) }
+@keyframes s-girar{ to{ transform:rotate(360deg) } }
+@media (min-width: 761px){ .s-sello{ width:136px; height:136px } .s-sello text{ font-size:9.6px } }
