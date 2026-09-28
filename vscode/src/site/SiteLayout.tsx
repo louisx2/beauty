@@ -1,3 +1,5 @@
+// primero los tokens: los CSS de los componentes se emiten después y les ganan por orden
+import './theme/tokens.css';
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SiteHeader from './header/SiteHeader';
@@ -8,7 +10,6 @@ import { origenDesdeBoton, type Punto } from './header/menuOrigen';
 import { useSiteTema } from './theme/useSiteTema';
 import SiteFooter from './SiteFooter';
 import WhatsAppButton from './WhatsAppButton';
-import './theme/tokens.css';
 import './SiteLayout.css';
 
 interface Props { children: ReactNode; conSecciones?: boolean; whatsappElevado?: boolean }
