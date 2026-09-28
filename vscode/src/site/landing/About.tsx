@@ -27,7 +27,7 @@ export default function About() {
             Hoy combina técnica, equipos de alta tecnología y calidez humana, para que al irte veas en el espejo
             exactamente lo que esperabas.
           </p>
-          <blockquote className="s-display s-about-cita">"Belleza y bienestar con responsabilidad."</blockquote>
+          <blockquote className="s-display s-about-cita">“Belleza y bienestar con responsabilidad.”</blockquote>
           <Desplegable id="s-historia" abierto={historia}>
             <div className="s-historia">
               <p>Todo comenzó en 2016, cuando di mis primeros pasos como consultora de belleza en Mary Kay. Ahí descubrí mi pasión: ayudar a las mujeres a sentirse seguras en su propia piel.</p>

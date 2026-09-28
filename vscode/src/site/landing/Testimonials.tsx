@@ -17,7 +17,7 @@ export default function Testimonials() {
         <CarruselCentrado etiqueta="Opiniones de clientas" className="s-carr--opiniones">
           {testimonios.map((t) => (
             <figure key={t.nombre} className="s-tq">
-              <span className="s-tq-q" aria-hidden="true">"</span>
+              <span className="s-tq-q" aria-hidden="true">“</span>
               <blockquote>{t.texto}</blockquote>
               <figcaption>
                 <span><b>{t.nombre}</b>{t.servicio}</span>
