@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import Navbar from '../components/Navbar';
+import Navbar from '../legacy/Navbar';
 import MyAppointments from '../components/MyAppointments';
-import Footer from '../components/Footer';
+import Footer from '../legacy/Footer';
 
 export default function ClientPortal() {
   useEffect(() => {

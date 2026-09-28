@@ -1,0 +1,10 @@
+.s-trust{ background:var(--s-bg-alt); border-top:1px solid var(--s-line); border-bottom:1px solid var(--s-line); color:var(--s-accent) }
+.s-trust-in{ list-style:none; display:grid; grid-template-columns:1fr 1fr; gap:12px 10px; padding-top:18px; padding-bottom:18px; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; text-align:center }
+@media (min-width: 761px){
+  .s-trust-in{ grid-template-columns:repeat(4,1fr); gap:18px; padding-top:22px; padding-bottom:22px; font-size:12px; letter-spacing:.12em }
+}
+/* computadora: una sola fila con rombos entre frases */
+@media (min-width: 1101px){
+  .s-trust-in{ display:flex; justify-content:center; align-items:center; gap:26px; font-size:13px; letter-spacing:.14em }
+  .s-trust-in li + li::before{ content:""; display:inline-block; width:6px; height:6px; margin-right:26px; transform:translateY(-2px) rotate(45deg); background:currentColor; opacity:.55 }
+}

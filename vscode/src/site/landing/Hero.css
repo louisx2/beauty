@@ -1,0 +1,36 @@
+.s-hero{ background:var(--s-tex); padding-top:var(--s-nav-h) }
+.s-hero-in{ display:grid; grid-template-columns:1fr; gap:44px; align-items:center; padding-top:18px; padding-bottom:72px }
+.s-hero-tx .s-eyebrow{ margin-bottom:18px; font-size:10.5px }
+.s-hero-tx h1{ margin-bottom:26px }
+.s-hero-tx .s-lead{ margin-bottom:38px }
+.s-hero-btns{ display:flex; gap:14px; flex-wrap:wrap }
+.s-hero-btns .s-btn{ flex:1; padding:0 18px }
+.s-hero-media{ position:relative; justify-self:center; width:100%; max-width:300px }
+.s-hero-arco{ z-index:2; aspect-ratio:4/5.9; border-radius:999px }
+.s-hero-arco img{ object-position:50% 22% }
+.s-hero-linea{ position:absolute; inset:0; z-index:1; transform:translate(12px,-12px); border:1px solid var(--s-accent); opacity:.5; border-radius:999px }
+.s-hero-sello{ z-index:3; left:-22px; bottom:30px }
+.s-hero-firma{ position:absolute; right:-10px; bottom:-16px; z-index:4; padding:10px 14px; border-radius:14px; font-size:12px; line-height:1.35; background:var(--s-float-bg); border:1px solid var(--s-float-line); color:var(--s-soft); box-shadow:var(--s-shadow); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px) }
+.s-hero-firma b{ display:block; font-family:var(--s-f-display); font-weight:400; font-size:15px; color:var(--s-text) }
+
+/* entrada: cascada del texto, el óvalo se eleva y la foto se aleja */
+@keyframes s-elevar{ from{ opacity:0; transform:translateY(40px) } to{ opacity:1; transform:none } }
+@keyframes s-alejar{ from{ transform:scale(1.14) } to{ transform:scale(1) } }
+.s-hero-a1{ animation:s-subir .9s .05s both }
+.s-hero-a2{ animation:s-subir 1s .15s both }
+.s-hero-a3{ animation:s-subir 1s .28s both }
+.s-hero-a4{ animation:s-subir 1s .4s both }
+.s-hero-media{ animation:s-elevar 1.2s .2s both }
+.s-hero-arco img{ animation:s-alejar 2.2s .2s both var(--s-ease) }
+
+@media (min-width: 761px){
+  .s-hero-in{ grid-template-columns:1.08fr .92fr; gap:40px; padding-top:30px; padding-bottom:84px }
+  .s-hero-tx .s-eyebrow{ margin-bottom:26px; font-size:12px }
+  .s-hero-btns .s-btn{ flex:none; padding:0 28px }
+  .s-hero-media{ max-width:430px }
+  .s-hero-linea{ transform:translate(20px,-20px) }
+  .s-hero-sello{ left:-54px; bottom:54px }
+  .s-hero-firma{ right:-26px; bottom:-22px; padding:14px 20px; font-size:13px }
+  .s-hero-firma b{ font-size:17px }
+}
+@media (min-width: 1101px){ .s-hero-in{ gap:64px; padding-top:36px; padding-bottom:104px } }

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import Navbar from '../components/Navbar';
+import Navbar from '../legacy/Navbar';
 import Booking from '../components/Booking';
-import Footer from '../components/Footer';
+import Footer from '../legacy/Footer';
 
 export default function BookingPage() {
   useEffect(() => {
