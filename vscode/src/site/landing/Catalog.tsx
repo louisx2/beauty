@@ -85,8 +85,12 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
       const movil = window.matchMedia('(max-width: 760px)').matches;
       const destino = movil ? document.getElementById(`s-acc-${elegida}`) : raiz.current;
       if (!destino) return;
-      // el margen de ancla ya cuenta la barra con pestañas (que aparecen al bajar)
-      destino.scrollIntoView({ behavior: reducir() ? 'instant' : 'smooth', block: 'start' });
+      // se baja la ventana a mano con el margen de ancla (que ya cuenta la barra con pestañas):
+      // scrollIntoView también correría el recorte interno del despliegue mientras se abre y
+      // el catálogo quedaría cortado arriba
+      const margen = parseFloat(getComputedStyle(destino).scrollMarginTop) || 0;
+      const top = destino.getBoundingClientRect().top + window.scrollY - margen;
+      window.scrollTo({ top, behavior: reducir() ? 'instant' : 'smooth' });
     }, reducir() ? 0 : 380);
     return () => window.clearTimeout(t);
     // solo cuando llega un pedido nuevo (el catálogo cambia al cargar precios y no debe volver a bajar)
