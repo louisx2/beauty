@@ -81,6 +81,11 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
     const fam = catalogo.find((c) => c.id === elegida)?.familia;
     if (fam) setFamilia(fam);
     setAbiertaMovil(elegida);
+    // el catálogo sigue creciendo por debajo de la especialidad mientras se abre: sin anclaje de
+    // desplazamiento, el navegador no "sigue" a la sección de abajo y la especialidad no se va de la pantalla
+    const html = document.documentElement;
+    html.style.overflowAnchor = 'none';
+    const t2 = window.setTimeout(() => { html.style.overflowAnchor = ''; }, 1400);
     const t = window.setTimeout(() => {
       const movil = window.matchMedia('(max-width: 760px)').matches;
       const destino = movil ? document.getElementById(`s-acc-${elegida}`) : raiz.current;
@@ -92,7 +97,7 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
       const top = destino.getBoundingClientRect().top + window.scrollY - margen;
       window.scrollTo({ top, behavior: reducir() ? 'instant' : 'smooth' });
     }, reducir() ? 0 : 380);
-    return () => window.clearTimeout(t);
+    return () => { window.clearTimeout(t); window.clearTimeout(t2); html.style.overflowAnchor = ''; };
     // solo cuando llega un pedido nuevo (el catálogo cambia al cargar precios y no debe volver a bajar)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pedido]);
