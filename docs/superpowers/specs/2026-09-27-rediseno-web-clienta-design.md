@@ -367,9 +367,16 @@ Cada cambio se guarda como `vscode/supabase/migration_*.sql`, igual que los ante
   - media queries en los cortes de la sección 3.8;
   - la página se desplaza con la ventana normal: la barra es `position: fixed` y las secciones usan
     `scroll-margin-top`.
-- **Lo que se retira** al terminar: los componentes viejos de la landing (`Hero`, `Services`,
-  `Packages`, `About`, `Mission`, `Testimonials`, `Footer` y `Navbar` públicos) y sus `.css`. Antes se
-  confirma que el panel no los usa.
+- **El diseño anterior se conserva** (pedido de Louis, 2026-09-27: "no quiero perder el visual viejo
+  por si debo volver a él luego"):
+  - antes de fusionar la primera fase que cambie lo que ve la clienta, se crea la etiqueta git
+    `diseno-anterior` en `main` y se sube a GitHub, para poder recuperarlo con un solo comando;
+  - los componentes viejos de la landing (`Hero`, `Services`, `Packages`, `About`, `Mission`,
+    `Testimonials`, `Footer`, `Navbar`, `Booking` y `MyAppointments` con sus `.css` y páginas) **no
+    se borran**: se mueven a `src/legacy/` y siguen compilando;
+  - quedan visibles en rutas de consulta: `/diseno-anterior`, `/diseno-anterior/reservar` y
+    `/diseno-anterior/mis-citas`, con `noindex` para que Google no las muestre;
+  - volver al diseño viejo sería apuntar `/`, `/reservar` y `/mis-citas` a esas páginas en `App.tsx`.
 - **Accesibilidad:** navegación por teclado completa, foco visible, `aria-*` en despliegues y menú,
   textos alternativos en fotos y contraste AA.
 - **Rendimiento:** imágenes con `loading="lazy"` salvo la portada, tamaños fijos para no saltar y
@@ -413,4 +420,5 @@ El diseño funciona sin esto, con los comportamientos indicados:
 5. **`/reservar`:** separar la lógica en `useBooking`, la interfaz de 3 pasos, el calendario, el
    resumen y la barra, y la confirmación.
 6. **`/mis-citas`:** la interfaz nueva, `get_client_packages` y "Mis paquetes".
-7. **Calidad:** revisión en todos los anchos, prueba en el teléfono y el iPad de Louis, y PR.
+7. **Calidad:** revisión en todos los anchos, conservar el diseño anterior en `src/legacy/` con sus
+   rutas de consulta (sección 8), prueba en el teléfono y el iPad de Louis, y PR.
