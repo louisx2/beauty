@@ -13,7 +13,7 @@
 .s-fam-ind{ position:absolute; left:0; top:0; z-index:0; border-radius:999px; background:var(--s-chip-on); transition:transform .6s var(--s-ease-io), width .6s var(--s-ease-io), background-color .6s }
 
 /* celular: acordeón de especialidades */
-.s-acc{ border-bottom:1px solid var(--s-line) }
+.s-acc{ border-bottom:1px solid var(--s-line); scroll-margin-top:calc(var(--s-nav-h) + 56px) }
 @keyframes s-entra-acc{ from{ opacity:0; transform:translateY(18px) } to{ opacity:1; transform:none } }
 .s-acc.is-entra{ animation:s-entra-acc .6s var(--s-ease) both; animation-delay:calc(var(--i, 0) * 65ms) }
 .s-acc-btn{ display:flex; align-items:center; gap:14px; width:100%; background:none; border:0; padding:15px 0; text-align:left }

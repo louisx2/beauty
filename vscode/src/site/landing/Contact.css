@@ -6,7 +6,7 @@
 .s-ct-list li{ display:grid; grid-template-columns:1fr; gap:4px; padding:15px 0; border-bottom:1px solid var(--s-line); font-size:15.5px }
 .s-ct-list li span{ padding-top:4px; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--s-accent) }
 /* enlaces de teléfono e Instagram con zona táctil de 44 px sin mover el texto */
-.s-ct-list a{ display:inline-block; margin:-10px 0; padding:10px 0 }
+.s-ct-list a{ display:inline-block; margin:-11px 0; padding:11px 0 }
 .s-ct-btns{ display:flex; flex-wrap:wrap; gap:12px }
 .s-ct-btns .s-btn{ width:100% }
 /* mapa: esquinas redondeadas que Safari/iPad respeta, sin filtros que lo deformen */

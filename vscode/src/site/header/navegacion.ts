@@ -21,14 +21,38 @@ export function useIrAlHash(): void {
     if (!hash) return;
     let id: string;
     try { id = decodeURIComponent(hash.slice(1)); } catch { return; } // un "#%" mal formado no tumba la página
-    // la sección puede tardar en pintarse (datos, carga diferida): reintenta hasta ~2 s
     let intentos = 0;
     let t = 0;
+    let fin = 0;
+    let ro: ResizeObserver | null = null;
+    const soltar = () => {
+      ro?.disconnect();
+      ro = null;
+      window.clearTimeout(fin);
+      window.removeEventListener('wheel', soltar);
+      window.removeEventListener('touchstart', soltar);
+      window.removeEventListener('keydown', soltar);
+    };
     const probar = () => {
-      if (id === 's-inicio' || document.getElementById(id)) { irASeccion(id); return; }
+      if (id === 's-inicio' || document.getElementById(id)) {
+        irASeccion(id);
+        // si algo de arriba termina de cargar (paquetes, fotos) y empuja la sección, se vuelve a acomodar
+        // un rato; en cuanto la persona toca, usa la rueda o el teclado, se la deja en paz
+        if (id !== 's-inicio' && typeof ResizeObserver !== 'undefined') {
+          let primero = true;
+          ro = new ResizeObserver(() => { if (primero) { primero = false; return; } irASeccion(id); });
+          ro.observe(document.body);
+          fin = window.setTimeout(soltar, 2500);
+          window.addEventListener('wheel', soltar, { passive: true });
+          window.addEventListener('touchstart', soltar, { passive: true });
+          window.addEventListener('keydown', soltar);
+        }
+        return;
+      }
+      // la sección puede tardar en pintarse (datos, carga diferida): reintenta hasta ~2 s
       if (++intentos < 40) t = window.setTimeout(probar, 50);
     };
     t = window.setTimeout(probar, 60);
-    return () => window.clearTimeout(t);
+    return () => { window.clearTimeout(t); soltar(); };
   }, [hash]);
 }
