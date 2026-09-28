@@ -4,17 +4,21 @@ import '../site/landing/landing.css';
 import Hero from '../site/landing/Hero';
 import TrustStrip from '../site/landing/TrustStrip';
 import Services from '../site/landing/Services';
-import { useServiciosPublicos } from '../site/landing/useDatosPublicos';
+import Packages from '../site/landing/Packages';
+import { usePaquetesPublicos, useServiciosPublicos } from '../site/landing/useDatosPublicos';
 
 /** Página principal (spec §5). Solo lista en el menú las secciones que existen. */
 export default function LandingPage() {
   const servicios = useServiciosPublicos();
-  const secciones = ['s-inicio', 's-servicios'];
+  const { paquetes } = usePaquetesPublicos();
+  const conPaquetes = paquetes.length > 0; // sin paquetes activos (o sin red) la sección no aparece
+  const secciones = ['s-inicio', 's-servicios', ...(conPaquetes ? ['s-paquetes'] : [])];
   return (
     <SiteLayout conSecciones secciones={secciones}>
       <Hero />
       <TrustStrip />
       <Services servicios={servicios} />
+      {conPaquetes && <Packages paquetes={paquetes} />}
     </SiteLayout>
   );
 }
