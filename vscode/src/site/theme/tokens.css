@@ -46,6 +46,9 @@
   --s-nav-bg:rgba(251,248,243,.92); --s-menu-bg:var(--s-listones-lino);
   --s-shadow:0 26px 50px -30px rgba(42,30,23,.4);
 }
+/* fondo de la página fuera de .site (la franja al estirar en iOS) con el color del tema; el panel no tiene .site */
+body:has(.site[data-site-tema="oscuro"]){ background:#2A1E17 }
+body:has(.site[data-site-tema="claro"]){ background:#FBF8F3 }
 
 /* reinicios con :where(.site): especificidad mínima, así cualquier clase s-* les gana */
 :where(.site) *, :where(.site) *::before, :where(.site) *::after{ box-sizing:border-box }

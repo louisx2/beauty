@@ -18,7 +18,8 @@ const Settings = lazy(() => import('./pages/admin/Settings'));
 const Reports = lazy(() => import('./pages/admin/Reports'));
 const SpecialistView        = lazy(() => import('./pages/specialist/SpecialistView'));
 const ReceptionistDashboard = lazy(() => import('./pages/receptionist/ReceptionistDashboard'));
-const DisenoPreview = lazy(() => import('./site/DisenoPreview'));
+// solo en desarrollo: en producción ni siquiera se emite el chunk de la vista previa
+const DisenoPreview = import.meta.env.DEV ? lazy(() => import('./site/DisenoPreview')) : null;
 
 function AdminFallback() {
   return (
@@ -81,7 +82,7 @@ export default function App() {
           <Route path="recepcion" element={<Suspense fallback={<AdminFallback />}><ReceptionistDashboard /></Suspense>} />
         </Route>
 
-        {import.meta.env.DEV && <Route path="/_diseno" element={<Suspense fallback={null}><DisenoPreview /></Suspense>} />}
+        {DisenoPreview && <Route path="/_diseno" element={<Suspense fallback={null}><DisenoPreview /></Suspense>} />}
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to={homePath} replace />} />

@@ -17,6 +17,8 @@ de servicios).
 - Nada cortado ni saliéndose de la pantalla.
 - Al pasar el mouse nunca cambia la letra; solo posición, color u opacidad.
 - `prefers-reduced-motion` apaga las animaciones.
+- Dentro de `.site` no se usan utilidades de Tailwind: las clases `s-*` sin capa les ganan, y los
+  reinicios del sitio van con `:where(.site)` para no pisar las clases de componentes.
 - La prueba final de cada fase es en el teléfono y el iPad de Louis, con `vite --host` en su WiFi.
 
 Cada fase es un PR que se puede revisar y fusionar por separado. El plan detallado de cada fase se
