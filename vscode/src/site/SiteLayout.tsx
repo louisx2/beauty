@@ -1,11 +1,11 @@
 // primero los tokens: los CSS de los componentes se emiten después y les ganan por orden
 import './theme/tokens.css';
-import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SiteHeader from './header/SiteHeader';
 import SiteMenu from './header/SiteMenu';
 import { useScrollSpy } from './header/useScrollSpy';
-import { irASeccion } from './header/navegacion';
+import { irASeccion, useIrAlHash } from './header/navegacion';
 import { origenDesdeBoton, type Punto } from './header/menuOrigen';
 import { useSiteTema } from './theme/useSiteTema';
 import SiteFooter from './SiteFooter';
@@ -22,7 +22,9 @@ export default function SiteLayout({ children, conSecciones = false, whatsappEle
   const [origen, setOrigen] = useState<Punto>({ x: 0, y: 0 });
   const abridor = useRef<HTMLButtonElement | null>(null);
   const botonMenu = useRef<HTMLButtonElement>(null);
+  const estabaAbierto = useRef(false);
   const navigate = useNavigate();
+  useIrAlHash(); // llegar con "/#s-servicios" baja a la sección; sin hash no hace nada
 
   // con el menú cerrado el círculo de 0 px ya está sobre MENÚ: al abrir solo crece (también tras girar)
   useLayoutEffect(() => {
@@ -40,10 +42,13 @@ export default function SiteLayout({ children, conSecciones = false, whatsappEle
     setMenuAbierto(true);
   }, []);
 
-  const cerrarMenu = useCallback(() => {
-    setMenuAbierto(false);
-    abridor.current?.focus({ preventScroll: true });
-  }, []);
+  const cerrarMenu = useCallback(() => setMenuAbierto(false), []);
+
+  // al cerrar por cualquier camino el foco vuelve a MENÚ; después del render, cuando la barra ya no está inerte
+  useEffect(() => {
+    if (estabaAbierto.current && !menuAbierto) abridor.current?.focus({ preventScroll: true });
+    estabaAbierto.current = menuAbierto;
+  }, [menuAbierto]);
 
   const ir = useCallback((id: string) => {
     setMenuAbierto(false);
@@ -53,12 +58,13 @@ export default function SiteLayout({ children, conSecciones = false, whatsappEle
 
   return (
     <div className="site" data-site-tema={tema}>
-      <a className="s-skip" href="#s-contenido">Saltar al contenido</a>
-      <SiteHeader conSecciones={conSecciones} activa={activa} solida={solida} menuAbierto={menuAbierto} onAbrirMenu={abrirMenu} onIr={ir} botonRef={botonMenu} />
+      {/* con el menú abierto todo lo de atrás queda inerte: ni Tab ni lector de pantalla llegan */}
+      <a className="s-skip" href="#s-contenido" inert={menuAbierto}>Saltar al contenido</a>
+      <SiteHeader conSecciones={conSecciones} activa={activa} solida={solida} menuAbierto={menuAbierto} onAbrirMenu={abrirMenu} onIr={ir} botonRef={botonMenu} inerte={menuAbierto} />
       <SiteMenu abierto={menuAbierto} origen={origen} activa={activa} tema={tema} onTema={setTema} onCerrar={cerrarMenu} onIr={ir} />
-      <main id="s-contenido" className={conSecciones ? 's-main' : 's-main s-main--pad'}>{children}</main>
-      <SiteFooter />
-      <WhatsAppButton elevado={whatsappElevado} />
+      <main id="s-contenido" tabIndex={-1} inert={menuAbierto} className={conSecciones ? 's-main' : 's-main s-main--pad'}>{children}</main>
+      <SiteFooter inerte={menuAbierto} />
+      <WhatsAppButton elevado={whatsappElevado} inerte={menuAbierto} />
     </div>
   );
 }

@@ -4,6 +4,10 @@ import { useLocation } from 'react-router-dom';
 const suave = (): ScrollBehavior =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
 
+/** Ctrl/Cmd/Shift/Alt+clic o un botón que no es el principal: se deja al navegador (pestaña nueva, etc.). */
+export const clicEspecial = (e: Pick<MouseEvent, 'metaKey' | 'ctrlKey' | 'shiftKey' | 'altKey' | 'button'>): boolean =>
+  e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
+
 /** Baja hasta una sección de la página actual; Inicio vuelve arriba del todo. */
 export function irASeccion(id: string): void {
   if (id === 's-inicio') { window.scrollTo({ top: 0, behavior: suave() }); return; }

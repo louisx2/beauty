@@ -1,4 +1,6 @@
 .s-main section{ scroll-margin-top:calc(var(--s-nav-h) + 56px) }
+/* main recibe el foco de "Saltar al contenido" (tabIndex -1): sin anillo alrededor de toda la página */
+.s-main:focus{ outline:none }
 .s-foot{ background:#1f1611; color:rgba(245,241,234,.55) }
 .s-foot-in{ display:flex; flex-direction:column; align-items:center; gap:16px; padding:28px 20px 96px; font-size:13px; text-align:center }
 .s-foot-in img{ height:62px; width:auto }

@@ -1,10 +1,8 @@
 import SiteLayout from './SiteLayout';
 import { SECCIONES } from './header/secciones';
-import { useIrAlHash } from './header/navegacion';
 
 /** Vista previa del caparazón con secciones de relleno. Solo existe en `npm run dev`. */
 export default function DisenoPreview() {
-  useIrAlHash();
   return (
     <SiteLayout conSecciones>
       {SECCIONES.map((s, i) => (

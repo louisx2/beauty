@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as EventoTeclado, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import MenuButton from './MenuButton';
 import { SECCIONES } from './secciones';
 import type { Punto } from './menuOrigen';
+import { clicEspecial } from './navegacion';
 import type { Tema } from '../theme/tema';
 import { FOTO_MENU, LOGO, LOGO_CLARO, MONOGRAMA } from '../brand';
 import { site } from '../../config/site';
@@ -25,6 +26,8 @@ const Sol = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 export default function SiteMenu({ abierto, origen, activa, tema, onTema, onCerrar, onIr }: Props) {
   const panel = useRef<HTMLDivElement>(null);
   const cerrar = useRef<HTMLButtonElement>(null);
+  const radioOscuro = useRef<HTMLButtonElement>(null);
+  const radioClaro = useRef<HTMLButtonElement>(null);
   const [x, setX] = useState(false);       // las líneas se cruzan un instante después de abrir
   const [listo, setListo] = useState(false); // terminó la entrada: el hover ya responde sin retrasos
 
@@ -58,6 +61,16 @@ export default function SiteMenu({ abierto, origen, activa, tema, onTema, onCerr
   }, [abierto, onCerrar]);
 
   const estilo = { '--mx': `${origen.x}px`, '--my': `${origen.y}px` } as CSSProperties;
+  const irA = (id: string) => (e: MouseEvent) => { if (clicEspecial(e)) return; e.preventDefault(); onIr(id); };
+
+  // radiogroup: cualquier flecha cambia al otro tema y le lleva el foco
+  const alTeclearTema = (e: EventoTeclado<HTMLDivElement>) => {
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+    e.preventDefault();
+    const otro: Tema = tema === 'oscuro' ? 'claro' : 'oscuro';
+    onTema(otro);
+    (otro === 'oscuro' ? radioOscuro : radioClaro).current?.focus();
+  };
 
   return (
     <div id="s-menu" ref={panel} role="dialog" aria-modal="true" aria-label="Menú" aria-hidden={!abierto} {...(!abierto ? { inert: true } : {})}
@@ -66,7 +79,7 @@ export default function SiteMenu({ abierto, origen, activa, tema, onTema, onCerr
       <img className="s-menu-mono" src={MONOGRAMA} alt="" aria-hidden="true" />
 
       <div className="s-wrap s-menu-top">
-        <a className="s-logo" href="/#s-inicio" onClick={(e) => { e.preventDefault(); onIr('s-inicio'); }} aria-label="Ir al inicio">
+        <a className="s-logo" href="/#s-inicio" onClick={irA('s-inicio')} aria-label="Ir al inicio">
           <img className="s-lc" src={LOGO} alt="" /><img className="s-lw" src={LOGO_CLARO} alt="" />
         </a>
         <MenuButton ref={cerrar} cerrar={x} etiqueta="Cerrar menú" controla="s-menu" expandido onClick={onCerrar} />
@@ -77,7 +90,7 @@ export default function SiteMenu({ abierto, origen, activa, tema, onTema, onCerr
           {SECCIONES.map((s, i) => (
             <a key={s.id} href={`/#${s.id}`} style={{ '--i': i } as CSSProperties}
               className={activa === s.id ? 'is-on' : ''} aria-current={activa === s.id ? 'true' : undefined}
-              onClick={(e) => { e.preventDefault(); onIr(s.id); }}>
+              onClick={irA(s.id)}>
               <span className="s-ml-n">{String(i + 1).padStart(2, '0')}</span>
               <span className="s-ml-t"><span>{s.etiqueta}</span></span>
               <span className="s-ml-here">Estás aquí</span>
@@ -87,17 +100,19 @@ export default function SiteMenu({ abierto, origen, activa, tema, onTema, onCerr
         </nav>
         <aside className="s-menu-side" aria-hidden="true">
           <div className="s-ms-arch"><img src={FOTO_MENU} alt="" loading="lazy" /></div>
-          <p className="s-ms-q">"Belleza y bienestar con responsabilidad."</p>
+          <p className="s-ms-q">“Belleza y bienestar con responsabilidad.”</p>
         </aside>
       </div>
 
       <div className="s-wrap s-menu-bottom">
         <div className="s-ts">
           <span className="s-ts-lbl" id="s-ts-lbl">Apariencia</span>
-          <div className="s-ts-seg" role="radiogroup" aria-labelledby="s-ts-lbl" data-on={tema}>
+          <div className="s-ts-seg" role="radiogroup" aria-labelledby="s-ts-lbl" data-on={tema} onKeyDown={alTeclearTema}>
             <i className="s-ts-knob" aria-hidden="true" />
-            <button type="button" role="radio" aria-checked={tema === 'oscuro'} className={tema === 'oscuro' ? 'is-on' : ''} onClick={() => onTema('oscuro')}><Luna />Marrón</button>
-            <button type="button" role="radio" aria-checked={tema === 'claro'} className={tema === 'claro' ? 'is-on' : ''} onClick={() => onTema('claro')}><Sol />Beige</button>
+            <button ref={radioOscuro} type="button" role="radio" aria-checked={tema === 'oscuro'} tabIndex={tema === 'oscuro' ? 0 : -1}
+              className={tema === 'oscuro' ? 'is-on' : ''} onClick={() => onTema('oscuro')}><Luna />Marrón</button>
+            <button ref={radioClaro} type="button" role="radio" aria-checked={tema === 'claro'} tabIndex={tema === 'claro' ? 0 : -1}
+              className={tema === 'claro' ? 'is-on' : ''} onClick={() => onTema('claro')}><Sol />Beige</button>
           </div>
         </div>
         <div className="s-menu-cta">
