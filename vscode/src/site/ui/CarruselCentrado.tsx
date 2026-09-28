@@ -34,7 +34,6 @@ export default function CarruselCentrado({ etiqueta, className = '', children }:
     f.addEventListener('scroll', alMover, { passive: true });
     const ro = new ResizeObserver(alMover);
     ro.observe(f);
-    marcar();
     return () => { f.removeEventListener('scroll', alMover); ro.disconnect(); if (raf) cancelAnimationFrame(raf); };
   }, [marcar]);
 

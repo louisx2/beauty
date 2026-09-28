@@ -39,7 +39,7 @@ export default function Packages({ paquetes }: { paquetes: PaquetePublico[] }) {
                   <img src={foto ?? MONOGRAMA} alt="" loading="lazy" />
                 </div>
                 <div className="s-prow-tx">
-                  <h3 className="s-display">{nombreCorto(p.nombre)}{esDestacado && <span className="s-tag">Más elegido</span>}</h3>
+                  <h3 className="s-display">{nombreCorto(p.nombre)}{esDestacado && <> <span className="s-tag">Más elegido</span></>}</h3>
                   {p.servicio && <p className="s-prow-inc">{p.servicio}</p>}
                   <div className="s-ovalos">
                     {Array.from({ length: Math.min(p.sesiones, MAX_OVALOS) }, (_, k) => <i key={k} aria-hidden="true" />)}

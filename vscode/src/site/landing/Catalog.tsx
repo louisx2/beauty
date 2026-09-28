@@ -156,7 +156,7 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
 
       {/* tableta y computadora */}
       <div className="s-cat-grid">
-        <nav className="s-cat-nav" aria-label="Especialidades">
+        <div className="s-cat-nav" role="group" aria-label="Especialidades">
           {FAMILIAS.map((f) => (
             <div key={f.id}>
               <p className="s-cat-fam">{f.nombre}</p>
@@ -168,7 +168,7 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
               ))}
             </div>
           ))}
-        </nav>
+        </div>
         <div className="s-cat-panel">
           <div className="s-cp-anim" key={actual.id}>
             <div className="s-cp-top">

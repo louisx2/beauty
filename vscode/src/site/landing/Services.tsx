@@ -79,7 +79,7 @@ export default function Services({ servicios }: { servicios: ServicioPublico[] }
           </button>
         </div>
 
-        <Desplegable id="s-cat-despl" abierto={abierto}>
+        <Desplegable id="s-cat-despl" className="s-cat-despl" abierto={abierto}>
           <Catalog catalogo={catalogo} elegida={elegida} onElegir={setElegida} pedido={pedido} />
         </Desplegable>
       </div>

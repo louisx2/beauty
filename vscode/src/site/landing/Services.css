@@ -25,6 +25,10 @@
 .s-co-chev svg{ width:14px; height:14px }
 .s-cat-open.is-abierto .s-co-chev{ transform:rotate(180deg); background:var(--s-btn-bg); color:var(--s-btn-fg); border-color:transparent }
 
+/* el recorte del catálogo llega al borde de la pantalla: las familias tocan el borde y los contornos de foco no se cortan */
+.s-cat-despl > .s-despl-in{ margin-inline:-20px; padding-inline:20px }
+@media (min-width: 761px){ .s-cat-despl > .s-despl-in{ margin-inline:-8px; padding-inline:8px } }
+
 /* tableta: 2×2 con descripción; computadora: 4 en fila */
 @media (min-width: 761px){
   .s-cards{ gap:22px }

@@ -203,6 +203,7 @@ export const servicesMenu: ServiceCategory[] = [
     title: 'Remoción de Tatuaje',
     specialist: specialists.anabel,
     familia: 'corporal',
+    imagen: '/fotos/servicio-tatu.jpg',
     descripcion: 'Eliminación de tatuajes con láser.',
     items: [
       {
