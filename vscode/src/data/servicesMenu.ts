@@ -317,6 +317,8 @@ export const servicesMenu: ServiceCategory[] = [
     items: [
       {
         name: 'Eliminación de verrugas',
+        description:
+          'El precio varía según la cantidad y el tamaño de las verrugas, desde RD$1,000 en adelante.',
         options: ['Eliminación de verrugas — desde RD$1,000'],
       },
     ],
