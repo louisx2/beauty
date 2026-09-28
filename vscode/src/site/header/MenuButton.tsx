@@ -7,18 +7,20 @@ interface Props {
   controla: string;
   expandido?: boolean;
   className?: string;
+  /** nombre fijo para lectores de pantalla (el Cerrar del menú no debe decir "Abrir menú" mientras gira) */
+  etiqueta?: string;
   ref?: Ref<HTMLButtonElement>;
 }
 
 /** "MENÚ" + dos líneas finas; en modo cerrar las líneas se cruzan en X y la palabra rueda a "CERRAR". */
-export default function MenuButton({ cerrar = false, onClick, controla, expandido, className = '', ref }: Props) {
+export default function MenuButton({ cerrar = false, onClick, controla, expandido, className = '', etiqueta, ref }: Props) {
   return (
     <button
       ref={ref}
       type="button"
       className={`s-menu-btn ${cerrar ? 'is-x' : ''} ${className}`}
       onClick={onClick}
-      aria-label={cerrar ? 'Cerrar menú' : 'Abrir menú'}
+      aria-label={etiqueta ?? (cerrar ? 'Cerrar menú' : 'Abrir menú')}
       aria-controls={controla}
       aria-expanded={expandido}
     >

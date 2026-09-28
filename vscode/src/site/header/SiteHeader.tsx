@@ -59,7 +59,7 @@ function Pestanas({ activa, onIr }: { activa: string | null; onIr: (id: string) 
       {SECCIONES.map((s) => (
         <button key={s.id} type="button" className={`s-chip ${activa === s.id ? 'is-on' : ''}`} onClick={() => onIr(s.id)}
           aria-current={activa === s.id ? 'true' : undefined}>
-          {s.etiqueta}
+          <span>{s.etiqueta}</span>
         </button>
       ))}
     </div>

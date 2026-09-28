@@ -69,7 +69,7 @@ export default function SiteMenu({ abierto, origen, activa, tema, onTema, onCerr
         <a className="s-logo" href="/#s-inicio" onClick={(e) => { e.preventDefault(); onIr('s-inicio'); }} aria-label="Ir al inicio">
           <img className="s-lc" src={LOGO} alt="" /><img className="s-lw" src={LOGO_CLARO} alt="" />
         </a>
-        <MenuButton ref={cerrar} cerrar={x} controla="s-menu" expandido onClick={onCerrar} />
+        <MenuButton ref={cerrar} cerrar={x} etiqueta="Cerrar menú" controla="s-menu" expandido onClick={onCerrar} />
       </div>
 
       <div className="s-wrap s-menu-body">
