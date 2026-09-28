@@ -49,6 +49,25 @@ componentes viejos se mueven a `src/legacy/` en lugar de borrarse (spec §8).
 - Revisar en el teléfono de Louis si el pie del menú se parte en dos filas; si pasa, las áreas táctiles de
   WhatsApp/Instagram se solapan y hay que dar más separación vertical a `.s-menu-info`.
 
+**Lo que dejó la Fase 2 para las Fases 3 y 4** (de la revisión final):
+- **`Packages`:** dividirlo en un caparazón (título y "Cómo funciona") más una fila por estilo, todos con
+  `PaquetePublico[]`. Para el % de ahorro, `usePaquetesPublicos` debe traer `services(name, price)`.
+- **Mover piezas compartidas:**
+  - sacar `.s-ovalos` a `ui/SessionPills` (lo usará `/reservar` en la Fase 5);
+  - mover `.s-arco`, `.s-h1–3`, `.s-sec`, `.s-rv` y `@keyframes s-subir` de `landing/landing.css` a `ui/`
+    o `theme/`, porque otras páginas los necesitarán.
+- **Secciones presentes:** una sola lista declarativa que alimente a la vez el menú y la página. Hoy se
+  decide en `LandingPage` y en el `return null` de cada sección, y el Equipo (Fase 4) se suma ahí.
+- **Accesibilidad:** anunciar el cambio de especialidad en el panel del catálogo (`aria-live`) y llevar
+  el foco a la especialidad que abre un destacado.
+- **Consola:** `useSiteTema` debe capturar la promesa rechazada de `startViewTransition` cuando la
+  pestaña está oculta (`vt.ready.catch(() => {})`).
+- **Estilos del sitio:** dentro de `.site`, el scroll a un elemento que está dentro de un despliegue se
+  hace con `window.scrollTo` y su `scroll-margin-top`, nunca con `scrollIntoView`, porque este correría
+  el recorte interno del despliegue.
+- **Enlaces con nombres viejos:** los enlaces del sitio anterior (`/#paquetes`, `/#contacto`, …) se
+  traducen en `idDeHash` (`header/navegacion.ts`). Al rediseñar `/reservar` hay que mantener esos alias.
+
 **Notas de la base de datos** (ver la memoria `roles-y-rls`):
 - anon solo lee columnas autorizadas de `staff` y `schedule_blocks`. Toda consulta pública debe nombrar
   sus columnas, y una columna nueva necesita su propio `grant select (col) ... to anon`.
