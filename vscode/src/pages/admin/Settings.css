@@ -306,3 +306,41 @@
 }
 
 
+/* ── Página web: estilo de los paquetes ── */
+.settings-estilos { border: 0; margin: 0; padding: 0; display: grid; gap: 12px; }
+.settings-estilos legend { margin-bottom: 10px; font-size: 0.85rem; font-weight: 600; color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 0.5px; }
+.settings-estilo { position: relative; display: flex; align-items: center; gap: 16px; min-height: 44px; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.08); cursor: pointer; transition: border-color .2s, background-color .2s; }
+.settings-estilo input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.settings-estilo.is-on { border-color: #B2967D; background: rgba(178, 150, 125, 0.1); }
+.settings-estilo:has(input:focus-visible) { outline: 2px solid #B2967D; outline-offset: 2px; }
+.settings-estilo__txt { display: flex; flex-direction: column; gap: 3px; }
+.settings-estilo__txt b { color: #fff; font-weight: 600; font-size: 0.95rem; }
+.settings-estilo__txt small { color: rgba(255, 255, 255, 0.6); font-size: 0.82rem; line-height: 1.4; }
+/* miniaturas de cada estilo */
+.settings-estilo__mini { flex-shrink: 0; position: relative; width: 72px; height: 50px; border-radius: 10px; overflow: hidden; background: #F5F1EA; }
+.settings-estilo__mini i { position: absolute; display: block; }
+.settings-estilo__mini--membresia { background: linear-gradient(135deg, #3b2b21, #2A1E17); }
+.settings-estilo__mini--membresia i:nth-child(1) { left: 8px; top: 8px; width: 22px; height: 4px; border-radius: 2px; background: #CDB8A2; }
+.settings-estilo__mini--membresia i:nth-child(2) { left: 8px; bottom: 15px; width: 34px; height: 5px; border-radius: 2px; background: #F5F1EA; }
+.settings-estilo__mini--membresia i:nth-child(3) { left: 8px; bottom: 7px; width: 20px; height: 4px; border-radius: 2px; background: #B2967D; }
+.settings-estilo__mini--menu i { left: 6px; right: 6px; height: 12px; border-bottom: 1px solid rgba(125, 90, 68, 0.25); }
+.settings-estilo__mini--menu i::before { content: ""; position: absolute; left: 0; top: 1px; width: 7px; height: 9px; border-radius: 4px 4px 1px 1px; background: #7D5A44; }
+.settings-estilo__mini--menu i::after { content: ""; position: absolute; left: 11px; top: 4px; width: 30px; height: 3px; border-radius: 2px; background: #B2967D; }
+.settings-estilo__mini--menu i:nth-child(1) { top: 4px; }
+.settings-estilo__mini--menu i:nth-child(2) { top: 18px; }
+.settings-estilo__mini--menu i:nth-child(3) { top: 32px; }
+.settings-estilo__mini--ahorro i:nth-child(1) { left: 0; right: 0; top: 0; height: 22px; background: #B2967D; }
+.settings-estilo__mini--ahorro i:nth-child(2) { right: 6px; top: 6px; width: 16px; height: 16px; border-radius: 50%; background: #2A1E17; }
+.settings-estilo__mini--ahorro i:nth-child(3) { left: 8px; bottom: 8px; width: 30px; height: 6px; border-radius: 2px; background: #7D5A44; }
+.settings-estilos__aviso { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 12px 14px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); color: #fbbf24; font-size: 0.85rem; line-height: 1.45; }
+.settings-estilos__aviso svg { flex-shrink: 0; margin-top: 1px; }
+.settings-estilos__ver { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 0.88rem; color: #CDB8A2; text-decoration: none; }
+.settings-estilos__ver:hover { text-decoration: underline; }
+:root[data-theme="light"] .settings-estilos legend { color: #4b5563; }
+:root[data-theme="light"] .settings-estilo { border-color: #e5e7eb; }
+:root[data-theme="light"] .settings-estilo.is-on { border-color: #7D5A44; background: rgba(125, 90, 68, 0.08); }
+:root[data-theme="light"] .settings-estilo:has(input:focus-visible) { outline-color: #7D5A44; }
+:root[data-theme="light"] .settings-estilo__txt b { color: #1f2937; }
+:root[data-theme="light"] .settings-estilo__txt small { color: #6b7280; }
+:root[data-theme="light"] .settings-estilos__aviso { color: #92400e; background: #fef3c7; }
+:root[data-theme="light"] .settings-estilos__ver { color: #7D5A44; }

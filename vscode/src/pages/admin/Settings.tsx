@@ -1,12 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useSettingsStore, type BankAccount } from '../../store/settingsStore';
-import { Save, AlertCircle, Building2, CreditCard, DollarSign, User as UserIcon, Phone, Plus, Trash2, Star } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { paquetesSinSello, type EstiloPaquetes } from '../../site/landing/paquetes';
+import { Save, AlertCircle, Building2, CreditCard, DollarSign, User as UserIcon, Phone, Plus, Trash2, Star, Globe, ExternalLink } from 'lucide-react';
 import './Settings.css';
+
+// estilos de la sección de paquetes de la página principal (spec §6.4)
+const ESTILOS: { id: EstiloPaquetes; nombre: string; desc: string }[] = [
+  { id: 'membresia', nombre: 'Membresía', desc: 'Tarjetas chocolate con el logo, como una tarjeta de socia.' },
+  { id: 'menu', nombre: 'Menú con foto', desc: 'Una fila por paquete con la foto del servicio. Es el estilo recomendado.' },
+  { id: 'ahorro', nombre: 'Ahorro', desc: 'Tarjetas con el sello "Ahorras X %" y el precio suelto tachado.' },
+];
+
+// en el dominio del panel (app.…) la página pública vive en el dominio principal
+const URL_PAQUETES = typeof window !== 'undefined' && window.location.hostname.startsWith('app.')
+  ? `https://${window.location.hostname.slice(4)}/#s-paquetes`
+  : '/#s-paquetes';
 
 export default function Settings() {
   const { settings, fetchSettings, updateSettings } = useSettingsStore();
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [listo, setListo] = useState(false);
 
   const [form, setForm] = useState({
     deposit_amount: 500,
@@ -17,12 +32,13 @@ export default function Settings() {
     whatsapp_number: '',
     package_deposit_type: 'fixed' as 'fixed' | 'percentage',
     package_deposit_value: 500,
+    estilo_paquetes: 'menu' as EstiloPaquetes,
     show_welcome_card: true,
     show_stats_cards: true
   });
 
   useEffect(() => {
-    fetchSettings();
+    fetchSettings().finally(() => setListo(true));
   }, [fetchSettings]);
 
   useEffect(() => {
@@ -36,11 +52,28 @@ export default function Settings() {
         whatsapp_number: settings.whatsapp_number,
         package_deposit_type: settings.package_deposit_type,
         package_deposit_value: settings.package_deposit_value,
+        estilo_paquetes: settings.estilo_paquetes,
         show_welcome_card: settings.show_welcome_card,
         show_stats_cards: settings.show_stats_cards
       });
     }
   }, [settings]);
+
+  // cuántos paquetes activos saldrían sin sello en el estilo Ahorro (su servicio no tiene precio)
+  const [conteo, setConteo] = useState<{ total: number; sinSello: number } | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    supabase.from('session_packages').select('sessions, price, services(price)').eq('active', true).then(({ data, error }) => {
+      if (!vivo || error) return;
+      type Fila = { sessions: number | string | null; price: number | string | null; services: { price: number | string | null } | { price: number | string | null }[] | null };
+      const paquetes = ((data ?? []) as unknown as Fila[]).map((p) => {
+        const sv = Array.isArray(p.services) ? p.services[0] : p.services;
+        return { precio: Number(p.price) || 0, sesiones: Number(p.sessions) || 0, precioServicio: Number(sv?.price) || 0 };
+      });
+      setConteo({ total: paquetes.length, sinSello: paquetesSinSello(paquetes) });
+    });
+    return () => { vivo = false; };
+  }, []);
 
   const handleAddBankAccount = () => {
     setForm(prev => ({
@@ -90,7 +123,7 @@ export default function Settings() {
         <button 
           className="settings-page__save-btn" 
           onClick={handleSubmit} 
-          disabled={loading}
+          disabled={loading || !listo}
         >
           <Save size={18} /> {loading ? 'Guardando...' : 'Guardar Cambios'}
         </button>
@@ -264,6 +297,35 @@ export default function Settings() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Página web */}
+        <div className="settings-card settings-card--secondary">
+          <div className="settings-card__header">
+            <h3 className="settings-card__title"><Globe size={20} /> Página web</h3>
+            <p className="settings-card__desc">Cómo se ven los paquetes en la página principal. Se publica al guardar.</p>
+          </div>
+          <fieldset className="settings-estilos">
+            <legend>Estilo de los paquetes</legend>
+            {ESTILOS.map((e) => (
+              <label key={e.id} className={`settings-estilo ${form.estilo_paquetes === e.id ? 'is-on' : ''}`}>
+                <input type="radio" name="estilo_paquetes" value={e.id} checked={form.estilo_paquetes === e.id}
+                  onChange={() => setForm({ ...form, estilo_paquetes: e.id })} />
+                <span className={`settings-estilo__mini settings-estilo__mini--${e.id}`} aria-hidden="true"><i /><i /><i /></span>
+                <span className="settings-estilo__txt"><b>{e.nombre}</b><small>{e.desc}</small></span>
+              </label>
+            ))}
+          </fieldset>
+          {form.estilo_paquetes === 'ahorro' && conteo && conteo.sinSello > 0 && (
+            <p className="settings-estilos__aviso" role="status">
+              <AlertCircle size={16} />
+              {conteo.sinSello} de {conteo.total} {conteo.total === 1 ? 'paquete no mostrará' : 'paquetes no mostrarán'} el sello
+              de ahorro porque su servicio no tiene precio. Cárgalo en Servicios.
+            </p>
+          )}
+          <a className="settings-estilos__ver" href={URL_PAQUETES} target="_blank" rel="noopener noreferrer">
+            Ver los paquetes en la página <ExternalLink size={14} />
+          </a>
         </div>
 
         {/* Preferencias de Interfaz */}
