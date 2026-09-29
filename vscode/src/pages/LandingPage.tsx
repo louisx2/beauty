@@ -19,7 +19,7 @@ import { testimonios } from '../config/testimonios';
  */
 export default function LandingPage() {
   const servicios = useServiciosPublicos();
-  const { paquetes } = usePaquetesPublicos();
+  const { paquetes, estilo } = usePaquetesPublicos();
   const conPaquetes = paquetes.length > 0; // sin paquetes activos (o sin red) la sección no aparece
   const conOpiniones = testimonios.length > 0;
   const secciones = [
@@ -34,7 +34,7 @@ export default function LandingPage() {
       <Hero />
       <TrustStrip />
       <Services servicios={servicios} />
-      {conPaquetes && <Packages paquetes={paquetes} />}
+      {conPaquetes && <Packages paquetes={paquetes} estilo={estilo} />}
       <About />
       <Philosophy />
       <Testimonials />
