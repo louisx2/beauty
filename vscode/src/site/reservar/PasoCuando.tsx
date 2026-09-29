@@ -119,7 +119,7 @@ export default function PasoCuando(p: PasoCuandoProps) {
           <>
             <Grupo titulo="Mañana" horas={manana} hora={p.hora} onHora={p.onHora} />
             <Grupo titulo="Tarde" horas={tarde} hora={p.hora} onHora={p.onHora} />
-            <p className="s-hint">Si eliges Cualquiera, te damos la primera especialista libre.</p>
+            <p className="s-hint">Si eliges “Cualquiera”, te damos la primera especialista libre.</p>
           </>
         )}
       </div>
