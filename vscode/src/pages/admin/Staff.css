@@ -1132,12 +1132,6 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* el input del interruptor está oculto: el foco del teclado se ve en la perilla */
-.toggle-switch input:focus-visible + .toggle-slider {
-  outline: 2px solid #B2967D;
-  outline-offset: 2px;
-}
-
 .staff-web__aviso {
   margin: 0;
   font-size: 0.8rem;
