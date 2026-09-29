@@ -83,11 +83,12 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       } else {
         const show_welcome_card = localStorage.getItem('show_welcome_card') !== 'false';
         const show_stats_cards = localStorage.getItem('show_stats_cards') !== 'false';
-        set({ settings: { ...DEFAULTS, show_welcome_card, show_stats_cards } });
+        set({ settings: { ...DEFAULTS, show_welcome_card, show_stats_cards }, cargado: false });
       }
       // If table doesn't exist yet, silently keep defaults
     } catch {
       // Keep defaults
+      set({ cargado: false });
     } finally {
       set({ loading: false });
     }
