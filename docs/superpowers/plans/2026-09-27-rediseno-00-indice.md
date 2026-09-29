@@ -79,6 +79,25 @@ componentes viejos se mueven a `src/legacy/` en lugar de borrarse (spec §8).
 - **Prueba pendiente:** el guardado del estilo desde el panel con sesión de admin la hace Louis antes de
   fusionar.
 
+**Lo que dejó la Fase 4** (de la revisión final; no bloquean):
+- **Menú en otras páginas:** `SiteLayout` sin `secciones` lista las 7. Cuando `/reservar` y `/mis-citas` usen
+  `SiteLayout` (Fases 5 y 6), su menú ofrecería Equipo o Paquetes aunque la página principal no los tenga. Hay que
+  compartir la presencia (un hook o un store con `seccionesPresentes`) o pasar la lista.
+- **Nombres con tilde:** Equipo ya usa `capitalizarNombre` (`src/lib/nombres.ts`), pero Citas (`Appointments.tsx`) y
+  Clientes (`Clients.tsx`) siguen con el `capitalizeName` viejo, que escribe "RodríGuez". Los nombres ya guardados con
+  la mayúscula rota no se corrigen solos.
+- **Fotos del equipo:** `reducirFoto` (`src/lib/fotos.ts`) las achica a 800 px en JPEG antes de subirlas. Falta
+  comprobar en el iPhone de Louis que una foto vertical no salga girada (EXIF). `imageSmoothingQuality = 'high'` daría
+  un achicado más limpio.
+- **Carga tardía:** Equipo y Paquetes aparecen cuando llega su consulta. En un teléfono lento, un enlace
+  `/#s-contacto` puede quedar corrido (se revisa en la Fase 7).
+- **Orden:** el equipo se ordena por el nombre completo, así que "Dra. Nadieska Soto" va en la D.
+- **Prueba pendiente:** Louis prueba el panel antes de fusionar. En Equipo:
+  - marca a alguien, escribe su cargo y guarda;
+  - cambia solo el teléfono y revisa que el cargo no se borre;
+  - revisa el tema claro;
+  - sube una foto vertical del teléfono.
+
 **Notas de la base de datos** (ver la memoria `roles-y-rls`):
 - anon solo lee columnas autorizadas de `staff` y `schedule_blocks`. Toda consulta pública debe nombrar
   sus columnas, y una columna nueva necesita su propio `grant select (col) ... to anon`.
