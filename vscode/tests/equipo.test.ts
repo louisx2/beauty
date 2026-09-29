@@ -15,6 +15,7 @@ test('iniciales: primer nombre y último apellido, sin títulos ni paréntesis',
   assert.equal(iniciales('Louis H.'), 'LH');
   assert.equal(iniciales('ángela ñúñez'), 'ÁÑ');
   assert.equal(iniciales('Carmen'), 'C');
+  assert.equal(iniciales('Licda. María Pérez'), 'MP');
 });
 
 test('iniciales: si el nombre no deja letras, vacío (la tarjeta pone la N)', () => {

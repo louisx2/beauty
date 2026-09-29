@@ -29,7 +29,7 @@ export function textoONull(valor: string | null | undefined): string | null {
 }
 
 // tratamientos que no cuentan para las iniciales ("Dra. Nadieska Soto" → NS)
-const TITULOS = new Set(['dr', 'dra', 'lic', 'lcda', 'lcdo', 'ing', 'sr', 'sra', 'srta']);
+const TITULOS = new Set(['dr', 'dra', 'lic', 'licda', 'licdo', 'lcda', 'lcdo', 'mtra', 'dña', 'ing', 'sr', 'sra', 'srta']);
 
 /** Primera letra del primer nombre y del último apellido, sin paréntesis ni títulos. */
 export function iniciales(nombre: string): string {
