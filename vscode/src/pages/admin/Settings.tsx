@@ -18,10 +18,9 @@ const URL_PAQUETES = typeof window !== 'undefined' && window.location.hostname.s
   : '/#s-paquetes';
 
 export default function Settings() {
-  const { settings, fetchSettings, updateSettings } = useSettingsStore();
+  const { settings, fetchSettings, updateSettings, cargado } = useSettingsStore();
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
-  const [listo, setListo] = useState(false);
 
   const [form, setForm] = useState({
     deposit_amount: 500,
@@ -38,7 +37,7 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    fetchSettings().finally(() => setListo(true));
+    fetchSettings();
   }, [fetchSettings]);
 
   useEffect(() => {
@@ -123,7 +122,7 @@ export default function Settings() {
         <button 
           className="settings-page__save-btn" 
           onClick={handleSubmit} 
-          disabled={loading || !listo}
+          disabled={loading || !cargado}
         >
           <Save size={18} /> {loading ? 'Guardando...' : 'Guardar Cambios'}
         </button>
@@ -320,7 +319,7 @@ export default function Settings() {
             <p className="settings-estilos__aviso" role="status">
               <AlertCircle size={16} />
               {conteo.sinSello} de {conteo.total} {conteo.total === 1 ? 'paquete no mostrará' : 'paquetes no mostrarán'} el sello
-              de ahorro porque su servicio no tiene precio. Cárgalo en Servicios.
+              de ahorro: su servicio no tiene precio cargado en Servicios o el paquete no sale más barato que las sesiones sueltas.
             </p>
           )}
           <a className="settings-estilos__ver" href={URL_PAQUETES} target="_blank" rel="noopener noreferrer">
