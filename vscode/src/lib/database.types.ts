@@ -610,9 +610,12 @@ export type Database = {
         Row: {
           active: boolean
           avatar_url: string | null
+          cargo_web: string | null
           commission_pct: number
           email: string | null
+          especialidades_web: string | null
           id: string
+          mostrar_en_web: boolean
           name: string
           phone: string
           role: string
@@ -625,9 +628,12 @@ export type Database = {
         Insert: {
           active?: boolean
           avatar_url?: string | null
+          cargo_web?: string | null
           commission_pct?: number
           email?: string | null
+          especialidades_web?: string | null
           id?: string
+          mostrar_en_web?: boolean
           name: string
           phone?: string
           role?: string
@@ -640,9 +646,12 @@ export type Database = {
         Update: {
           active?: boolean
           avatar_url?: string | null
+          cargo_web?: string | null
           commission_pct?: number
           email?: string | null
+          especialidades_web?: string | null
           id?: string
+          mostrar_en_web?: boolean
           name?: string
           phone?: string
           role?: string

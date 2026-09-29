@@ -1105,3 +1105,61 @@
   text-decoration: underline;
 }
 
+/* Página web (spec §6.5) */
+.staff-web {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 16px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.staff-web__titulo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.staff-toggle__txt {
+  margin-left: 8px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* el input del interruptor está oculto: el foco del teclado se ve en la perilla */
+.toggle-switch input:focus-visible + .toggle-slider {
+  outline: 2px solid #B2967D;
+  outline-offset: 2px;
+}
+
+.staff-web__aviso {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #fbbf24;
+}
+
+.staff-card__web-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: rgba(178, 150, 125, 0.15);
+  color: #d8c3ae;
+}
+
+[data-theme="light"] .staff-web { border-color: rgba(74, 52, 42, 0.12); }
+[data-theme="light"] .staff-web__titulo,
+[data-theme="light"] .staff-toggle__txt { color: var(--muted); }
+[data-theme="light"] .staff-web__aviso { color: #92400e; }
+[data-theme="light"] .staff-card__web-badge { background: rgba(125, 90, 68, 0.1); color: #7D5A44; }

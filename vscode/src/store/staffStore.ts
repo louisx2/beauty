@@ -26,6 +26,10 @@ export interface StaffMember {
   serviceIds: string[];
   active: boolean;
   avatarUrl?: string | null;
+  /** Página web (spec §6.5): sale en "Nuestro equipo" si además está activa */
+  mostrarEnWeb: boolean;
+  cargoWeb: string | null;
+  especialidadesWeb: string | null;
   createdAt: string;
 }
 
@@ -50,6 +54,9 @@ function mapRow(r: any): StaffMember {
     serviceIds: r.service_ids || [],
     active: r.active ?? true,
     avatarUrl: r.avatar_url || null,
+    mostrarEnWeb: r.mostrar_en_web ?? false,
+    cargoWeb: r.cargo_web ?? null,
+    especialidadesWeb: r.especialidades_web ?? null,
     createdAt: r.created_at,
   };
 }
@@ -97,6 +104,9 @@ export const useStaffStore = create<StaffState>()((set, get) => ({
         service_ids: s.serviceIds,
         active: s.active,
         avatar_url: s.avatarUrl,
+        mostrar_en_web: s.mostrarEnWeb,
+        cargo_web: s.cargoWeb,
+        especialidades_web: s.especialidadesWeb,
       })
       .select()
       .single();
@@ -119,6 +129,9 @@ export const useStaffStore = create<StaffState>()((set, get) => ({
     if (updates.serviceIds !== undefined) db.service_ids = updates.serviceIds;
     if (updates.active !== undefined) db.active = updates.active;
     if (updates.avatarUrl !== undefined) db.avatar_url = updates.avatarUrl;
+    if (updates.mostrarEnWeb !== undefined) db.mostrar_en_web = updates.mostrarEnWeb;
+    if (updates.cargoWeb !== undefined) db.cargo_web = updates.cargoWeb;
+    if (updates.especialidadesWeb !== undefined) db.especialidades_web = updates.especialidadesWeb;
 
     const { data, error } = await supabase
       .from('staff')
