@@ -21,6 +21,7 @@ export default function Settings() {
   const { settings, fetchSettings, updateSettings, cargado, loading: cargando } = useSettingsStore();
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [intentado, setIntentado] = useState(false); // ya terminó el primer intento de cargar la configuración
 
   const [form, setForm] = useState({
     deposit_amount: 500,
@@ -37,7 +38,7 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    fetchSettings();
+    fetchSettings().finally(() => setIntentado(true));
   }, [fetchSettings]);
 
   useEffect(() => {
@@ -135,7 +136,7 @@ export default function Settings() {
         </div>
       )}
 
-      {!cargando && !cargado && (
+      {intentado && !cargando && !cargado && (
         <div className="settings-error" role="alert" style={{ marginBottom: 24 }}>
           <AlertCircle size={18} />
           No se pudo cargar la configuración, así que no se puede guardar. Recarga la página.
