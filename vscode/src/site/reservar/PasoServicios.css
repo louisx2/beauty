@@ -1,0 +1,79 @@
+/* Paso 1 de /reservar (boceto citas-v2, #sec1). Celular primero. */
+.s-seg{ display:flex; min-width:0; margin:0 0 18px; padding:4px; border:0; border-radius:999px; background:var(--s-surface-2) }
+.s-seg label{ position:relative; flex:1 }
+.s-seg span{ display:flex; align-items:center; justify-content:center; min-height:44px; padding:0 14px; border-radius:999px; font-size:14px; color:var(--s-soft); text-align:center; cursor:pointer; transition:background-color .3s, color .3s }
+.s-seg input:checked + span{ background:var(--s-chip-on); color:var(--s-chip-on-fg); font-weight:500 }
+/* los controles de verdad quedan invisibles pero enfocables; el foco se ve en su etiqueta */
+.s-seg input, .s-sv input, .s-pkc input, .s-av input{ position:absolute; width:1px; height:1px; margin:0; opacity:0 }
+.s-seg input:focus-visible + span{ outline:2px solid var(--s-accent); outline-offset:2px }
+.s-sv:has(input:focus-visible), .s-pkc:has(input:focus-visible), .s-av:has(input:focus-visible){ outline:2px solid var(--s-accent); outline-offset:2px }
+@supports not selector(:has(*)){
+  .s-sv:focus-within, .s-pkc:focus-within, .s-av:focus-within{ outline:2px solid var(--s-accent); outline-offset:2px }
+}
+
+.s-picks{ display:flex; flex-direction:column; gap:12px; margin:0 0 18px; padding:0; list-style:none }
+.s-pick{ padding:14px; border-radius:18px; border:1px solid var(--s-accent); background:var(--s-surface-2); animation:s-r-entra .4s var(--s-ease) both }
+.s-pick-top{ display:flex; align-items:center; gap:10px; margin-bottom:10px }
+.s-pick-top b{ flex:1; min-width:0; font:400 17px/1.25 var(--s-f-display); overflow-wrap:anywhere }
+.s-pick-top span{ font-size:12.5px; color:var(--s-faint); white-space:nowrap }
+.s-pick-top button{ display:grid; place-items:center; width:44px; height:44px; margin:-10px -10px -10px 0; border:0; background:none; color:var(--s-faint); font-size:20px; line-height:1 }
+
+.s-quien{ min-width:0; margin:0; padding:0; border:0 }
+.s-quien legend{ margin:0 0 6px; padding:0; font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--s-faint) }
+.s-quien-op{ display:flex; flex-wrap:wrap; gap:6px }
+.s-av{ position:relative; display:inline-flex; align-items:center; gap:8px; min-height:44px; max-width:100%; padding:4px 12px 4px 4px; border-radius:999px; border:1px solid var(--s-line); font-size:12.5px; cursor:pointer; transition:background-color .3s, color .3s, border-color .3s }
+.s-av img, .s-av i{ display:grid; place-items:center; width:30px; height:30px; flex-shrink:0; border-radius:50%; object-fit:cover; object-position:50% 18%; background:var(--s-arch-bg); font-style:normal; font-size:11px }
+.s-av.is-on{ border-color:var(--s-accent); background:var(--s-chip-on); color:var(--s-chip-on-fg) }
+
+.s-buscar{ display:flex; align-items:center; gap:10px; min-height:48px; margin-bottom:14px; padding:0 16px; border-radius:14px; border:1px solid var(--s-line); background:var(--s-input) }
+.s-buscar svg{ width:17px; height:17px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:2; opacity:.7 }
+.s-buscar input{ flex:1; min-width:0; height:46px; border:0; background:none; color:var(--s-text); font:400 16px var(--s-f-body); outline:none }
+.s-buscar input::placeholder{ color:var(--s-faint) }
+.s-buscar:focus-within{ border-color:var(--s-accent); box-shadow:0 0 0 1px var(--s-accent) }
+
+.s-fams{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px }
+.s-fam{ min-height:44px; padding:0 14px; border-radius:999px; border:1px solid var(--s-line); background:none; font-size:13px; color:var(--s-soft) }
+.s-fam.is-on{ background:var(--s-chip-on); color:var(--s-chip-on-fg); border-color:transparent }
+.s-filtro{ display:flex; align-items:center; flex-wrap:wrap; gap:4px 10px; margin:0 0 6px; font-size:13.5px; color:var(--s-soft) }
+.s-filtro b{ color:var(--s-text); font-weight:500 }
+.s-filtro button{ min-height:44px; padding:0 4px; border:0; background:none; color:var(--s-accent); text-decoration:underline; text-underline-offset:4px }
+
+.s-svlist{ max-height:360px; margin:0 -8px; padding:0 8px; overflow-y:auto; overscroll-behavior:contain }
+.s-sv{ position:relative; display:flex; align-items:center; gap:10px; min-height:52px; padding:10px 2px; border-bottom:1px solid var(--s-line); cursor:pointer }
+.s-sv-ck{ display:grid; place-items:center; width:22px; height:22px; flex-shrink:0; border-radius:7px; border:1.5px solid var(--s-line); font-size:13px; color:transparent; transition:background-color .25s, color .25s }
+.s-sv.is-on .s-sv-ck{ background:var(--s-btn-bg); border-color:transparent; color:var(--s-btn-fg) }
+.s-sv-nm{ flex:1; min-width:0; font-size:14.5px; overflow-wrap:anywhere }
+.s-sv-nm small{ display:block; margin-top:2px; font-size:12px; color:var(--s-faint) }
+.s-sv-meta{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0 }
+.s-sv-du{ font-size:12.5px; color:var(--s-faint); white-space:nowrap }
+.s-sv-pr{ font-size:12.5px; font-weight:500; white-space:nowrap }
+.s-sv-pr.is-na{ color:var(--s-faint); font-weight:400 }
+.s-vacio{ margin:0; padding:18px 4px; font-size:14px; line-height:1.5; color:var(--s-soft) }
+
+.s-pkgs{ display:grid; gap:12px; min-width:0; margin:0; padding:0; border:0 }
+.s-pkc{ position:relative; display:block; padding:16px; border-radius:18px; border:1px solid var(--s-line); cursor:pointer; transition:border-color .3s, background-color .3s }
+.s-pkc.is-on{ border-color:var(--s-accent); background:var(--s-surface-2) }
+.s-pkc b{ display:block; margin-bottom:4px; font:400 18px/1.2 var(--s-f-display); overflow-wrap:anywhere }
+.s-pkc > span{ font-size:12.5px; color:var(--s-faint) }
+.s-pkc .s-ovalos{ margin-top:10px }
+.s-pkgs + .s-pick{ margin-top:16px }
+
+@media (min-width: 761px){
+  .s-seg{ display:inline-flex }
+  .s-seg label{ flex:none }
+  .s-seg span{ padding:0 18px }
+  .s-pick{ padding:16px 18px }
+  .s-pick-top b{ font-size:19px }
+  .s-av{ font-size:13px }
+  .s-sv{ gap:14px; padding:12px 4px }
+  .s-sv-nm{ font-size:15px }
+  .s-sv-meta{ flex-direction:row; align-items:center; gap:14px }
+  .s-sv-pr{ min-width:86px; text-align:right; font-size:13.5px }
+  .s-pkgs{ grid-template-columns:repeat(2, minmax(0,1fr)) }
+}
+@media (min-width: 1101px){
+  .s-pkgs{ grid-template-columns:repeat(3, minmax(0,1fr)) }
+}
+@media (hover:hover){
+  .s-fam:not(.is-on):hover, .s-av:not(.is-on):hover, .s-pkc:not(.is-on):hover{ border-color:var(--s-accent) }
+}

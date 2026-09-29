@@ -35,7 +35,7 @@
   --s-chip-on:#F5F1EA; --s-chip-on-fg:#2A1E17; --s-arch-bg:#3A2A20;
   --s-nav-bg:rgba(34,24,18,.9); --s-menu-bg:var(--s-listones-oscuro);
   --s-surface-hover:rgba(245,241,234,.1); --s-float-bg:rgba(42,30,23,.86); --s-float-line:rgba(178,150,125,.35); --s-seal-bg:#2A1E17;
-  --s-shadow:0 30px 60px -30px rgba(0,0,0,.7);
+  --s-shadow:0 30px 60px -30px rgba(0,0,0,.7); --s-surface-2:rgba(245,241,234,.1); --s-input:rgba(245,241,234,.05); --s-warn:#E3B878; --s-bad:#E39A8F;
 }
 .site[data-site-tema="claro"]{
   color-scheme:light;
@@ -46,7 +46,7 @@
   --s-chip-on:#2A1E17; --s-chip-on-fg:#F5F1EA; --s-arch-bg:#D7C9B8;
   --s-nav-bg:rgba(251,248,243,.92); --s-menu-bg:var(--s-listones-lino);
   --s-surface-hover:#FFFFFF; --s-float-bg:#FFFFFF; --s-float-line:rgba(125,90,68,.08); --s-seal-bg:#FBF8F3;
-  --s-shadow:0 26px 50px -30px rgba(42,30,23,.4);
+  --s-shadow:0 26px 50px -30px rgba(42,30,23,.4); --s-surface-2:#F5F1EA; --s-input:#FFFFFF; --s-warn:#8F5C16; --s-bad:#B04A3C;
 }
 /* fondo de la página fuera de .site (la franja al estirar en iOS) con el color del tema; el panel no tiene .site */
 body:has(.site[data-site-tema="oscuro"]){ background:#2A1E17 }
