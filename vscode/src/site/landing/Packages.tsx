@@ -1,6 +1,7 @@
 import { indiceDestacado, type EstiloPaquetes, type PaquetePublico } from './paquetes';
 import PaquetesMenu from './PaquetesMenu';
 import PaquetesMembresia from './PaquetesMembresia';
+import PaquetesAhorro from './PaquetesAhorro';
 import { useRevela } from '../ui/useRevela';
 import './Packages.css';
 
@@ -27,9 +28,9 @@ export default function Packages({ paquetes, estilo }: { paquetes: PaquetePublic
         </div>
 
         <div className="s-rv" ref={lista}>
-          {estilo === 'membresia'
-            ? <PaquetesMembresia paquetes={paquetes} destacado={destacado} />
-            : <PaquetesMenu paquetes={paquetes} destacado={destacado} />}
+          {estilo === 'membresia' && <PaquetesMembresia paquetes={paquetes} destacado={destacado} />}
+          {estilo === 'ahorro' && <PaquetesAhorro paquetes={paquetes} destacado={destacado} />}
+          {estilo === 'menu' && <PaquetesMenu paquetes={paquetes} destacado={destacado} />}
         </div>
 
         <ol className="s-how s-rv" ref={pasos}>
