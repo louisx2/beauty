@@ -11,17 +11,17 @@
 .s-tm-tags{ font-size:10.5px; line-height:1.6; letter-spacing:.1em; text-transform:uppercase; color:var(--s-accent); margin:0; overflow-wrap:anywhere }
 
 @media (min-width: 761px){
-  .s-team-grid{ gap:28px 22px }
+  .s-team-grid{ gap:28px 22px; max-width:622px; margin-inline:auto }
   /* en tableta 2 por fila, pero sin retratos gigantes */
-  .s-tm{ flex-basis:calc((100% - 22px) / 2); max-width:300px }
+  .s-tm{ flex-basis:calc((100% - 22px) / 2) }
   .s-tm-ini{ font-size:42px }
   .s-tm-nombre{ font-size:20px }
   .s-tm-cargo{ font-size:13.5px }
   .s-tm-tags{ font-size:11px; letter-spacing:.14em }
 }
 @media (min-width: 1101px){
-  .s-team-grid{ gap:26px }
-  .s-tm{ flex-basis:calc((100% - 3 * 26px) / 4); max-width:none }
+  .s-team-grid{ gap:26px; max-width:none }
+  .s-tm{ flex-basis:calc((100% - 3 * 26px) / 4) }
   .s-tm-arco{ margin-bottom:18px }
   .s-tm-nombre{ font-size:21px }
 }
