@@ -569,6 +569,7 @@ export type Database = {
           bank_name: string
           created_at: string | null
           deposit_amount: number
+          estilo_paquetes: string
           id: number
           package_deposit_type: string
           package_deposit_value: number
@@ -582,6 +583,7 @@ export type Database = {
           bank_name?: string
           created_at?: string | null
           deposit_amount?: number
+          estilo_paquetes?: string
           id?: number
           package_deposit_type?: string
           package_deposit_value?: number
@@ -595,6 +597,7 @@ export type Database = {
           bank_name?: string
           created_at?: string | null
           deposit_amount?: number
+          estilo_paquetes?: string
           id?: number
           package_deposit_type?: string
           package_deposit_value?: number
