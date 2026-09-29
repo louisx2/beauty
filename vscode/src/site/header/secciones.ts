@@ -32,7 +32,7 @@ export function lineaDeSeccion(altoVentana: number, altoBarra: number): number {
   return Math.max(altoVentana * 0.33, altoBarra + 57);
 }
 
-/** Solo las secciones que la página tiene de verdad (sin paquetes u opiniones vacías); sin lista, todas. */
+/** Solo las secciones que la página tiene de verdad (sin paquetes, equipo u opiniones vacíos); sin lista, todas. */
 export function seccionesVisibles(presentes?: readonly string[]): Seccion[] {
   return presentes ? SECCIONES.filter((s) => presentes.includes(s.id)) : SECCIONES;
 }

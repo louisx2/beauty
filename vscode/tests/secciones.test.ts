@@ -63,3 +63,14 @@ test('secciones presentes: Equipo va entre Nosotros y Opiniones, en el orden de 
     SECCIONES.map((s) => s.id),
   );
 });
+
+test('secciones presentes: cada bandera enciende solo su sección', () => {
+  assert.deepEqual(
+    seccionesPresentes({ paquetes: true, equipo: false, opiniones: false }),
+    ['s-inicio', 's-servicios', 's-paquetes', 's-nosotros', 's-contacto'],
+  );
+  assert.deepEqual(
+    seccionesPresentes({ paquetes: false, equipo: false, opiniones: true }),
+    ['s-inicio', 's-servicios', 's-nosotros', 's-opiniones', 's-contacto'],
+  );
+});
