@@ -11,6 +11,8 @@ import {
 import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
 import { textoONull } from '../../site/landing/equipo';
+import { capitalizarNombre } from '../../lib/nombres';
+import { reducirFoto } from '../../lib/fotos';
 import './Staff.css';
 
 const ROLES: { key: StaffRole; label: string }[] = [
@@ -39,10 +41,6 @@ const emptyForm: Omit<StaffMember, 'id' | 'createdAt'> = {
   serviceIds: [], active: true, avatarUrl: null,
   mostrarEnWeb: false, cargoWeb: null, especialidadesWeb: null,
 };
-
-function capitalizeName(val: string) {
-  return val.replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 10);
@@ -244,11 +242,13 @@ export default function Staff() {
 
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
+      // la foto de un teléfono pesa 2–6 MB y en la web se ve a 150–300 px: se reduce antes de subir
+      const foto = await reducirFoto(file);
+      const ext = foto.type === 'image/jpeg' ? 'jpg' : file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file);
+        .upload(fileName, foto, { contentType: foto.type });
 
       if (error) throw error;
 
@@ -766,7 +766,7 @@ export default function Staff() {
                     placeholder="Nombre de la empleada"
                     value={form.name}
                     onChange={(e) => {
-                      setForm({ ...form, name: capitalizeName(e.target.value) });
+                      setForm({ ...form, name: capitalizarNombre(e.target.value) });
                       setErrors({ ...errors, name: undefined });
                     }}
                     className={errors.name ? 'input--error' : ''}
