@@ -1,0 +1,31 @@
+/* Estilo C · Ahorro */
+.s-sc-grid{ list-style:none; display:grid; grid-template-columns:1fr; gap:22px; max-width:440px; margin:0 auto; padding:0 }
+.s-sc{ position:relative; display:flex; flex-direction:column; border-radius:28px; overflow:hidden; background:var(--s-surface); border:1px solid var(--s-surface-line); transition:transform .5s var(--s-ease), box-shadow .5s }
+.s-sc.is-pop{ border-color:var(--s-accent) }
+.s-sc-img{ position:relative; height:170px; overflow:hidden; background:var(--s-arch-bg) }
+.s-sc-img img{ width:100%; height:100%; object-fit:cover; object-position:50% 30% }
+.s-sc-img.is-ph{ display:grid; place-items:center; background:var(--s-tex) }
+.s-sc-img.is-ph img{ width:40px; height:auto; opacity:.5; object-fit:contain }
+.site[data-site-tema="oscuro"] .s-sc-img.is-ph img{ filter:brightness(0) invert(1) }
+.s-sc-img::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent 40%, rgba(42,30,23,.6)); pointer-events:none }
+.s-sc-flag{ position:absolute; left:18px; top:18px; z-index:2; padding:6px 12px; border-radius:999px; background:var(--s-btn-bg); color:var(--s-btn-fg); font:500 10.5px var(--s-f-body); letter-spacing:.16em; text-transform:uppercase }
+/* el sello siempre camel sobre chocolate, en los dos temas */
+.s-sc-sello{ position:absolute; right:18px; top:18px; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; width:78px; height:78px; border-radius:50%; background:#B2967D; color:#2A1E17; line-height:1; transform:rotate(-8deg); box-shadow:0 12px 24px -10px rgba(0,0,0,.5) }
+.s-sc-sello small{ font-size:9.5px; letter-spacing:.14em; text-transform:uppercase }
+.s-sc-sello b{ margin-top:3px; font-family:var(--s-f-display); font-weight:500; font-size:24px }
+.s-sc-img .s-sc-ovalos{ position:absolute; left:16px; bottom:14px; z-index:2; padding:6px 12px; border-radius:999px; background:rgba(42,30,23,.72); color:#F5F1EA }
+.s-sc-bd{ display:flex; flex-direction:column; flex:1; padding:24px 26px 28px }
+.s-sc-bd h3{ margin:0 0 6px; font-size:25px; overflow-wrap:anywhere }
+.s-sc-inc{ margin:0 0 22px; font-size:14px; color:var(--s-soft); font-weight:300; overflow-wrap:anywhere }
+.s-sc-per{ display:flex; align-items:baseline; flex-wrap:wrap; gap:10px; margin:0 }
+.s-sc-per b{ font-family:var(--s-f-display); font-weight:400; font-size:34px }
+.s-sc-per span{ font-size:13px; color:var(--s-soft) }
+.s-sc-antes{ margin:6px 0 4px; font-size:13px; color:var(--s-faint) }
+.s-sc-antes s{ margin-right:6px }
+.s-sc-total{ margin:0 0 22px; padding:14px 0 22px; border-bottom:1px solid var(--s-line); font-size:13px; color:var(--s-soft) }
+.s-sc-total b{ color:var(--s-text); font-weight:500 }
+.s-sc .s-btn{ width:100%; margin-top:auto }
+
+@media (min-width: 761px){ .s-sc-grid{ grid-template-columns:1fr 1fr; max-width:none } }
+@media (min-width: 1101px){ .s-sc-grid{ grid-template-columns:repeat(3,1fr); gap:24px } }
+@media (hover: hover) and (prefers-reduced-motion: no-preference){ .s-sc:hover{ transform:translateY(-8px); box-shadow:var(--s-shadow) } }

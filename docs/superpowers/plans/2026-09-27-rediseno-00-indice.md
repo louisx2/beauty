@@ -29,7 +29,7 @@ la fase anterior.
 |---|---|---|---|
 | 1 | `2026-09-27-rediseno-fase-1-base.md` | Tema marrón/beige, barra `logo \| secciones \| MENÚ`, menú premium con día/noche, pie, WhatsApp, logo y fotos. Vista previa en `/_diseno` (solo en desarrollo). | La vista previa cumple la lista de verificación del plan en todos los anchos |
 | 2 | `2026-09-28-rediseno-fase-2-landing.md` | Página principal nueva (spec §5, sin la sección de equipo), con los paquetes en su estilo por defecto "Menú con foto" para que la página publicada no los pierda, los componentes viejos movidos a `src/legacy/` (no se borran), `/diseno-anterior` y la etiqueta `diseno-anterior` subida antes de fusionar | `/` igual al boceto `land-v4` en todos los anchos y temas; SEO intacto |
-| 3 | se escribe al empezar | Los otros 2 estilos de paquetes (Membresía y Ahorro), `settings.estilo_paquetes` y la tarjeta "Página web" del panel (spec §6.4) | Cambiar el estilo en el panel cambia la landing; el % de ahorro está probado |
+| 3 | `2026-09-29-rediseno-fase-3-paquetes.md` | Los otros 2 estilos de paquetes (Membresía y Ahorro), `settings.estilo_paquetes` y la tarjeta "Página web" del panel (spec §6.4) | Cambiar el estilo en el panel cambia la landing; el % de ahorro está probado |
 | 4 | se escribe al empezar | Equipo desde `staff`: columnas nuevas con su `grant select (col) to anon`, campos en la página Equipo y sección en la landing (spec §6.5) | Marcar a alguien en el panel lo muestra en la web; si no hay nadie, la sección no aparece |
 | 5 | se escribe al empezar | `/reservar` en 3 pasos: lógica en `useBooking` sin cambiar su comportamiento, calendario de semana/mes a 90 días, resumen o barra fija y confirmación (spec §6.1–6.2) | Pasan los 6 casos de reserva de la spec §10 |
 | 6 | se escribe al empezar | `/mis-citas` nueva con `get_client_packages` y "Mis paquetes" (spec §6.3) | Búsqueda, cancelación de 12 h y saldo de paquetes funcionan con datos de prueba |
@@ -67,6 +67,17 @@ componentes viejos se mueven a `src/legacy/` en lugar de borrarse (spec §8).
   el recorte interno del despliegue.
 - **Enlaces con nombres viejos:** los enlaces del sitio anterior (`/#paquetes`, `/#contacto`, …) se
   traducen en `idDeHash` (`header/navegacion.ts`). Al rediseñar `/reservar` hay que mantener esos alias.
+
+**Lo que dejó la Fase 3** (de la revisión final; no bloquean):
+- **Orden de lectura:** en Ahorro, "Más elegido" va antes del título; en Membresía, el nombre del servicio va
+  antes del título. Quien navega por encabezados se los salta. Se arregla con el `h3` primero en el DOM y
+  `order` en flex.
+- **Servicio inactivo:** si un paquete apunta a un servicio inactivo, el panel lo cuenta con sello y la página
+  no, porque anon solo ve servicios activos.
+- **Detalles:** "Ahorras" del sello está a 9.5 px, como en el boceto. El enlace "Ver los paquetes" muestra el
+  estilo guardado, no el recién elegido.
+- **Prueba pendiente:** el guardado del estilo desde el panel con sesión de admin la hace Louis antes de
+  fusionar.
 
 **Notas de la base de datos** (ver la memoria `roles-y-rls`):
 - anon solo lee columnas autorizadas de `staff` y `schedule_blocks`. Toda consulta pública debe nombrar
