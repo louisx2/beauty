@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import Navbar from '../legacy/Navbar';
-import Booking from '../components/Booking';
+import Booking from '../legacy/Booking';
 import Footer from '../legacy/Footer';
 
 export default function BookingPage() {
