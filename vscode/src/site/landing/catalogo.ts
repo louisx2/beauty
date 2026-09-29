@@ -78,7 +78,7 @@ export function precioDelTexto(opcion: string): string | null {
 }
 
 /** Tabla > 0 primero; si el menú habla de un rango o de "desde", el de la tabla es el mínimo. */
-function precioVista(fila: ServicioPublico | undefined, opcion: string, enTabla: string): Pick<ServicioVista, 'precio' | 'conPrecio'> {
+export function precioVista(fila: ServicioPublico | undefined, opcion: string, enTabla: string): Pick<ServicioVista, 'precio' | 'conPrecio'> {
   if (fila && fila.price > 0) {
     const desde = /desde/i.test(opcion) || /desde/i.test(enTabla) || /\d\s+a\s+\d/.test(opcion);
     return { precio: `${desde ? 'desde ' : ''}${formatoRD(fila.price)}`, conPrecio: true };
@@ -88,7 +88,7 @@ function precioVista(fila: ServicioPublico | undefined, opcion: string, enTabla:
 }
 
 /** Bloques de la especialidad: primero los servicios sueltos, después los grupos con nombre. */
-function gruposDe(cat: ServiceCategory): { etiqueta?: string; opciones: string[] }[] {
+export function gruposDe(cat: ServiceCategory): { etiqueta?: string; opciones: string[] }[] {
   const grupos: { etiqueta?: string; opciones: string[] }[] = [];
   const sueltos: string[] = [];
   for (const item of cat.items) {
