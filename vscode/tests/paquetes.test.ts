@@ -42,6 +42,8 @@ test('sin sello: servicio sin precio, sin sesiones, sin ahorro o con menos de 1 
   assert.equal(porcentajeAhorro({ precio: 6000, sesiones: 0, precioServicio: 1500 }), null);
   assert.equal(porcentajeAhorro({ precio: 8000, sesiones: 5, precioServicio: 1500 }), null);
   assert.equal(porcentajeAhorro({ precio: 4990, sesiones: 5, precioServicio: 1000 }), null);
+  assert.equal(porcentajeAhorro({ precio: 2985, sesiones: 3, precioServicio: 1000 }), null); // 0.5 %: no llega a 1 %
+  assert.equal(porcentajeAhorro({ precio: 0, sesiones: 5, precioServicio: 1500 }), null);    // paquete sin precio
 });
 
 test('aviso del panel: cuántos paquetes quedarían sin sello', () => {

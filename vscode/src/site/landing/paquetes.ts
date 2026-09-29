@@ -64,13 +64,13 @@ type ConPrecios = Pick<PaquetePublico, 'precio' | 'sesiones' | 'precioServicio'>
 /**
  * % que se ahorra frente a pagar cada sesión suelta (spec §6.4-C):
  * (precio del servicio × sesiones − precio del paquete) / (precio del servicio × sesiones).
- * null = sin sello: el servicio no tiene precio, no hay sesiones o el ahorro no llega a 1 %.
+ * null = sin sello: el servicio o el paquete no tienen precio, no hay sesiones o el ahorro no llega a 1 %.
  */
 export function porcentajeAhorro(p: ConPrecios): number | null {
-  if (p.precioServicio <= 0 || p.sesiones <= 0) return null;
+  if (p.precioServicio <= 0 || p.sesiones <= 0 || p.precio <= 0) return null;
   const suelto = p.precioServicio * p.sesiones;
-  const pct = Math.round(((suelto - p.precio) / suelto) * 100);
-  return pct >= 1 ? pct : null;
+  const ratio = (suelto - p.precio) / suelto;
+  return ratio >= 0.01 ? Math.round(ratio * 100) : null;
 }
 
 /** Cuántos paquetes saldrían sin sello en el estilo Ahorro (para el aviso del panel). */
