@@ -28,8 +28,8 @@ la fase anterior.
 | Fase | Plan | Qué entrega | Terminada cuando |
 |---|---|---|---|
 | 1 | `2026-09-27-rediseno-fase-1-base.md` | Tema marrón/beige, barra `logo \| secciones \| MENÚ`, menú premium con día/noche, pie, WhatsApp, logo y fotos. Vista previa en `/_diseno` (solo en desarrollo). | La vista previa cumple la lista de verificación del plan en todos los anchos |
-| 2 | se escribe al empezar | Página principal nueva (spec §5, sin la sección de paquetes ni la de equipo), con los componentes viejos movidos a `src/legacy/` (no se borran) y la etiqueta `diseno-anterior` subida antes de fusionar | `/` igual al boceto `land-v4` en todos los anchos y temas; SEO intacto |
-| 3 | se escribe al empezar | Paquetes en sus 3 estilos, `settings.estilo_paquetes` y la tarjeta "Página web" del panel (spec §6.4) | Cambiar el estilo en el panel cambia la landing; el % de ahorro está probado |
+| 2 | `2026-09-28-rediseno-fase-2-landing.md` | Página principal nueva (spec §5, sin la sección de equipo), con los paquetes en su estilo por defecto "Menú con foto" para que la página publicada no los pierda, los componentes viejos movidos a `src/legacy/` (no se borran), `/diseno-anterior` y la etiqueta `diseno-anterior` subida antes de fusionar | `/` igual al boceto `land-v4` en todos los anchos y temas; SEO intacto |
+| 3 | se escribe al empezar | Los otros 2 estilos de paquetes (Membresía y Ahorro), `settings.estilo_paquetes` y la tarjeta "Página web" del panel (spec §6.4) | Cambiar el estilo en el panel cambia la landing; el % de ahorro está probado |
 | 4 | se escribe al empezar | Equipo desde `staff`: columnas nuevas con su `grant select (col) to anon`, campos en la página Equipo y sección en la landing (spec §6.5) | Marcar a alguien en el panel lo muestra en la web; si no hay nadie, la sección no aparece |
 | 5 | se escribe al empezar | `/reservar` en 3 pasos: lógica en `useBooking` sin cambiar su comportamiento, calendario de semana/mes a 90 días, resumen o barra fija y confirmación (spec §6.1–6.2) | Pasan los 6 casos de reserva de la spec §10 |
 | 6 | se escribe al empezar | `/mis-citas` nueva con `get_client_packages` y "Mis paquetes" (spec §6.3) | Búsqueda, cancelación de 12 h y saldo de paquetes funcionan con datos de prueba |
@@ -48,6 +48,25 @@ componentes viejos se mueven a `src/legacy/` en lugar de borrarse (spec §8).
 - Destello color lino antes de que cargue el JS en `/`: fondo inicial en `index.html` y `theme-color` por tema.
 - Revisar en el teléfono de Louis si el pie del menú se parte en dos filas; si pasa, las áreas táctiles de
   WhatsApp/Instagram se solapan y hay que dar más separación vertical a `.s-menu-info`.
+
+**Lo que dejó la Fase 2 para las Fases 3 y 4** (de la revisión final):
+- **`Packages`:** dividirlo en un caparazón (título y "Cómo funciona") más una fila por estilo, todos con
+  `PaquetePublico[]`. Para el % de ahorro, `usePaquetesPublicos` debe traer `services(name, price)`.
+- **Mover piezas compartidas:**
+  - sacar `.s-ovalos` a `ui/SessionPills` (lo usará `/reservar` en la Fase 5);
+  - mover `.s-arco`, `.s-h1–3`, `.s-sec`, `.s-rv` y `@keyframes s-subir` de `landing/landing.css` a `ui/`
+    o `theme/`, porque otras páginas los necesitarán.
+- **Secciones presentes:** una sola lista declarativa que alimente a la vez el menú y la página. Hoy se
+  decide en `LandingPage` y en el `return null` de cada sección, y el Equipo (Fase 4) se suma ahí.
+- **Accesibilidad:** anunciar el cambio de especialidad en el panel del catálogo (`aria-live`) y llevar
+  el foco a la especialidad que abre un destacado.
+- **Consola:** `useSiteTema` debe capturar la promesa rechazada de `startViewTransition` cuando la
+  pestaña está oculta (`vt.ready.catch(() => {})`).
+- **Estilos del sitio:** dentro de `.site`, el scroll a un elemento que está dentro de un despliegue se
+  hace con `window.scrollTo` y su `scroll-margin-top`, nunca con `scrollIntoView`, porque este correría
+  el recorte interno del despliegue.
+- **Enlaces con nombres viejos:** los enlaces del sitio anterior (`/#paquetes`, `/#contacto`, …) se
+  traducen en `idDeHash` (`header/navegacion.ts`). Al rediseñar `/reservar` hay que mantener esos alias.
 
 **Notas de la base de datos** (ver la memoria `roles-y-rls`):
 - anon solo lee columnas autorizadas de `staff` y `schedule_blocks`. Toda consulta pública debe nombrar

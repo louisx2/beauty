@@ -1,12 +1,14 @@
 import { useEffect, useRef, type MouseEvent, type RefObject } from 'react';
 import MenuButton from './MenuButton';
-import { SECCIONES } from './secciones';
+import type { Seccion } from './secciones';
 import { clicEspecial } from './navegacion';
 import { LOGO, LOGO_CLARO } from '../brand';
 import './SiteHeader.css';
 
 interface Props {
   conSecciones: boolean;
+  /** secciones que la página tiene (la barra y las pestañas muestran solo esas) */
+  secciones: Seccion[];
   activa: string | null;
   solida: boolean;
   menuAbierto: boolean;
@@ -19,7 +21,7 @@ interface Props {
 }
 
 /** Celular/tableta: logo | MENÚ (+ pestañas al bajar). Computadora: logo | secciones centradas | MENÚ. */
-export default function SiteHeader({ conSecciones, activa, solida, menuAbierto, onAbrirMenu, onIr, botonRef, inerte = false }: Props) {
+export default function SiteHeader({ conSecciones, secciones, activa, solida, menuAbierto, onAbrirMenu, onIr, botonRef, inerte = false }: Props) {
   const botonPropio = useRef<HTMLButtonElement>(null);
   const boton = botonRef ?? botonPropio;
   const ir = (id: string) => (e: MouseEvent) => { if (clicEspecial(e)) return; e.preventDefault(); onIr(id); };
@@ -33,7 +35,7 @@ export default function SiteHeader({ conSecciones, activa, solida, menuAbierto, 
         </a>
         {conSecciones && (
           <nav className="s-links" aria-label="Secciones">
-            {SECCIONES.map((s) => (
+            {secciones.map((s) => (
               <a key={s.id} href={`#${s.id}`} onClick={ir(s.id)}
                 className={activa === s.id ? 'is-on' : ''} aria-current={activa === s.id ? 'true' : undefined}>
                 {s.etiqueta}
@@ -44,13 +46,13 @@ export default function SiteHeader({ conSecciones, activa, solida, menuAbierto, 
         <MenuButton ref={boton} className="s-nav-menu" controla="s-menu" expandido={menuAbierto}
           onClick={() => boton.current && onAbrirMenu(boton.current)} />
       </div>
-      {conSecciones && <Pestanas activa={activa} onIr={onIr} />}
+      {conSecciones && <Pestanas secciones={secciones} activa={activa} onIr={onIr} />}
     </header>
   );
 }
 
 /** Fila de pestañas (celular y tableta): la activa va rellena y se centra sola. */
-function Pestanas({ activa, onIr }: { activa: string | null; onIr: (id: string) => void }) {
+function Pestanas({ secciones, activa, onIr }: { secciones: Seccion[]; activa: string | null; onIr: (id: string) => void }) {
   const fila = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const f = fila.current, el = f?.querySelector<HTMLElement>('.is-on');
@@ -59,7 +61,7 @@ function Pestanas({ activa, onIr }: { activa: string | null; onIr: (id: string) 
   }, [activa]);
   return (
     <div className="s-chips" ref={fila}>
-      {SECCIONES.map((s) => (
+      {secciones.map((s) => (
         <button key={s.id} type="button" className={`s-chip ${activa === s.id ? 'is-on' : ''}`} onClick={() => onIr(s.id)}
           aria-current={activa === s.id ? 'true' : undefined}>
           <span>{s.etiqueta}</span>

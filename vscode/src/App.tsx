@@ -18,8 +18,8 @@ const Settings = lazy(() => import('./pages/admin/Settings'));
 const Reports = lazy(() => import('./pages/admin/Reports'));
 const SpecialistView        = lazy(() => import('./pages/specialist/SpecialistView'));
 const ReceptionistDashboard = lazy(() => import('./pages/receptionist/ReceptionistDashboard'));
-// solo en desarrollo: en producción ni siquiera se emite el chunk de la vista previa
-const DisenoPreview = import.meta.env.DEV ? lazy(() => import('./site/DisenoPreview')) : null;
+// el diseño anterior de la página principal, para consultarlo o volver a él (spec §8)
+const LandingPageAnterior = lazy(() => import('./legacy/LandingPageAnterior'));
 
 function AdminFallback() {
   return (
@@ -56,6 +56,7 @@ export default function App() {
         <Route path="/" element={isPanelHost ? <Navigate to="/admin" replace /> : <LandingPage />} />
         <Route path="/reservar" element={<BookingPage />} />
         <Route path="/mis-citas" element={<ClientPortal />} />
+        <Route path="/diseno-anterior" element={<Suspense fallback={null}><LandingPageAnterior /></Suspense>} />
 
         {/* Admin: Login */}
         <Route path="/admin/login" element={<Login />} />
@@ -81,8 +82,6 @@ export default function App() {
           <Route path="mi-turno"  element={<Suspense fallback={<AdminFallback />}><SpecialistView /></Suspense>} />
           <Route path="recepcion" element={<Suspense fallback={<AdminFallback />}><ReceptionistDashboard /></Suspense>} />
         </Route>
-
-        {DisenoPreview && <Route path="/_diseno" element={<Suspense fallback={null}><DisenoPreview /></Suspense>} />}
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to={homePath} replace />} />

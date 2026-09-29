@@ -1,0 +1,38 @@
+/* Piezas comunes de las secciones de la página principal (boceto land-v4). Celular primero. */
+.s-sec{ position:relative; padding:72px 0 }
+.s-sec-head{ display:grid; gap:16px; margin-bottom:28px }
+.s-sec-head .s-eyebrow{ margin-bottom:18px }
+.s-sec-head.s-sec-head--centro{ display:block; text-align:center; max-width:720px; margin:0 auto 32px }
+.s-sec-head--centro .s-lead{ margin:18px auto 0 }
+
+.s-h1{ font-size:40px }
+.s-h2{ font-size:30px }
+.s-h3{ font-size:23px; line-height:1.15 }
+
+/* fotos en arco u óvalo; la máscara hace que Safari respete las esquinas */
+.s-arco{ position:relative; overflow:hidden; background:var(--s-arch-bg); -webkit-mask-image:-webkit-radial-gradient(white, black) }
+.s-arco img{ width:100%; height:100%; object-fit:cover }
+/* especialidades sin foto (medicina estética): la N sobre la textura */
+.s-arco.is-ph{ display:grid; place-items:center; background:var(--s-tex) }
+.s-arco.is-ph img{ width:34px; height:auto; opacity:.5; object-fit:contain }
+.site[data-site-tema="oscuro"] .s-arco.is-ph img{ filter:brightness(0) invert(1) }
+
+/* aparecer al bajar (useRevela) */
+.s-rv{ opacity:0; transform:translateY(28px); transition:opacity 1s var(--s-ease), transform 1s var(--s-ease) }
+.s-rv.is-in{ opacity:1; transform:none }
+@media (prefers-reduced-motion: reduce){ .s-rv{ opacity:1; transform:none } }
+
+@keyframes s-subir{ from{ opacity:0; transform:translateY(22px) } to{ opacity:1; transform:none } }
+
+@media (min-width: 761px){
+  .s-sec{ padding:92px 0 }
+  .s-sec-head{ margin-bottom:40px }
+  .s-sec-head.s-sec-head--centro{ margin-bottom:60px }
+  .s-h1{ font-size:51px }
+  .s-h2{ font-size:44px }
+}
+@media (min-width: 1101px){
+  .s-sec{ padding:112px 0 }
+  .s-sec-head{ grid-template-columns:1fr 1fr; gap:48px; align-items:end; margin-bottom:56px }
+  .s-h1{ font-size:63px }
+}

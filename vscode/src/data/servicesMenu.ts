@@ -7,6 +7,8 @@ export interface Specialist {
   role: string;
   image: string;
   bio?: string;
+  /** Foto chica (160 px) para "Realizado por"; sin ella se muestran las iniciales */
+  miniatura?: string;
 }
 
 const specialists = {
@@ -15,18 +17,21 @@ const specialists = {
     role: 'Fundadora & Cosmetóloga Superior',
     image: '/equipo/anabel-retrato.jpg',
     bio: 'Fundadora de Anadsll Beauty Esthetic. Especialista certificada en cosmetología avanzada, cejas, pestañas y técnicas de maquillaje profesional. Más de 10 años de experiencia realzando la belleza natural.',
+    miniatura: '/fotos/esp-anabel.jpg',
   },
   nadieska: {
     name: 'Dra. Nadieska Soto',
     role: 'Médico Estético & Cosmiatra',
     image: '/equipo/colaboradora1.png',
     bio: 'Médico Estético y Cosmiatra. Especialista en tratamientos inyectables de rejuvenecimiento, toxina botulínica, rellenos de ácido hialurónico, bioestimuladores de colágeno y terapias de renovación de la piel.',
+    miniatura: '/fotos/esp-nadieska.jpg',
   },
   carmen: {
     name: 'Carmen Rodríguez',
     role: 'Esp. en Aparatología & Corporal',
     image: '/equipo/colaboradora2.png',
     bio: 'Especialista en Aparatología y Tratamientos Corporales. Experta en tecnologías avanzadas de moldeamiento, tonificación corporal, depilación láser de diodo y blanqueamiento cosmético.',
+    miniatura: '/fotos/esp-carmen.jpg',
   },
   paola: {
     name: 'Paola Jiménez',
@@ -46,11 +51,21 @@ export interface ServiceItem {
   description?: string;
 }
 
+/** Familia de la página principal (spec §5.3) */
+export type FamiliaId = 'facial' | 'corporal' | 'cejas-maquillaje' | 'medicina';
+
 export interface ServiceCategory {
   id: string;
   title: string;
   items: ServiceItem[];
   specialist: Specialist;
+  familia: FamiliaId;
+  /** Foto del servicio en `public/fotos`; sin foto se muestra la N (medicina estética) */
+  imagen?: string;
+  /** Encuadre de la foto (object-position) */
+  posicion?: string;
+  /** Texto corto de la especialidad en el catálogo */
+  descripcion?: string;
 }
 
 export const servicesMenu: ServiceCategory[] = [
@@ -58,6 +73,10 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'limpieza-facial',
     title: 'Limpieza Facial',
     specialist: specialists.nadieska,
+    familia: 'facial',
+    imagen: '/fotos/servicio-limpieza.jpg',
+    posicion: '50% 30%',
+    descripcion: 'Protocolos de limpieza y renovación según tu tipo de piel.',
     items: [
       { name: 'Limpieza facial express / hidratación' },
       { name: 'Limpieza facial profunda' },
@@ -78,6 +97,9 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'depilacion-laser',
     title: 'Depilación Láser',
     specialist: specialists.anabel,
+    familia: 'corporal',
+    imagen: '/fotos/servicio-laser.jpg',
+    descripcion: 'Láser de diodo para resultados progresivos y seguros.',
     items: [
       {
         name: 'Depilación láser',
@@ -112,6 +134,8 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'depilacion-cera',
     title: 'Depilación con Cera',
     specialist: specialists.paola,
+    familia: 'corporal',
+    imagen: '/fotos/servicio-cera.jpg',
     items: [
       {
         name: 'Depilación con cera',
@@ -123,6 +147,9 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'cejas-pestanas',
     title: 'Cejas y Pestañas',
     specialist: specialists.anabel,
+    familia: 'cejas-maquillaje',
+    imagen: '/fotos/servicio-pest.jpg',
+    posicion: '60% 50%',
     items: [
       { name: 'Lifting de pestañas' },
       { name: 'Laminado de cejas' },
@@ -146,6 +173,9 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'hidra-lips',
     title: 'Hidra Lips',
     specialist: specialists.nadieska,
+    familia: 'facial',
+    imagen: '/fotos/servicio-lips.jpg',
+    descripcion: 'Exfolia, hidrata en profundidad y da volumen temporal a los labios con ácido hialurónico y succión suave. Sin agujas.',
     items: [
       {
         name: 'Hidra Lips',
@@ -158,6 +188,9 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'blanqueamiento-corporal',
     title: 'Blanqueamiento Corporal',
     specialist: specialists.carmen,
+    familia: 'corporal',
+    imagen: '/fotos/servicio-blanq.jpg',
+    posicion: '25% 50%',
     items: [
       {
         name: 'Blanqueamiento corporal',
@@ -169,6 +202,9 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'remocion-tatuaje',
     title: 'Remoción de Tatuaje',
     specialist: specialists.anabel,
+    familia: 'corporal',
+    imagen: '/fotos/servicio-tatu.jpg',
+    descripcion: 'Eliminación de tatuajes con láser.',
     items: [
       {
         name: 'Remoción de tatuaje',
@@ -180,6 +216,8 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'maquillaje',
     title: 'Maquillaje',
     specialist: specialists.anabel,
+    familia: 'cejas-maquillaje',
+    imagen: '/fotos/servicio-maq.jpg',
     items: [
       {
         name: 'Maquillaje',
@@ -191,6 +229,7 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'toxina-botulinica',
     title: 'Toxina Botulínica',
     specialist: specialists.nadieska,
+    familia: 'medicina',
     items: [
       {
         name: 'Toxina botulínica',
@@ -207,6 +246,7 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'rellenos',
     title: 'Rellenos con Ácido Hialurónico',
     specialist: specialists.nadieska,
+    familia: 'medicina',
     items: [
       {
         name: 'Rellenos',
@@ -225,6 +265,7 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'bioestimuladores',
     title: 'Bioestimuladores de Colágeno',
     specialist: specialists.nadieska,
+    familia: 'medicina',
     items: [
       {
         name: 'Bioestimuladores',
@@ -242,6 +283,7 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'mesoterapia',
     title: 'Mesoterapias',
     specialist: specialists.nadieska,
+    familia: 'medicina',
     items: [
       {
         name: 'Mesoterapias',
@@ -256,6 +298,8 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'escleroterapia',
     title: 'Escleroterapia',
     specialist: specialists.nadieska,
+    familia: 'medicina',
+    descripcion: 'Tratamiento para várices.',
     items: [
       {
         name: 'Escleroterapia',
@@ -269,12 +313,14 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'verrugas',
     title: 'Eliminación de Verrugas',
     specialist: specialists.nadieska,
+    familia: 'medicina',
+    descripcion: 'El precio varía según la cantidad y el tamaño.',
     items: [
       {
         name: 'Eliminación de verrugas',
         description:
           'El precio varía según la cantidad y el tamaño de las verrugas, desde RD$1,000 en adelante.',
-        options: ['Desde RD$1,000'],
+        options: ['Eliminación de verrugas — desde RD$1,000'],
       },
     ],
   },
@@ -282,6 +328,9 @@ export const servicesMenu: ServiceCategory[] = [
     id: 'aparatologia',
     title: 'Aparatologías',
     specialist: specialists.carmen,
+    familia: 'corporal',
+    imagen: '/fotos/servicio-aparatologia.jpg',
+    posicion: '50% 62%',
     items: [
       {
         name: 'Aparatologías',

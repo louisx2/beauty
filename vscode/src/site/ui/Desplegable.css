@@ -1,0 +1,5 @@
+.s-despl{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .8s var(--s-ease-io) }
+.s-despl.is-abierto{ grid-template-rows:1fr }
+.s-despl-in{ overflow:hidden; min-height:0 }
+.s-despl-in > *{ opacity:0; transform:translateY(-10px); transition:opacity .3s ease, transform .45s var(--s-ease-x) }
+.s-despl.is-abierto > .s-despl-in > *{ opacity:1; transform:none; transition:opacity .6s .18s ease, transform .8s .12s var(--s-ease) }

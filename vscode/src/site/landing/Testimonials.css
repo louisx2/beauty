@@ -1,0 +1,9 @@
+.s-testi{ background:var(--s-bg) }
+.s-carr--opiniones{ --carr-movil:84vw }
+.s-tq{ display:flex; flex-direction:column; width:100%; margin:0; padding:30px 24px 26px; border-radius:26px; background:var(--s-surface); border:1px solid var(--s-surface-line) }
+.s-tq-q{ height:34px; font-family:var(--s-f-display); font-size:70px; line-height:.6; color:var(--s-accent) }
+.s-tq blockquote{ flex:1; margin:10px 0 26px; font-family:var(--s-f-display); font-size:20px; line-height:1.4 }
+.s-tq figcaption{ display:flex; align-items:center; gap:12px; padding-top:18px; border-top:1px solid var(--s-line); font-size:13px; color:var(--s-soft) }
+.s-tq figcaption b{ display:block; font-size:14px; font-weight:500; color:var(--s-text) }
+.s-tq-est{ margin-left:auto; font-size:12px; letter-spacing:2px; color:var(--s-accent) }
+@media (min-width: 761px){ .s-tq{ padding:38px 34px 32px } }

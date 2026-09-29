@@ -13,9 +13,26 @@ export const SECCIONES: Seccion[] = [
 
 export interface MarcaSeccion { id: string; top: number }
 
-/** La activa es la última (en orden de la página) cuyo borde de arriba ya cruzó la línea. */
-export function seccionActiva(marcas: MarcaSeccion[], linea: number): string | null {
+/**
+ * La activa es la última (en orden de la página) cuyo borde de arriba ya cruzó la línea.
+ * Al llegar al fondo manda la última: una sección corta al final nunca alcanzaría la línea.
+ */
+export function seccionActiva(marcas: MarcaSeccion[], linea: number, alFondo = false): string | null {
+  if (alFondo && marcas.length) return marcas[marcas.length - 1].id;
   let activa: string | null = marcas.length ? marcas[0].id : null;
   for (const m of marcas) if (m.top <= linea) activa = m.id;
   return activa;
+}
+
+/**
+ * Un tercio de la pantalla, pero nunca por encima de donde queda una sección al tocarla
+ * (barra + 56 px de margen + 1). Así, en un celular acostado, la que se tocó queda marcada.
+ */
+export function lineaDeSeccion(altoVentana: number, altoBarra: number): number {
+  return Math.max(altoVentana * 0.33, altoBarra + 57);
+}
+
+/** Solo las secciones que la página tiene de verdad (sin paquetes u opiniones vacías); sin lista, todas. */
+export function seccionesVisibles(presentes?: readonly string[]): Seccion[] {
+  return presentes ? SECCIONES.filter((s) => presentes.includes(s.id)) : SECCIONES;
 }

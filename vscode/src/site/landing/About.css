@@ -1,0 +1,24 @@
+.s-about{ background:var(--s-bg) }
+.s-about-in{ display:grid; grid-template-columns:1fr; gap:44px; align-items:center }
+.s-about-media{ position:relative; width:100%; max-width:300px; margin:0 auto }
+.s-about-arco{ aspect-ratio:4/5.4; border-radius:999px 999px 26px 26px }
+.s-about-arco img{ object-position:40% 40% }
+.s-about-sello{ position:absolute; right:-14px; top:40px; z-index:3; display:grid; place-items:center; width:72px; height:72px; border-radius:50%; background:var(--s-btn-bg) }
+.s-about-sello img{ width:28px; filter:brightness(0) invert(1) }
+.site[data-site-tema="oscuro"] .s-about-sello img{ filter:brightness(0) }
+.s-about-tx .s-eyebrow{ margin-bottom:18px }
+.s-about-tx h2{ margin-bottom:26px }
+.s-about-p{ max-width:34em; margin:0 0 16px; font-size:16px; line-height:1.75; font-weight:300; color:var(--s-soft) }
+.s-about-cita{ margin:30px 0; padding-left:26px; border-left:1px solid var(--s-accent); font-size:23px; font-style:italic; line-height:1.25 }
+.s-historia{ margin-bottom:8px; padding:4px 0 30px 26px; border-left:1px solid var(--s-line) }
+.s-historia p{ max-width:34em; margin:0 0 14px; font-size:15.5px; line-height:1.8; color:var(--s-soft); font-weight:300 }
+.s-historia .s-historia-firma{ font-family:var(--s-f-display); font-style:italic; font-size:21px; color:var(--s-text) }
+.s-historia-btn .s-ar{ transition:transform .4s }
+.s-historia-btn.is-abierto .s-ar, .s-historia-btn.is-abierto:hover .s-ar{ transform:rotate(90deg) }
+@media (min-width: 761px){
+  .s-about-in{ grid-template-columns:.9fr 1.1fr; gap:48px }
+  .s-about-media{ max-width:440px; margin:0 }
+  .s-about-sello{ right:-30px; width:92px; height:92px }
+  .s-about-cita{ font-size:28px }
+}
+@media (min-width: 1101px){ .s-about-in{ gap:88px } }

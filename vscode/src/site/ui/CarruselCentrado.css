@@ -1,0 +1,22 @@
+/* celular primero: uno a la vez, centrado; el primero y el último también quedan al centro */
+.s-carr{ --carr-movil:78vw }
+.s-carr-fila{ position:relative; display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:14px; margin:0 -20px; padding:16px calc((100vw - var(--carr-movil)) / 2) 8px; scrollbar-width:none }
+.s-carr-fila::-webkit-scrollbar{ display:none }
+.s-carr-item{ display:flex; justify-content:center; min-width:0; flex:0 0 var(--carr-movil); scroll-snap-align:center; scroll-snap-stop:always; transition:transform .55s var(--s-ease), opacity .55s }
+.s-carr-item:not(.is-centro){ transform:scale(.92); opacity:.5 }
+.s-carr-puntos{ display:flex; justify-content:center; margin-top:10px }
+/* puntito de 8 px dentro de una zona táctil de 44 × 44 px */
+.s-carr-puntos button{ position:relative; width:44px; height:44px; border:0; padding:0; background:none }
+.s-carr-puntos button::before{ content:""; position:absolute; left:50%; top:50%; width:8px; height:8px; border-radius:999px; background:var(--s-line); transform:translate(-50%,-50%); transition:width .4s, background-color .4s }
+.s-carr-puntos button.is-on::before{ width:26px; background:var(--s-accent) }
+/* tableta: tarjetas de 340 px */
+@media (min-width: 761px){
+  .s-carr-fila{ gap:22px; margin:0 -36px; padding:16px calc(50vw - 170px) 8px }
+  .s-carr-item{ flex-basis:340px }
+}
+/* computadora: todos en fila, sin deslizar ni puntitos */
+@media (min-width: 1101px){
+  .s-carr-fila{ display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:30px; overflow:visible; scroll-snap-type:none; margin:0; padding:0 }
+  .s-carr-item, .s-carr-item:not(.is-centro){ transform:none; opacity:1 }
+  .s-carr-puntos{ display:none }
+}

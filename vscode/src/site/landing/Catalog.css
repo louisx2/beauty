@@ -1,0 +1,78 @@
+.s-cat{ position:relative; padding-top:30px; scroll-margin-top:calc(var(--s-nav-h) + 56px) }
+.s-cat-head{ margin-bottom:28px; padding-bottom:22px; border-bottom:1px solid var(--s-line) }
+.s-cat-head .s-eyebrow{ margin-bottom:12px }
+.s-cat-tit{ font-size:32px }
+.s-cat-head > p{ margin:10px 0 0; font-size:14px; color:var(--s-soft); max-width:26em; font-weight:300 }
+.s-cat-grid{ display:none }
+
+/* celular: familias con píldora que se desliza */
+.s-famchips{ position:relative; display:flex; gap:8px; overflow-x:auto; margin:0 -20px 10px; padding:0 20px 4px; scroll-padding-inline:20px; scrollbar-width:none }
+.s-famchips::-webkit-scrollbar{ display:none }
+.s-famchip{ position:relative; z-index:1; flex-shrink:0; height:44px; padding:0 16px; border-radius:999px; border:1px solid var(--s-line); background:transparent; font-size:13px; color:var(--s-soft); white-space:nowrap; transition:color .45s, border-color .45s }
+.s-famchip.is-on{ color:var(--s-chip-on-fg); border-color:transparent }
+.s-fam-ind{ position:absolute; left:0; top:0; z-index:0; border-radius:999px; background:var(--s-chip-on); transition:transform .6s var(--s-ease-io), width .6s var(--s-ease-io), background-color .6s }
+
+/* celular: acordeón de especialidades */
+.s-acc{ border-bottom:1px solid var(--s-line); scroll-margin-top:calc(var(--s-nav-h) + 56px) }
+@keyframes s-entra-acc{ from{ opacity:0; transform:translateY(18px) } to{ opacity:1; transform:none } }
+.s-acc.is-entra{ animation:s-entra-acc .6s var(--s-ease) both; animation-delay:calc(var(--i, 0) * 65ms) }
+.s-acc-btn{ display:flex; align-items:center; gap:14px; width:100%; background:none; border:0; padding:15px 0; text-align:left }
+.s-acc-mini{ width:46px; height:46px; border-radius:999px 999px 10px 10px; flex-shrink:0; transition:transform .6s var(--s-ease) }
+.s-acc-mini.is-ph img{ width:18px }
+.s-acc.is-abierta .s-acc-mini{ transform:scale(1.08) }
+.s-acc-t{ flex:1; min-width:0; font-family:var(--s-f-display); font-size:19px; transition:color .45s }
+.s-acc-t small{ display:block; font:400 12px var(--s-f-body); color:var(--s-faint); margin-top:3px }
+.s-acc.is-abierta .s-acc-t{ color:var(--s-accent) }
+/* + que se vuelve – */
+.s-acc-mas{ position:relative; width:30px; height:30px; border-radius:50%; border:1px solid var(--s-line); flex-shrink:0; transition:background-color .45s, color .45s, border-color .45s }
+.s-acc-mas::before, .s-acc-mas::after{ content:""; position:absolute; left:50%; top:50%; width:11px; height:1.5px; border-radius:2px; background:currentColor; transform:translate(-50%,-50%); transition:transform .55s var(--s-ease-io) }
+.s-acc-mas::after{ transform:translate(-50%,-50%) rotate(90deg) }
+.s-acc.is-abierta .s-acc-mas{ background:var(--s-btn-bg); color:var(--s-btn-fg); border-color:transparent }
+.s-acc.is-abierta .s-acc-mas::after{ transform:translate(-50%,-50%) rotate(0deg) }
+.s-acc-in{ padding:0 0 22px }
+@keyframes s-fila-entra{ from{ opacity:0; transform:translateX(-12px) } to{ opacity:1; transform:none } }
+.s-acc.is-abierta .s-fila{ animation:s-fila-entra .5s var(--s-ease) both; animation-delay:calc(.22s + var(--r, 0) * 35ms) }
+
+/* detalle de la especialidad (celular y panel) */
+.s-cp-fam, .s-cp-etq{ font:500 11px var(--s-f-body); letter-spacing:.2em; text-transform:uppercase; color:var(--s-accent) }
+.s-cp-etq{ margin:22px 0 6px }
+.s-cp-tit{ font-size:32px; margin:10px 0 12px }
+.s-cp-desc{ font-size:14.5px; line-height:1.65; color:var(--s-soft); font-weight:300; margin:0 0 16px; max-width:34em }
+.s-cp-esp{ display:inline-flex; align-items:center; gap:12px; padding:8px 16px 8px 8px; border-radius:999px; border:1px solid var(--s-line); font-size:12.5px; color:var(--s-soft); line-height:1.3 }
+.s-cp-esp b{ display:block; color:var(--s-text); font-weight:500; font-size:13.5px }
+.s-cp-esp img, .s-cp-ini{ width:38px; height:38px; border-radius:50%; object-fit:cover; flex-shrink:0 }
+.s-cp-ini{ display:grid; place-items:center; background:var(--s-arch-bg); color:var(--s-text); font:500 13px var(--s-f-body) }
+.s-cp-grupo ul{ list-style:none; margin:0; padding:0 }
+.s-fila{ display:flex; align-items:baseline; gap:10px; padding:11px 0; border-bottom:1px solid var(--s-line); font-size:14px }
+.s-fila-nm{ flex:1; min-width:0 }
+.s-fila-pts{ display:none }
+.s-fila-du{ font-size:12.5px; color:var(--s-faint); white-space:nowrap }
+.s-fila-pr{ margin-left:auto; font-weight:500; white-space:nowrap; text-align:right }
+.s-fila-pr.is-na{ color:var(--s-faint); font-weight:400 }
+.s-cp-foot{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-top:28px }
+.s-cp-foot span{ font-size:13px; color:var(--s-faint) }
+
+/* tableta y computadora: especialidades a la izquierda y panel a la derecha */
+@media (min-width: 761px){
+  .s-cat{ padding-top:40px }
+  .s-cat-head{ display:flex; align-items:end; justify-content:space-between; gap:24px }
+  .s-cat-head > p{ margin:0 }
+  .s-famchips, .s-cat-acc{ display:none }
+  .s-cat-grid{ display:grid; grid-template-columns:220px 1fr; gap:26px; align-items:start }
+  .s-cat-fam{ font:500 11px var(--s-f-body); letter-spacing:.2em; text-transform:uppercase; color:var(--s-faint); margin:22px 0 8px }
+  .s-cat-nav > div:first-child .s-cat-fam{ margin-top:0 }
+  .s-cat-btn{ display:flex; justify-content:space-between; align-items:center; gap:10px; width:100%; min-height:44px; text-align:left; background:none; border:0; padding:9px 14px; border-radius:10px; font-size:15px; color:var(--s-soft); transition:background-color .3s, color .3s }
+  .s-cat-btn small{ font-size:12px }
+  .s-cat-btn.is-on{ background:var(--s-chip-on); color:var(--s-chip-on-fg) }
+  .s-cat-panel{ min-width:0; min-height:520px; padding:34px 36px 36px; border-radius:26px; background:var(--s-surface); border:1px solid var(--s-surface-line) }
+  .s-cp-top{ display:grid; grid-template-columns:1fr 130px; gap:28px; align-items:start; margin-bottom:26px }
+  .s-cp-img{ aspect-ratio:4/5.2; border-radius:999px 999px 18px 18px }
+  .s-cp-anim{ animation:s-subir .55s both }
+  .s-fila{ gap:12px; font-size:15px }
+  .s-fila-pts{ display:block; flex:1; min-width:20px; border-bottom:1px dotted var(--s-line); transform:translateY(-4px) }
+}
+@media (min-width: 761px) and (hover: hover){ .s-cat-btn:not(.is-on):hover{ color:var(--s-text); background:var(--s-surface) } }
+@media (min-width: 1101px){
+  .s-cat-grid{ grid-template-columns:270px 1fr; gap:44px }
+  .s-cp-top{ grid-template-columns:1fr 170px }
+}

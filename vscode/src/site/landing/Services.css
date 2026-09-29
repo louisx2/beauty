@@ -1,0 +1,50 @@
+.s-svc{ background:var(--s-bg) }
+
+/* celular: cuadrícula 2×2 de fotos con el nombre encima (sin carrusel) */
+.s-cards{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
+.s-card{ position:relative; display:block; border-radius:20px; overflow:hidden; background:var(--s-surface); border:1px solid var(--s-surface-line); -webkit-tap-highlight-color:transparent; transition:transform .5s var(--s-ease), box-shadow .5s, background-color .6s, border-color .6s }
+.s-card:active{ transform:scale(.98) }
+.s-card-img{ aspect-ratio:4/5.2; overflow:hidden }
+.s-card-img img{ width:100%; height:100%; object-fit:cover; transition:transform 1.2s var(--s-ease) }
+.s-card-bd{ position:absolute; left:0; right:0; bottom:0; padding:46px 14px 14px; background:linear-gradient(180deg, rgba(20,14,10,0), rgba(20,14,10,.88)) }
+.s-card-bd p, .s-card-num{ display:none }
+.s-card-bd .s-h3{ margin:0 0 4px; font-size:17px; color:#F5F1EA }
+.s-card-link{ display:inline-flex; gap:8px; font-size:12.5px; font-weight:500; color:var(--s-camel-l) }
+
+/* botón del catálogo: el texto rueda a "Ocultar servicios" y la flecha gira */
+.s-cat-toggle{ display:flex; justify-content:center; margin-top:24px }
+.s-cat-open{ width:100%; height:auto; min-height:64px; justify-content:space-between; gap:14px; padding:12px 16px 12px 24px; overflow:hidden }
+.s-co-l{ display:flex; flex-direction:column; align-items:flex-start; line-height:1.2; text-align:left }
+.s-co-l small{ font-size:12px; font-weight:400; opacity:.65 }
+.s-co-roll{ position:relative; display:block; height:1.3em; overflow:hidden }
+.s-co-roll b{ display:block; font-weight:500; transition:transform .65s var(--s-ease-x) }
+.s-co-roll .s-co-b{ position:absolute; left:0; top:0; transform:translateY(110%) }
+.s-cat-open.is-abierto .s-co-a{ transform:translateY(-110%) }
+.s-cat-open.is-abierto .s-co-b{ transform:none }
+.s-co-chev{ display:grid; place-items:center; flex-shrink:0; width:34px; height:34px; border-radius:50%; border:1px solid currentColor; transition:transform .65s var(--s-ease-x), background-color .45s, color .45s, border-color .45s }
+.s-co-chev svg{ width:14px; height:14px }
+.s-cat-open.is-abierto .s-co-chev{ transform:rotate(180deg); background:var(--s-btn-bg); color:var(--s-btn-fg); border-color:transparent }
+
+/* el recorte del catálogo llega al borde de la pantalla: las familias tocan el borde y los contornos de foco no se cortan */
+.s-cat-despl > .s-despl-in{ margin-inline:-20px; padding-inline:20px }
+@media (min-width: 761px){ .s-cat-despl > .s-despl-in{ margin-inline:-8px; padding-inline:8px } }
+
+/* tableta: 2×2 con descripción; computadora: 4 en fila */
+@media (min-width: 761px){
+  .s-cards{ gap:22px }
+  .s-card{ border-radius:22px }
+  .s-card-img{ aspect-ratio:4/4.6; margin:10px 10px 0; border-radius:16px }
+  .s-card-bd{ position:static; padding:20px 22px 24px; background:none }
+  .s-card-num{ display:block; margin-bottom:10px; font:500 12px var(--s-f-body); letter-spacing:.2em; color:var(--s-accent) }
+  .s-card-bd .s-h3{ margin:0 0 10px; font-size:23px; color:var(--s-text) }
+  .s-card-bd p{ display:block; min-height:4.8em; margin:0 0 18px; font-size:14px; line-height:1.6; font-weight:300; color:var(--s-soft) }
+  .s-card-link{ font-size:14px; color:var(--s-accent) }
+  .s-cat-toggle{ margin-top:44px }
+  .s-cat-open{ width:auto; padding:12px 30px }
+}
+@media (min-width: 1101px){ .s-cards{ grid-template-columns:repeat(4,1fr) } }
+@media (hover: hover){
+  .s-card:hover{ transform:translateY(-8px); background:var(--s-surface-hover); box-shadow:var(--s-shadow) }
+  .s-card:hover .s-card-img img{ transform:scale(1.06) }
+  .s-card:hover .s-ar{ transform:translateX(5px) }
+}
