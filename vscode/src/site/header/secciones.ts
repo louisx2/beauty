@@ -36,3 +36,20 @@ export function lineaDeSeccion(altoVentana: number, altoBarra: number): number {
 export function seccionesVisibles(presentes?: readonly string[]): Seccion[] {
   return presentes ? SECCIONES.filter((s) => presentes.includes(s.id)) : SECCIONES;
 }
+
+/** Lo que la página tiene hoy: estas secciones dependen de datos y solo están si hay qué mostrar. */
+export interface Presencia { paquetes: boolean; equipo: boolean; opiniones: boolean }
+
+const OPCIONALES: Record<string, keyof Presencia> = {
+  's-paquetes': 'paquetes',
+  's-equipo': 'equipo',
+  's-opiniones': 'opiniones',
+};
+
+/** Ids de las secciones presentes, en el orden de la página. La misma lista pinta la página y arma el menú. */
+export function seccionesPresentes(p: Presencia): string[] {
+  return SECCIONES.map((s) => s.id).filter((id) => {
+    const clave = OPCIONALES[id];
+    return clave ? p[clave] : true;
+  });
+}
