@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
+import type { EstiloPaquetes } from '../site/landing/paquetes';
 
 export interface BankAccount {
   bank_name: string;
@@ -17,6 +18,8 @@ export interface Settings {
   whatsapp_number: string;
   package_deposit_type: 'fixed' | 'percentage';
   package_deposit_value: number;
+  /** cómo se ven los paquetes en la página principal (Configuración → Página web) */
+  estilo_paquetes: EstiloPaquetes;
   show_welcome_card: boolean;
   show_stats_cards: boolean;
 }
@@ -34,6 +37,7 @@ const DEFAULTS: Settings = {
   whatsapp_number: '18293224014',
   package_deposit_type: 'fixed',
   package_deposit_value: 500,
+  estilo_paquetes: 'menu',
   show_welcome_card: true,
   show_stats_cards: true,
 };
@@ -54,7 +58,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     try {
       const { data, error } = await supabase
         .from('settings')
-        .select('deposit_amount, bank_name, account_number, account_name, bank_accounts, whatsapp_number, package_deposit_type, package_deposit_value')
+        .select('deposit_amount, bank_name, account_number, account_name, bank_accounts, whatsapp_number, package_deposit_type, package_deposit_value, estilo_paquetes')
         .eq('id', 1)
         .maybeSingle();
 
