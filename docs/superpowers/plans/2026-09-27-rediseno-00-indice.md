@@ -68,6 +68,17 @@ componentes viejos se mueven a `src/legacy/` en lugar de borrarse (spec §8).
 - **Enlaces con nombres viejos:** los enlaces del sitio anterior (`/#paquetes`, `/#contacto`, …) se
   traducen en `idDeHash` (`header/navegacion.ts`). Al rediseñar `/reservar` hay que mantener esos alias.
 
+**Lo que dejó la Fase 3** (de la revisión final; no bloquean):
+- **Orden de lectura:** en Ahorro, "Más elegido" va antes del título; en Membresía, el nombre del servicio va
+  antes del título. Quien navega por encabezados se los salta. Se arregla con el `h3` primero en el DOM y
+  `order` en flex.
+- **Servicio inactivo:** si un paquete apunta a un servicio inactivo, el panel lo cuenta con sello y la página
+  no, porque anon solo ve servicios activos.
+- **Detalles:** "Ahorras" del sello está a 9.5 px, como en el boceto. El enlace "Ver los paquetes" muestra el
+  estilo guardado, no el recién elegido.
+- **Prueba pendiente:** el guardado del estilo desde el panel con sesión de admin la hace Louis antes de
+  fusionar.
+
 **Notas de la base de datos** (ver la memoria `roles-y-rls`):
 - anon solo lee columnas autorizadas de `staff` y `schedule_blocks`. Toda consulta pública debe nombrar
   sus columnas, y una columna nueva necesita su propio `grant select (col) ... to anon`.
