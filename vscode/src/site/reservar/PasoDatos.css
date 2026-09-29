@@ -1,0 +1,14 @@
+/* Paso 3 de /reservar (boceto citas-v2, #sec3). Celular primero; 16 px para que el iPhone no acerque la vista. */
+.s-campos{ display:grid; gap:16px }
+.s-campo{ min-width:0 }
+.s-campo label{ display:block; margin-bottom:7px; font-size:12.5px; color:var(--s-soft) }
+.s-campo input, .s-campo textarea{ width:100%; min-height:50px; padding:0 16px; border-radius:14px; border:1px solid var(--s-line); background:var(--s-input); color:var(--s-text); font:400 16px var(--s-f-body) }
+.s-campo textarea{ min-height:96px; padding:14px 16px; line-height:1.5; resize:vertical }
+.s-campo input::placeholder, .s-campo textarea::placeholder{ color:var(--s-faint) }
+.s-campo input[aria-invalid="true"]{ border-color:var(--s-bad) }
+.s-campo small{ display:block; margin-top:6px; font-size:12px; line-height:1.4; color:var(--s-faint) }
+.s-campo .s-campo-error{ color:var(--s-bad); font-weight:500 }
+@media (min-width: 761px){
+  .s-campos{ grid-template-columns:1fr 1fr }
+  .s-campo--full{ grid-column:1 / -1 }
+}
