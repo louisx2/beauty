@@ -18,7 +18,7 @@ const URL_PAQUETES = typeof window !== 'undefined' && window.location.hostname.s
   : '/#s-paquetes';
 
 export default function Settings() {
-  const { settings, fetchSettings, updateSettings, cargado } = useSettingsStore();
+  const { settings, fetchSettings, updateSettings, cargado, loading: cargando } = useSettingsStore();
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -132,6 +132,13 @@ export default function Settings() {
         <div className="settings-success" style={{ marginBottom: 24 }}>
           <AlertCircle size={18} />
           {successMsg}
+        </div>
+      )}
+
+      {!cargando && !cargado && (
+        <div className="settings-error" role="alert" style={{ marginBottom: 24 }}>
+          <AlertCircle size={18} />
+          No se pudo cargar la configuración, así que no se puede guardar. Recarga la página.
         </div>
       )}
 
@@ -315,13 +322,15 @@ export default function Settings() {
               </label>
             ))}
           </fieldset>
-          {form.estilo_paquetes === 'ahorro' && conteo && conteo.sinSello > 0 && (
-            <p className="settings-estilos__aviso" role="status">
-              <AlertCircle size={16} />
-              {conteo.sinSello} de {conteo.total} {conteo.total === 1 ? 'paquete no mostrará' : 'paquetes no mostrarán'} el sello
-              de ahorro: su servicio no tiene precio cargado en Servicios o el paquete no sale más barato que las sesiones sueltas.
-            </p>
-          )}
+          <div role="status" className="settings-estilos__estado">
+            {form.estilo_paquetes === 'ahorro' && conteo && conteo.sinSello > 0 && (
+              <p className="settings-estilos__aviso">
+                <AlertCircle size={16} />
+                {conteo.sinSello} de {conteo.total} {conteo.total === 1 ? 'paquete no mostrará' : 'paquetes no mostrarán'} el sello
+                de ahorro: su servicio no tiene precio cargado en Servicios o el paquete no sale más barato que las sesiones sueltas.
+              </p>
+            )}
+          </div>
           <a className="settings-estilos__ver" href={URL_PAQUETES} target="_blank" rel="noopener noreferrer">
             Ver los paquetes en la página <ExternalLink size={14} />
           </a>

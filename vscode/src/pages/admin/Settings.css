@@ -198,6 +198,20 @@
   animation: slideIn 0.3s ease-out;
 }
 
+/* Aviso de error: hermano de .settings-success, en rojo */
+.settings-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  font-size: 0.9rem;
+}
+:root[data-theme="light"] .settings-error { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -312,6 +326,7 @@
 .settings-estilo { position: relative; display: flex; align-items: center; gap: 16px; min-height: 44px; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.08); cursor: pointer; transition: border-color .2s, background-color .2s; }
 .settings-estilo input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .settings-estilo.is-on { border-color: #B2967D; background: rgba(178, 150, 125, 0.1); }
+.settings-estilo:focus-within { outline: 2px solid #B2967D; outline-offset: 2px; }
 .settings-estilo:has(input:focus-visible) { outline: 2px solid #B2967D; outline-offset: 2px; }
 .settings-estilo__txt { display: flex; flex-direction: column; gap: 3px; }
 .settings-estilo__txt b { color: #fff; font-weight: 600; font-size: 0.95rem; }
@@ -333,12 +348,15 @@
 .settings-estilo__mini--ahorro i:nth-child(2) { right: 6px; top: 6px; width: 16px; height: 16px; border-radius: 50%; background: #2A1E17; }
 .settings-estilo__mini--ahorro i:nth-child(3) { left: 8px; bottom: 8px; width: 30px; height: 6px; border-radius: 2px; background: #7D5A44; }
 .settings-estilos__aviso { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 12px 14px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); color: #fbbf24; font-size: 0.85rem; line-height: 1.45; }
+/* el contenedor del aviso existe siempre (para que se anuncie); vacío no debe sumar otro hueco del gap de la tarjeta */
+.settings-estilos__estado:empty { position: absolute; }
 .settings-estilos__aviso svg { flex-shrink: 0; margin-top: 1px; }
 .settings-estilos__ver { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 0.88rem; color: #CDB8A2; text-decoration: none; }
 .settings-estilos__ver:hover { text-decoration: underline; }
 :root[data-theme="light"] .settings-estilos legend { color: #4b5563; }
 :root[data-theme="light"] .settings-estilo { border-color: #e5e7eb; }
 :root[data-theme="light"] .settings-estilo.is-on { border-color: #7D5A44; background: rgba(125, 90, 68, 0.08); }
+:root[data-theme="light"] .settings-estilo:focus-within { outline-color: #7D5A44; }
 :root[data-theme="light"] .settings-estilo:has(input:focus-visible) { outline-color: #7D5A44; }
 :root[data-theme="light"] .settings-estilo__txt b { color: #1f2937; }
 :root[data-theme="light"] .settings-estilo__txt small { color: #4b5563; }
