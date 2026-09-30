@@ -6,7 +6,8 @@
 .s-cal-arr{ display:grid; place-items:center; width:44px; height:44px; flex-shrink:0; border-radius:50%; border:1px solid var(--s-line); background:none; font-size:18px; line-height:1 }
 .s-cal-arr:disabled{ opacity:.25; cursor:default }
 
-.s-dias{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:5px; margin-bottom:22px }
+/* celular: la tira sale 10 px a cada lado y deja menos espacio entre días, para que sean más anchos (44 px a 390) */
+.s-dias{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:3px; margin-bottom:22px; margin-inline:-10px }
 .s-dia{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:0; height:70px; padding:0; border-radius:20px; border:1px solid var(--s-line); background:none }
 .s-dia small{ font-size:9.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--s-faint) }
 .s-dia b{ font:400 19px/1 var(--s-f-display) }
@@ -36,7 +37,7 @@
   .s-cal-mes{ flex-direction:row; align-items:center; gap:12px }
   .s-cal-mes b{ font-size:22px }
   .s-cal-mes span{ padding:5px 11px; font-size:11.5px }
-  .s-dias{ gap:8px }
+  .s-dias{ gap:8px; margin-inline:0 }
   .s-dia{ height:84px; border-radius:999px }
   .s-dia small{ font-size:11px; letter-spacing:.1em }
   .s-dia b{ font-size:24px }
