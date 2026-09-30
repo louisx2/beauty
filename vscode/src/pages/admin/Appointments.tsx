@@ -47,7 +47,10 @@ import './Appointments.css';
 
 //  Formatters & validators 
 function formatPhone(raw: string): string {
-  const digits = raw.replace(/\D/g, '').slice(0, 10);
+  let digits = raw.replace(/\D/g, '');
+  // con más de 10 dígitos que empiezan con 1 (+1 …), se quita el 1 del país
+  if (digits.length > 10 && digits[0] === '1') digits = digits.slice(1);
+  digits = digits.slice(0, 10);
   if (digits.length <= 3) return digits;
   if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
   return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
