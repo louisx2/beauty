@@ -10,7 +10,7 @@
 .s-lookup-inp input{ flex:1; min-width:0; height:44px; border:0; background:none; color:var(--s-text); font:400 16px var(--s-f-body); outline:none }
 .s-lookup-inp input::placeholder{ color:var(--s-faint) }
 .s-lookup .s-btn{ width:100% }
-.s-lookup .s-btn[aria-disabled="true"]{ opacity:.6; cursor:default }
+.s-lookup .s-btn[aria-disabled="true"]{ opacity:.6; cursor:default; transform:none; box-shadow:none }
 .s-citas-error{ margin:8px 0 0; font-size:13px; font-weight:500; color:var(--s-bad) }
 .s-recordar{ position:relative; display:inline-flex; align-items:center; gap:10px; min-height:44px; margin-top:6px; font-size:13.5px; color:var(--s-soft); cursor:pointer }
 .s-recordar input{ position:absolute; width:1px; height:1px; margin:0; opacity:0 }

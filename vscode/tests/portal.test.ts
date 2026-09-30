@@ -40,9 +40,9 @@ test('horas que faltan y fecha corta', () => {
   assert.equal(fechaCorta('2026-09-15'), '15 sep');
 });
 
-test('próximas: activas y por venir, de la más cercana; historial: lo demás, de la más reciente', () => {
-  assert.deepEqual(proximas.map((c) => c.id), ['B', 'A']);
-  assert.deepEqual(historial.map((c) => c.id), ['D', 'E', 'C']);
+test('próximas: pendientes y confirmadas por venir, y la que está en curso; historial: lo demás, de la más reciente', () => {
+  assert.deepEqual(proximas.map((c) => c.id), ['E', 'B', 'A']);
+  assert.deepEqual(historial.map((c) => c.id), ['D', 'C']);
 });
 
 test('cada servicio de la cita con su hora y su especialista, en orden', () => {
@@ -74,6 +74,17 @@ test('cancelar: justo a las 12 h ya no es en línea; una pendiente que ya pasó 
   assert.equal(horasHasta('2026-09-29', '22:00:00', AHORA), 12);
   assert.deepEqual(casos.proximas.map((c) => [c.id, c.cancelable, c.menosDe12h]), [['F', false, true]]);
   assert.deepEqual(casos.historial.map((c) => [c.id, c.cancelable, c.menosDe12h]), [['G', false, false]]);
+});
+
+test('una cita en curso de hace días (nadie la cerró) va al historial; el historial de otro año lleva el año', () => {
+  const r = vistaCitas([
+    cita('I', '2026-09-15', '09:00:00', 'in_progress'),
+    cita('J', '2025-12-20', '10:00:00', 'completed'),
+  ], [], AHORA);
+  assert.deepEqual(r.proximas, []);
+  assert.deepEqual(r.historial.map((c) => [c.id, c.fechaCorta]), [['I', '15 sep'], ['J', '20 dic 2025']]);
+  assert.equal(fechaCorta('2025-12-20', 2026), '20 dic 2025');
+  assert.equal(fechaCorta('2026-09-15', 2026), '15 sep');
 });
 
 const paquete = (extra: Partial<FilaPaqueteCliente>): FilaPaqueteCliente => ({

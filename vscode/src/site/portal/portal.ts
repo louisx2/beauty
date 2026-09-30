@@ -40,11 +40,15 @@ export function horasHasta(fecha: string, hora: string, ahora: Date): number {
   return (cita.getTime() - ahora.getTime()) / 3_600_000;
 }
 
-/** "2026-09-15" → "15 sep" */
-export function fechaCorta(iso: string): string {
+/** "2026-09-15" → "15 sep"; si se pasa el año actual y es otro, "20 dic 2025". */
+export function fechaCorta(iso: string, anioActual?: number): string {
   const d = deIso(iso);
-  return `${d.getDate()} ${MESES[d.getMonth()].slice(0, 3)}`;
+  const base = `${d.getDate()} ${MESES[d.getMonth()].slice(0, 3)}`;
+  return anioActual !== undefined && d.getFullYear() !== anioActual ? `${base} ${d.getFullYear()}` : base;
 }
+
+/** El año en Santo Domingo en ese instante (UTC-4 todo el año). */
+const anioEnSantoDomingo = (ahora: Date) => new Date(ahora.getTime() - 4 * 3_600_000).getUTCFullYear();
 
 export interface LineaCita { hora: string; nombre: string; quien: string }
 
@@ -86,13 +90,14 @@ function vista(c: FilaCita, servicios: FilaServicioCita[], ahora: Date): CitaVis
     titulo: lineas.map((l) => l.nombre).join(' + '),
     lineas,
     ovalo: { dia: DIAS_CORTOS[d.getDay()], numero: d.getDate(), mes: `${mes[0].toUpperCase()}${mes.slice(1)}` },
-    fechaCorta: fechaCorta(c.date),
+    fechaCorta: fechaCorta(c.date, anioEnSantoDomingo(ahora)),
     cancelable: puede && faltan > 12,
     menosDe12h: puede && faltan > 0 && faltan <= 12,
   };
 }
 
-/** Próximas: activas y por venir, de la más cercana a la más lejana. Historial: lo demás, de la más reciente. */
+/** Próximas: pendientes y confirmadas por venir, de la más cercana a la más lejana, y la que está en curso (hasta 12 h
+ *  después de empezar, por si nadie la cierra). Historial: lo demás, de la más reciente a la más vieja. */
 export function vistaCitas(
   citas: FilaCita[], servicios: FilaServicioCita[], ahora: Date,
 ): { proximas: CitaVista[]; historial: CitaVista[] } {
@@ -100,7 +105,9 @@ export function vistaCitas(
   const historial: CitaVista[] = [];
   for (const c of citas) {
     const v = vista(c, servicios, ahora);
-    (ACTIVAS.includes(c.status) && horasHasta(c.date, c.time, ahora) > 0 ? proximas : historial).push(v);
+    const faltan = horasHasta(c.date, c.time, ahora);
+    const proxima = c.status === 'in_progress' ? faltan > -12 : ACTIVAS.includes(c.status) && faltan > 0;
+    (proxima ? proximas : historial).push(v);
   }
   const clave = (v: CitaVista) => `${v.fecha} ${v.hora}`;
   proximas.sort((a, b) => clave(a).localeCompare(clave(b)));
