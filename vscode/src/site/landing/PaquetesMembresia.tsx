@@ -35,7 +35,7 @@ export default function PaquetesMembresia({ paquetes, destacado }: { paquetes: P
             </div>
             <div className="s-mc-under">
               <span>{porSesion !== null ? `${formatoRD(porSesion)} por sesión` : ''}</span>
-              <Link className={`s-btn ${esDestacado ? 's-btn-solid' : 's-btn-line'}`} to="/reservar">
+              <Link className={`s-btn ${esDestacado ? 's-btn-solid' : 's-btn-line'}`} to={`/reservar?paquete=${p.id}`}>
                 Reservar <span className="s-ar" aria-hidden="true">→</span>
               </Link>
             </div>

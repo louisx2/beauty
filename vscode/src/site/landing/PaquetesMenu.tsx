@@ -28,7 +28,7 @@ export default function PaquetesMenu({ paquetes, destacado }: { paquetes: Paquet
               {porSesion !== null && <span>{formatoRD(porSesion)} por sesión</span>}
             </div>
             <div className="s-prow-go">
-              <Link className={`s-btn ${esDestacado ? 's-btn-solid' : 's-btn-line'}`} to="/reservar">
+              <Link className={`s-btn ${esDestacado ? 's-btn-solid' : 's-btn-line'}`} to={`/reservar?paquete=${p.id}`}>
                 Reservar paquete <span className="s-ar" aria-hidden="true">→</span>
               </Link>
             </div>

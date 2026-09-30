@@ -20,6 +20,7 @@ const SpecialistView        = lazy(() => import('./pages/specialist/SpecialistVi
 const ReceptionistDashboard = lazy(() => import('./pages/receptionist/ReceptionistDashboard'));
 // el diseño anterior de la página principal, para consultarlo o volver a él (spec §8)
 const LandingPageAnterior = lazy(() => import('./legacy/LandingPageAnterior'));
+const BookingPageAnterior = lazy(() => import('./legacy/BookingPageAnterior'));
 
 function AdminFallback() {
   return (
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/reservar" element={<BookingPage />} />
         <Route path="/mis-citas" element={<ClientPortal />} />
         <Route path="/diseno-anterior" element={<Suspense fallback={null}><LandingPageAnterior /></Suspense>} />
+        <Route path="/diseno-anterior/reservar" element={<Suspense fallback={null}><BookingPageAnterior /></Suspense>} />
 
         {/* Admin: Login */}
         <Route path="/admin/login" element={<Login />} />

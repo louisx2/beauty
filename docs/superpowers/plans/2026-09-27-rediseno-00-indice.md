@@ -31,7 +31,7 @@ la fase anterior.
 | 2 | `2026-09-28-rediseno-fase-2-landing.md` | Página principal nueva (spec §5, sin la sección de equipo), con los paquetes en su estilo por defecto "Menú con foto" para que la página publicada no los pierda, los componentes viejos movidos a `src/legacy/` (no se borran), `/diseno-anterior` y la etiqueta `diseno-anterior` subida antes de fusionar | `/` igual al boceto `land-v4` en todos los anchos y temas; SEO intacto |
 | 3 | `2026-09-29-rediseno-fase-3-paquetes.md` | Los otros 2 estilos de paquetes (Membresía y Ahorro), `settings.estilo_paquetes` y la tarjeta "Página web" del panel (spec §6.4) | Cambiar el estilo en el panel cambia la landing; el % de ahorro está probado |
 | 4 | `2026-09-29-rediseno-fase-4-equipo.md` | Equipo desde `staff`: columnas nuevas con su `grant select (col) to anon`, campos en la página Equipo, sección en la landing (spec §6.5) y una sola lista de secciones presentes | Marcar a alguien en el panel lo muestra en la web; si no hay nadie, la sección no aparece |
-| 5 | se escribe al empezar | `/reservar` en 3 pasos: lógica en `useBooking` sin cambiar su comportamiento, calendario de semana/mes a 90 días, resumen o barra fija y confirmación (spec §6.1–6.2) | Pasan los 6 casos de reserva de la spec §10 |
+| 5 | `2026-09-29-rediseno-fase-5-reservar.md` | `/reservar` en 3 pasos: lógica en `useBooking` sin cambiar su comportamiento, calendario de semana/mes a 90 días, resumen o barra fija y confirmación (spec §6.1–6.2) | Pasan los 6 casos de reserva de la spec §10 |
 | 6 | se escribe al empezar | `/mis-citas` nueva con `get_client_packages` y "Mis paquetes" (spec §6.3) | Búsqueda, cancelación de 12 h y saldo de paquetes funcionan con datos de prueba |
 | 7 | se escribe al empezar | Calidad: revisión completa, **conservar el diseño anterior** en `src/legacy/` con rutas `/diseno-anterior…` (spec §8) y prueba en los aparatos de Louis | Lista de la spec §3.8 en verde, el diseño viejo abre en sus rutas y Louis aprueba en su teléfono |
 
@@ -97,6 +97,30 @@ componentes viejos se mueven a `src/legacy/` en lugar de borrarse (spec §8).
   - cambia solo el teléfono y revisa que el cargo no se borre;
   - revisa el tema claro;
   - sube una foto vertical del teléfono.
+
+**Lo que dejó la Fase 5** (de la revisión final; no bloquean):
+- **Prueba pendiente en el teléfono y el iPad de Louis.** El panel del navegador no dejó comprobar los desplazamientos.
+  Hay que revisar:
+  - que la página baje a cada paso ("Continuar", el error de datos y la hora ocupada);
+  - que se pueda deslizar la página pasando por encima de la lista de servicios;
+  - la barra de abajo con el teclado abierto;
+  - el botón del resumen en el iPad acostado (1180 px).
+- **Contenido para Louis:**
+  - "Diseño de Cejas" (RD$ 600) y el "Depilación Laser Brasileño" repetido no están en el menú de la página, así que salen
+    solo en "Todos" y en el buscador. Hay que sumarlos al menú (`servicesMenu.ts`), o unirlos o desactivarlos en el panel.
+  - El nombre del servicio de un paquete se guarda como "Paquete: Paquete …". La página ya lo muestra limpio.
+- **Cuenta de ejemplo:** si la configuración no carga, la confirmación muestra la cuenta de ejemplo (123456789). Viene de
+  antes. Conviene ocultarla usando `cargado` del store.
+- **Pendientes chicos:**
+  - "Ver semana" desde un mes que empieza viernes o sábado muestra la semana del mes anterior;
+  - el día 90, si cae domingo 1 de mes, deja una semana toda apagada;
+  - el WhatsApp sigue elevado en la confirmación;
+  - `hoy` no cambia si la pestaña queda abierta pasada la medianoche.
+- **Para la Fase 6:**
+  - `useSeccionesPresentes` (`header/usePresencia.ts`) da el menú fuera de la página principal;
+  - `numeroWhatsApp` (`reservar/datos.ts`) normaliza el número para `wa.me`;
+  - `/reservar?paquete=<id>` ya abre con el paquete elegido;
+  - `--s-warn` y `--s-bad` ya existen en `tokens.css`, y falta `--s-ok`.
 
 **Notas de la base de datos** (ver la memoria `roles-y-rls`):
 - anon solo lee columnas autorizadas de `staff` y `schedule_blocks`. Toda consulta pública debe nombrar
