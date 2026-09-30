@@ -724,6 +724,17 @@ export type Database = {
           time: string
         }[]
       }
+      get_client_appointment_services: {
+        Args: { p_phone: string }
+        Returns: {
+          appointment_id: string
+          duracion: number
+          especialista: string
+          hora: string
+          orden: number
+          servicio: string
+        }[]
+      }
       get_client_appointments: {
         Args: { p_phone: string }
         Returns: {
@@ -737,6 +748,21 @@ export type Database = {
           source: string
           status: string
           time: string
+        }[]
+      }
+      get_client_packages: {
+        Args: { p_phone: string }
+        Returns: {
+          cliente: string | null
+          comprado: string
+          estado: string
+          id: string
+          paquete: string | null
+          paquete_activo: boolean | null
+          paquete_id: string | null
+          servicio: string | null
+          sesiones: number
+          usadas: number
         }[]
       }
       get_next_ncf: { Args: { ncf_type: string }; Returns: string }
