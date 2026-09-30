@@ -1,0 +1,44 @@
+/* Resumen de /reservar (boceto citas-v2): barra abajo en tableta y celular, "Tu visita" fija en computadora.
+   Los dos van siempre en chocolate, como la llamada final. */
+.s-sum{ display:none }
+.s-rbar{ position:sticky; bottom:0; z-index:15; display:flex; align-items:center; gap:12px; margin-top:8px; padding:12px 16px calc(14px + env(safe-area-inset-bottom)); border-radius:20px 20px 0 0; background:var(--s-listones-oscuro); color:#F5F1EA; box-shadow:0 -14px 30px -18px rgba(0,0,0,.6) }
+.s-rbar p{ flex:1; min-width:0; margin:0; font-size:12.5px; line-height:1.4; color:rgba(245,241,234,.75) }
+.s-rbar b{ display:block; color:#F5F1EA; font-size:14px; font-weight:500 }
+.s-rbar b, .s-rbar span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.s-rbar span{ display:block }
+.s-rbar .s-btn{ flex-shrink:0; min-height:46px; padding:0 18px; background:#B2967D; color:#2A1E17 }
+.s-rbar .s-btn:disabled{ opacity:.5; cursor:default }
+.s-rbar .s-btn:focus-visible{ outline-color:#B2967D }
+
+@media (min-width: 761px){
+  .s-rbar{ padding:14px 22px calc(16px + env(safe-area-inset-bottom)); border-radius:22px 22px 0 0 }
+  .s-rbar p{ font-size:13px }
+  .s-rbar b{ font-size:15px }
+  .s-rbar .s-btn{ padding:0 22px }
+}
+
+@media (min-width: 1101px){
+  .s-rbar{ display:none }
+  .s-sum{ position:sticky; top:calc(var(--s-nav-h) + 20px); display:flex; flex-direction:column; max-height:calc(100vh - var(--s-nav-h) - 40px); max-height:calc(100dvh - var(--s-nav-h) - 40px); border-radius:26px; overflow:hidden; background:var(--s-surface); border:1px solid var(--s-surface-line); box-shadow:var(--s-shadow) }
+  .s-sum-h{ flex-shrink:0; padding:20px 24px; background:var(--s-listones-oscuro); color:#F5F1EA }
+  .s-sum-h .s-eyebrow{ margin:0 0 8px; color:#B2967D }
+  .s-sum-h h2{ font-size:26px }
+  .s-sum-b{ flex:1; min-height:0; padding:18px 24px 6px; overflow-y:auto }
+  .s-sum-pie{ flex-shrink:0; padding:4px 24px 22px; border-top:1px solid var(--s-line) }
+  .s-sum-vacio{ margin:0; padding:10px 0 18px; font-size:14px; line-height:1.6; color:var(--s-faint) }
+  .s-tl{ margin:0 0 18px; padding:0; list-style:none }
+  .s-tl li{ display:grid; grid-template-columns:62px minmax(0,1fr); gap:12px; padding:10px 0 }
+  .s-tl li + li{ border-top:1px dashed var(--s-line) }
+  .s-tl time{ font-size:13px; font-weight:500; color:var(--s-accent) }
+  .s-tl b{ display:block; margin-bottom:2px; font-size:14.5px; font-weight:500; overflow-wrap:anywhere }
+  .s-tl span{ font-size:12.5px; color:var(--s-faint) }
+  .s-sum-filas{ margin:0 }
+  .s-sum-filas div{ display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-top:1px solid var(--s-line); font-size:13.5px; color:var(--s-soft) }
+  .s-sum-filas dt, .s-sum-filas dd{ margin:0 }
+  .s-sum-filas dd{ color:var(--s-text); font-weight:500; text-align:right }
+  .s-dep{ margin:14px 0 18px; padding:12px 14px; border-radius:14px; background:var(--s-surface-2); font-size:12.8px; line-height:1.55; color:var(--s-soft) }
+  .s-dep b{ color:var(--s-text) }
+  .s-sum .s-btn{ width:100% }
+  .s-sum .s-btn:disabled{ opacity:.35; cursor:default }
+  .s-sum .s-btn:disabled:hover{ transform:none; box-shadow:none; background:var(--s-btn-bg) }
+}

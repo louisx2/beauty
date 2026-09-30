@@ -12,4 +12,6 @@
 .s-wa svg{ width:25px; height:25px }
 .s-wa.is-elevado{ bottom:92px }
 @media (min-width: 761px){ .s-wa{ right:20px; bottom:20px; width:54px; height:54px } .s-wa.is-elevado{ bottom:96px } }
+/* en computadora /reservar no tiene barra abajo: el WhatsApp vuelve a su lugar */
+@media (min-width: 1101px){ .s-wa.is-elevado{ bottom:20px } }
 @media (hover:hover){ .s-wa:hover{ transform:scale(1.07) } }
