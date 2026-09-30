@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DIAS_MAXIMOS, deIso, diasEntre, etiquetaMes, flechasMes, flechasSemana, isoLocal, lunesDe, mesDeSemana,
-  mesEnCuadricula, motivoNoReservable, primerDiaReservable, semana, sumarDias, sumarMeses,
+  DIAS_MAXIMOS, deIso, diasEntre, etiquetaMes, flechasMes, flechasSemana, hayReservableEnMes, isoLocal, lunesDe,
+  lunesParaMes, mesAcotado, mesDeSemana, mesEnCuadricula, motivoNoReservable, msHastaMedianoche, primerDiaReservable,
+  semana, sumarDias, sumarMeses,
 } from '../src/site/reservar/calendario.ts';
 
 // "hoy" en las pruebas: martes 29 de septiembre de 2026
@@ -73,4 +74,31 @@ test('flechas de mes, nombre del mes y sumar meses cruzando de año', () => {
 test('el mes que se nombra sobre una semana es el de su jueves', () => {
   assert.deepEqual(mesDeSemana('2026-09-28'), { anio: 2026, mes: 9 });
   assert.deepEqual(mesDeSemana('2026-09-21'), { anio: 2026, mes: 8 });
+});
+
+test('mes: la flecha siguiente no abre un mes sin días reservables (el día 90 es un domingo 1)', () => {
+  // desde el lunes 3 de agosto de 2026 el día 90 es el domingo 1 de noviembre
+  assert.equal(hayReservableEnMes({ anio: 2026, mes: 10 }, '2026-08-03'), false);
+  assert.equal(hayReservableEnMes({ anio: 2026, mes: 9 }, '2026-08-03'), true);
+  assert.deepEqual(flechasMes({ anio: 2026, mes: 9 }, '2026-08-03'), { anterior: true, siguiente: false });
+});
+
+test('"Ver mes" se queda entre el mes de hoy y el último mes con días reservables', () => {
+  assert.deepEqual(mesAcotado({ anio: 2026, mes: 7 }, HOY), { anio: 2026, mes: 8 });
+  assert.deepEqual(mesAcotado({ anio: 2026, mes: 9 }, HOY), { anio: 2026, mes: 9 });
+  assert.deepEqual(mesAcotado({ anio: 2027, mes: 1 }, HOY), { anio: 2026, mes: 11 });
+  assert.deepEqual(mesAcotado({ anio: 2026, mes: 10 }, '2026-08-03'), { anio: 2026, mes: 9 });
+});
+
+test('"Ver semana" vuelve a una semana que se nombra con el mes que se miraba', () => {
+  assert.equal(lunesParaMes({ anio: 2026, mes: 9 }, HOY), '2026-09-28'); // el jueves 1 de octubre ya es de octubre
+  // enero de 2027 empieza viernes: la semana del 1 se nombra diciembre, así que va a la del 4
+  assert.equal(lunesParaMes({ anio: 2027, mes: 0 }, '2026-12-15'), '2027-01-04');
+  // lo que queda de septiembre cae en una semana que se nombra octubre: se queda ahí, no salta más adelante
+  assert.equal(lunesParaMes({ anio: 2026, mes: 8 }, HOY), '2026-09-28');
+});
+
+test('milisegundos hasta la medianoche (más 5 segundos de margen)', () => {
+  assert.equal(msHastaMedianoche(new Date(2026, 8, 29, 23, 59, 0)), 65_000);
+  assert.equal(msHastaMedianoche(new Date(2026, 8, 29, 0, 0, 0)), 86_405_000);
 });

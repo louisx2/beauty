@@ -129,11 +129,46 @@ export function mesEnCuadricula(visto: MesVisto, hoy: string): (Dia | null)[] {
   ];
 }
 
-/** No se va a un mes ya pasado ni a uno que empieza después del límite. */
+/** No se va a un mes ya pasado ni a uno sin días reservables (fuera del límite, o solo un domingo dentro). */
 export function flechasMes(visto: MesVisto, hoy: string): Flechas {
   const h = deIso(hoy);
   return {
     anterior: visto.anio * 12 + visto.mes > h.getFullYear() * 12 + h.getMonth(),
-    siguiente: diasEntre(hoy, primeroDe(sumarMeses(visto, 1))) <= DIAS_MAXIMOS,
+    siguiente: hayReservableEnMes(sumarMeses(visto, 1), hoy),
   };
+}
+
+/** Si el mes tiene algún día que se pueda reservar (abierto, desde hoy y dentro del límite). */
+export function hayReservableEnMes(visto: MesVisto, hoy: string): boolean {
+  return mesEnCuadricula(visto, hoy).some((d) => d !== null && d.motivo === null);
+}
+
+/** El mes que abre "Ver mes": nunca antes del de hoy, ni uno sin días reservables al final (p. ej. cuando el día 90 es
+ *  un domingo 1). */
+export function mesAcotado(m: MesVisto, hoy: string): MesVisto {
+  const h = deIso(hoy);
+  const desde: MesVisto = { anio: h.getFullYear(), mes: h.getMonth() };
+  const n = (x: MesVisto) => x.anio * 12 + x.mes;
+  let r = n(m) < n(desde) ? desde : m;
+  while (n(r) > n(desde) && !hayReservableEnMes(r, hoy)) r = sumarMeses(r, -1);
+  return r;
+}
+
+/** La semana que muestra "Ver semana" al volver del mes: la del primer día reservable de ese mes. Si esa semana se
+ *  nombra con el mes anterior (su jueves cae antes) y la siguiente sí es del mes, va a la siguiente. */
+export function lunesParaMes(visto: MesVisto, hoy: string): string {
+  const dia = mesEnCuadricula(visto, hoy).find((d) => d !== null && d.motivo === null)?.iso ?? primerDiaReservable(hoy);
+  const lunes = lunesDe(dia);
+  const siguiente = sumarDias(lunes, 7);
+  const delMes = (l: string) => {
+    const m = mesDeSemana(l);
+    return m.anio === visto.anio && m.mes === visto.mes;
+  };
+  return !delMes(lunes) && delMes(siguiente) && flechasSemana(lunes, hoy).siguiente ? siguiente : lunes;
+}
+
+/** Cuánto falta para la próxima medianoche local, más 5 s de margen (para cambiar "hoy" sin recargar). */
+export function msHastaMedianoche(ahora: Date): number {
+  const manana = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1, 0, 0, 5);
+  return manana.getTime() - ahora.getTime();
 }

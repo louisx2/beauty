@@ -86,3 +86,10 @@ test('número de WhatsApp para wa.me: solo dígitos y con el 1 del país', () =>
   assert.equal(numeroWhatsApp('18293224014'), '18293224014');
   assert.equal(numeroWhatsApp('+1 (829) 322-4014'), '18293224014');
 });
+
+test('teléfono con el 1 del país delante: se quita (+1 829…, 1829…)', () => {
+  assert.equal(formatoTelefono('+1 829-555-0102'), '829-555-0102');
+  assert.equal(formatoTelefono('18295550102'), '829-555-0102');
+  // mientras se escribe, con 10 dígitos o menos no se toca
+  assert.equal(formatoTelefono('1829555010'), '182-955-5010');
+});
