@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import Navbar from '../legacy/Navbar';
-import MyAppointments from '../components/MyAppointments';
+import MyAppointments from '../legacy/MyAppointments';
 import Footer from '../legacy/Footer';
 
 export default function ClientPortal() {
