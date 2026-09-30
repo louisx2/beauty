@@ -15,8 +15,8 @@
 .s-mc-logo{ height:34px; width:auto }
 .s-mc-top .s-ovalos{ gap:5px; justify-content:flex-end }
 .s-mc-top .s-ovalos i{ width:9px; height:16px }
-.s-mc-mid{ position:relative; margin-top:auto; padding-top:18px }
-.s-mc-svc{ margin:0 0 6px; font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--s-accent); overflow-wrap:anywhere; }
+.s-mc-mid{ position:relative; margin-top:auto; padding-top:18px; display:flex; flex-direction:column }
+.s-mc-svc{ margin:0 0 6px; font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--s-accent); overflow-wrap:anywhere; order:-1; }
 .s-mc-nombre{ font-size:25px; overflow-wrap:anywhere }
 .s-mc-bot{ position:relative; display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-top:14px; padding-top:12px; border-top:1px solid rgba(205,184,162,.25) }
 .s-mc-bot b{ font-family:var(--s-f-display); font-weight:400; font-size:25px; color:var(--s-accent) }

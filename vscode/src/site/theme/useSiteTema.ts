@@ -11,10 +11,18 @@ export function useSiteTema(): [Tema, (t: Tema) => void] {
   const [tema, setEstado] = useState<Tema>(() => leerTema(almacen()));
   const setTema = useCallback((t: Tema) => {
     guardarTema(almacen(), t);
-    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    const doc = document as Document & {
+      startViewTransition?: (cb: () => void) => { ready?: Promise<unknown>; finished?: Promise<unknown> } | undefined;
+    };
     const reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (doc.startViewTransition && !reducir) doc.startViewTransition(() => flushSync(() => setEstado(t)));
-    else setEstado(t);
+    if (doc.startViewTransition && !reducir) {
+      const vt = doc.startViewTransition(() => flushSync(() => setEstado(t)));
+      // con la pestaña oculta la transición se cancela y sus promesas se rechazan: el tema ya cambió, no es un error
+      vt?.ready?.catch(() => {});
+      vt?.finished?.catch(() => {});
+    } else {
+      setEstado(t);
+    }
   }, []);
   return [tema, setTema];
 }

@@ -44,9 +44,17 @@ export function iniciales(nombre: string): string {
   return (primera + ultima).toLocaleUpperCase('es');
 }
 
+/** El nombre sin los títulos de delante, para ordenar: "Dra. Nadieska Soto" va con la N. Nunca queda vacío. */
+export function nombreParaOrdenar(nombre: string): string {
+  const palabras = nombre.trim().split(/\s+/);
+  let i = 0;
+  while (i < palabras.length - 1 && TITULOS.has(palabras[i].replace(/[^\p{L}]/gu, '').toLocaleLowerCase('es'))) i++;
+  return palabras.slice(i).join(' ');
+}
+
 /**
  * Quienes salen en la web: marcadas, activas y con nombre. Primero la administración (la dueña) y
- * después por nombre, como en el boceto.
+ * después por nombre (sin contar títulos como Dra.), como en el boceto.
  */
 export function equipoPublico(filas: readonly FilaEquipo[]): MiembroPublico[] {
   return filas
@@ -55,7 +63,7 @@ export function equipoPublico(filas: readonly FilaEquipo[]): MiembroPublico[] {
     .filter((x): x is { f: FilaEquipo; nombre: string } => x.nombre !== null)
     .sort((a, b) =>
       Number(b.f.role === 'admin') - Number(a.f.role === 'admin') ||
-      a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+      nombreParaOrdenar(a.nombre).localeCompare(nombreParaOrdenar(b.nombre), 'es', { sensitivity: 'base' }))
     .map(({ f, nombre }) => ({
       id: String(f.id),
       nombre,

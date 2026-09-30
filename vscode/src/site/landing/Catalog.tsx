@@ -74,6 +74,8 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
   const [abiertaMovil, setAbiertaMovil] = useState<string | null>(null);
   const [entrada, setEntrada] = useState(0); // al cambiar de familia, las especialidades entran en cascada
   const [pildora, setPildora] = useState<CSSProperties>({ width: 0 });
+  const [anuncio, setAnuncio] = useState('');
+  const tituloPanel = useRef<HTMLHeadingElement>(null);
 
   // un destacado pidió esta especialidad: se elige su familia, se abre y la pantalla baja hasta ella
   useEffect(() => {
@@ -96,6 +98,9 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
       const margen = parseFloat(getComputedStyle(destino).scrollMarginTop) || 0;
       const top = destino.getBoundingClientRect().top + window.scrollY - margen;
       window.scrollTo({ top, behavior: reducir() ? 'instant' : 'smooth' });
+      // el foco va a la especialidad que se abrió: en celular, su botón; en tableta y computadora, el título del panel
+      const foco = movil ? destino.querySelector<HTMLElement>('.s-acc-btn') : tituloPanel.current;
+      foco?.focus({ preventScroll: true });
     }, reducir() ? 0 : 380);
     return () => { window.clearTimeout(t); window.clearTimeout(t2); html.style.overflowAnchor = ''; };
     // solo cuando llega un pedido nuevo (el catálogo cambia al cargar precios y no debe volver a bajar)
@@ -118,6 +123,13 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
     ro.observe(cont);
     return () => ro.disconnect();
   }, [familia]);
+
+  // en tableta y computadora el panel cambia sin mover el foco: se anuncia qué especialidad quedó a la vista
+  const elegirEspecialidad = (id: string) => {
+    onElegir(id);
+    const c = catalogo.find((x) => x.id === id);
+    if (c) setAnuncio(`${c.titulo}: ${plural(c.total)}`);
+  };
 
   const elegirFamilia = (f: FamiliaId) => {
     if (f === familia) return;
@@ -162,7 +174,7 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
               <p className="s-cat-fam">{f.nombre}</p>
               {catalogo.filter((c) => c.familia === f.id).map((c) => (
                 <button key={c.id} type="button" className={`s-cat-btn ${c.id === actual.id ? 'is-on' : ''}`}
-                  aria-pressed={c.id === actual.id} onClick={() => onElegir(c.id)}>
+                  aria-pressed={c.id === actual.id} onClick={() => elegirEspecialidad(c.id)}>
                   {c.titulo}<small>{c.total}</small>
                 </button>
               ))}
@@ -174,7 +186,7 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
             <div className="s-cp-top">
               <div>
                 <span className="s-cp-fam">{nombreFamilia(actual.familia)}</span>
-                <h4 className="s-display s-cp-tit">{actual.titulo}</h4>
+                <h4 className="s-display s-cp-tit" tabIndex={-1} ref={tituloPanel}>{actual.titulo}</h4>
                 {actual.descripcion && <p className="s-cp-desc">{actual.descripcion}</p>}
                 <Especialista e={actual.especialista} />
               </div>
@@ -188,6 +200,7 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
           </div>
         </div>
       </div>
+      <p className="s-sr" aria-live="polite">{anuncio}</p>
 
       {/* celular */}
       <div className="s-famchips" ref={chips} role="group" aria-label="Tipo de tratamiento">

@@ -37,6 +37,7 @@
 .s-cp-fam, .s-cp-etq{ font:500 11px var(--s-f-body); letter-spacing:.2em; text-transform:uppercase; color:var(--s-accent) }
 .s-cp-etq{ margin:22px 0 6px }
 .s-cp-tit{ font-size:32px; margin:10px 0 12px }
+.s-cp-tit:focus{ outline:none }
 .s-cp-desc{ font-size:14.5px; line-height:1.65; color:var(--s-soft); font-weight:300; margin:0 0 16px; max-width:34em }
 .s-cp-esp{ display:inline-flex; align-items:center; gap:12px; padding:8px 16px 8px 8px; border-radius:999px; border:1px solid var(--s-line); font-size:12.5px; color:var(--s-soft); line-height:1.3 }
 .s-cp-esp b{ display:block; color:var(--s-text); font-weight:500; font-size:13.5px }
