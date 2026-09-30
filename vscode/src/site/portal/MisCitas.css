@@ -1,8 +1,8 @@
 /* /mis-citas (boceto citas-v2): cabecera con listones y búsqueda, saludo, citas, historial y paquetes. Celular primero. */
-.s-mc-head{ padding:34px 0 28px; background:var(--s-tex); border-bottom:1px solid var(--s-line) }
-.s-mc-head .s-eyebrow{ margin:0 0 16px }
-.s-mc-titulo{ margin:0 0 14px; font-size:36px }
-.s-mc-intro{ max-width:36em; margin:0; font-size:15px; font-weight:300; line-height:1.65; color:var(--s-soft) }
+.s-citas-head{ padding:34px 0 28px; background:var(--s-tex); border-bottom:1px solid var(--s-line) }
+.s-citas-head .s-eyebrow{ margin:0 0 16px }
+.s-citas-titulo{ margin:0 0 14px; font-size:36px }
+.s-citas-intro{ max-width:36em; margin:0; font-size:15px; font-weight:300; line-height:1.65; color:var(--s-soft) }
 .s-lookup{ display:flex; flex-direction:column; align-items:stretch; gap:10px; max-width:560px; margin-top:24px; padding:10px; border-radius:22px; background:var(--s-surface); border:1px solid var(--s-surface-line) }
 .s-lookup-inp{ display:flex; align-items:center; gap:10px; min-height:46px; padding:0 14px; border-radius:14px; border:1px solid var(--s-faint); background:var(--s-input) }
 .s-lookup-inp:focus-within{ border-color:var(--s-accent); box-shadow:0 0 0 1px var(--s-accent) }
@@ -10,29 +10,29 @@
 .s-lookup-inp input{ flex:1; min-width:0; height:44px; border:0; background:none; color:var(--s-text); font:400 16px var(--s-f-body); outline:none }
 .s-lookup-inp input::placeholder{ color:var(--s-faint) }
 .s-lookup .s-btn{ width:100% }
-.s-lookup .s-btn:disabled{ opacity:.6; cursor:default }
-.s-mc-error{ margin:8px 0 0; font-size:13px; font-weight:500; color:var(--s-bad) }
+.s-lookup .s-btn[aria-disabled="true"]{ opacity:.6; cursor:default }
+.s-citas-error{ margin:8px 0 0; font-size:13px; font-weight:500; color:var(--s-bad) }
 .s-recordar{ position:relative; display:inline-flex; align-items:center; gap:10px; min-height:44px; margin-top:6px; font-size:13.5px; color:var(--s-soft); cursor:pointer }
 .s-recordar input{ position:absolute; width:1px; height:1px; margin:0; opacity:0 }
 .s-recordar i{ display:grid; place-items:center; width:20px; height:20px; border-radius:6px; border:1.5px solid var(--s-faint); font-style:normal; font-size:12px; color:transparent; transition:background-color .25s, color .25s }
 .s-recordar input:checked + i{ background:var(--s-btn-bg); border-color:transparent; color:var(--s-btn-fg) }
 .s-recordar input:focus-visible + i{ outline:2px solid var(--s-accent); outline-offset:2px }
 
-.s-mc-cuerpo{ padding-top:30px; padding-bottom:80px }
-.s-mc-estado{ margin:0; padding:30px 0 50px; text-align:center; font-size:15px; color:var(--s-soft) }
-.s-mc-vacio{ padding:30px 0 50px; text-align:center; color:var(--s-soft) }
-.s-mc-vacio p{ margin:0 0 18px; font-size:15px }
-.s-mc-vacio b{ color:var(--s-text); font-weight:500 }
-.s-mc-vacio-btns{ display:flex; flex-direction:column; gap:10px; max-width:360px; margin:0 auto }
+.s-citas-cuerpo{ padding-top:30px; padding-bottom:80px }
+.s-citas-estado{ margin:0; padding:30px 0 50px; text-align:center; font-size:15px; color:var(--s-soft) }
+.s-citas-vacio{ padding:30px 0 50px; text-align:center; color:var(--s-soft) }
+.s-citas-vacio p{ margin:0 0 18px; font-size:15px }
+.s-citas-vacio b{ color:var(--s-text); font-weight:500 }
+.s-citas-vacio-btns{ display:flex; flex-direction:column; gap:10px; max-width:360px; margin:0 auto }
 .s-hello{ display:flex; flex-direction:column; align-items:flex-start; gap:14px; margin-bottom:26px }
 .s-hello h2{ font-size:30px }
 .s-hello p{ margin:6px 0 0; font-size:14.5px; color:var(--s-soft) }
-.s-mc-grid{ display:grid; gap:28px }
+.s-citas-grid{ display:grid; gap:28px }
 .s-blk-t{ margin:0 0 14px; font:500 12px var(--s-f-body); letter-spacing:.2em; text-transform:uppercase; color:var(--s-accent) }
-.s-blk-t:focus{ outline:none }
+.s-blk-t:focus, .s-citas-foco:focus{ outline:none }
 .s-blk-t--sep{ margin-top:28px }
-.s-mc-nada{ margin:0 0 14px; font-size:14px; color:var(--s-soft) }
-.s-mc-nada a{ color:var(--s-accent); text-decoration:underline; text-underline-offset:3px }
+.s-citas-nada{ margin:0 0 14px; font-size:14px; color:var(--s-soft) }
+.s-citas-nada a{ color:var(--s-accent); text-decoration:underline; text-underline-offset:3px }
 .s-hist{ margin:0; padding:0; list-style:none; border-radius:22px; border:1px solid var(--s-line); overflow:hidden }
 .s-hist li{ display:grid; grid-template-columns:58px minmax(0,1fr); gap:6px 14px; align-items:center; padding:13px 18px; font-size:13.5px }
 .s-hist li + li{ border-top:1px solid var(--s-line) }
@@ -41,22 +41,22 @@
 .s-hist .s-estado{ grid-column:2; justify-self:start }
 
 @media (min-width: 761px){
-  .s-mc-head{ padding:56px 0 46px }
-  .s-mc-titulo{ font-size:46px }
-  .s-mc-intro{ font-size:16.5px }
-  .s-lookup{ flex-direction:row; align-items:center; gap:12px; padding:8px; border-radius:999px }
+  .s-citas-head{ padding:56px 0 46px }
+  .s-citas-titulo{ font-size:46px }
+  .s-citas-intro{ font-size:16.5px }
+  .s-lookup{ flex-direction:row; align-items:center; gap:12px; padding:8px; border-radius:999px; border-color:var(--s-faint) }
   .s-lookup-inp{ flex:1; border:0; background:none }
   .s-lookup-inp:focus-within{ box-shadow:none }
   .s-lookup:focus-within{ border-color:var(--s-accent); box-shadow:0 0 0 1px var(--s-accent) }
   .s-lookup .s-btn{ width:auto }
-  .s-mc-cuerpo{ padding-top:44px; padding-bottom:90px }
-  .s-mc-vacio-btns{ flex-direction:row; justify-content:center; max-width:none }
+  .s-citas-cuerpo{ padding-top:44px; padding-bottom:90px }
+  .s-citas-vacio-btns{ flex-direction:row; justify-content:center; max-width:none }
   .s-hello{ flex-direction:row; justify-content:space-between; align-items:flex-end; gap:20px; margin-bottom:30px }
   .s-hello h2{ font-size:38px }
   .s-hist li{ grid-template-columns:90px minmax(0,1fr) auto; gap:14px }
   .s-hist .s-estado{ grid-column:auto }
 }
 @media (min-width: 1101px){
-  .s-mc-titulo{ font-size:54px }
-  .s-mc-grid{ grid-template-columns:1.35fr 1fr; align-items:start }
+  .s-citas-titulo{ font-size:54px }
+  .s-citas-grid{ grid-template-columns:1.35fr 1fr; align-items:start }
 }
