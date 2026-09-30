@@ -37,7 +37,7 @@ export default function PaquetesAhorro({ paquetes, destacado }: { paquetes: Paqu
               <p className="s-sc-total">
                 Total <b>{formatoRD(p.precio)}</b> por {p.sesiones === 1 ? 'la sesión' : `las ${p.sesiones} sesiones`}
               </p>
-              <Link className={`s-btn ${esDestacado ? 's-btn-solid' : 's-btn-line'}`} to="/reservar">
+              <Link className={`s-btn ${esDestacado ? 's-btn-solid' : 's-btn-line'}`} to={`/reservar?paquete=${p.id}`}>
                 Reservar paquete <span className="s-ar" aria-hidden="true">→</span>
               </Link>
             </div>

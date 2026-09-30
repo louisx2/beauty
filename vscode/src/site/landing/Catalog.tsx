@@ -183,7 +183,7 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
             <Lista grupos={actual.grupos} />
             <div className="s-cp-foot">
               <span>{plural(actual.total)} · puedes combinar varios en una misma cita</span>
-              <Link className="s-btn s-btn-solid" to="/reservar">Reservar <span className="s-ar" aria-hidden="true">→</span></Link>
+              <Link className="s-btn s-btn-solid" to={`/reservar?categoria=${actual.id}`}>Reservar <span className="s-ar" aria-hidden="true">→</span></Link>
             </div>
           </div>
         </div>
@@ -216,7 +216,7 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
                   <Especialista e={c.especialista} />
                   <Lista grupos={c.grupos} />
                   <div className="s-cp-foot">
-                    <Link className="s-btn s-btn-solid" to="/reservar">Reservar <span className="s-ar" aria-hidden="true">→</span></Link>
+                    <Link className="s-btn s-btn-solid" to={`/reservar?categoria=${c.id}`}>Reservar <span className="s-ar" aria-hidden="true">→</span></Link>
                   </div>
                 </div>
               </Desplegable>
