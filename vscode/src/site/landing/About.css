@@ -4,7 +4,7 @@
 .s-about-arco{ aspect-ratio:4/5.4; border-radius:999px 999px 26px 26px }
 .s-about-arco img{ object-position:40% 40% }
 .s-about-sello{ position:absolute; right:-14px; top:40px; z-index:3; display:grid; place-items:center; width:72px; height:72px; border-radius:50%; background:var(--s-btn-bg) }
-.s-about-sello img{ width:28px; filter:brightness(0) invert(1) }
+.s-about-sello img{ width:28px; height:auto; filter:brightness(0) invert(1) }
 .site[data-site-tema="oscuro"] .s-about-sello img{ filter:brightness(0) }
 .s-about-tx .s-eyebrow{ margin-bottom:18px }
 .s-about-tx h2{ margin-bottom:26px }

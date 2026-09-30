@@ -14,7 +14,7 @@ export default function About() {
       <div className="s-wrap s-about-in">
         <div className="s-about-media s-rv" ref={media}>
           <div className="s-arco s-about-arco"><img src={FOTOS.anabelLobby} alt="Anabel en el lobby del salón" loading="lazy" /></div>
-          <div className="s-about-sello" aria-hidden="true"><img src={MONOGRAMA} alt="" /></div>
+          <div className="s-about-sello" aria-hidden="true"><img src={MONOGRAMA} alt="" width={497} height={839} loading="lazy" /></div>
         </div>
         <div className="s-about-tx s-rv" ref={texto}>
           <p className="s-eyebrow">Conoce a Anabel</p>

@@ -39,17 +39,18 @@ import {
 import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
 import { notifyStatusChange } from '../../lib/whatsapp';
+import { capitalizarNombre } from '../../lib/nombres';
 import SaveClientModal from '../../components/SaveClientModal';
 import ScheduleBlocksModal from '../../components/ScheduleBlocksModal';
 import { useBlockStore, isBlocked, timeToMinutes, minutesToTime } from '../../store/blockStore';
 import './Appointments.css';
 
 //  Formatters & validators 
-function capitalizeName(val: string) {
-  return val.replace(/\b\w/g, (c) => c.toUpperCase());
-}
 function formatPhone(raw: string): string {
-  const digits = raw.replace(/\D/g, '').slice(0, 10);
+  let digits = raw.replace(/\D/g, '');
+  // con más de 10 dígitos que empiezan con 1 (+1 …), se quita el 1 del país
+  if (digits.length > 10 && digits[0] === '1') digits = digits.slice(1);
+  digits = digits.slice(0, 10);
   if (digits.length <= 3) return digits;
   if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
   return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
@@ -831,7 +832,7 @@ export default function Appointments() {
                     clients={clients}
                     value={form.clientName}
                     onChange={(text) => {
-                      setForm({ ...form, clientName: capitalizeName(text), client_id: null });
+                      setForm({ ...form, clientName: capitalizarNombre(text), client_id: null });
                       setApptErrors({ ...apptErrors, clientName: undefined });
                     }}
                     onSelect={(c) => {

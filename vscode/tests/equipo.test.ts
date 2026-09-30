@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { equipoPublico, iniciales, textoONull, type FilaEquipo } from '../src/site/landing/equipo.ts';
+import { equipoPublico, iniciales, nombreParaOrdenar, textoONull, type FilaEquipo } from '../src/site/landing/equipo.ts';
 
 const fila = (extra: Partial<FilaEquipo>): FilaEquipo => ({
   id: 'x', name: 'Paola Jiménez', role: 'specialist', active: true, avatar_url: null,
@@ -50,6 +50,19 @@ test('equipo: la administración primero y después por nombre, con los acentos 
     fila({ id: '4', name: 'Carmen Rodríguez' }),
   ]);
   assert.deepEqual(r.map((m) => m.nombre), ['Zoila Pérez', 'Ángela Ruiz', 'Carmen Rodríguez', 'Paola Jiménez']);
+});
+
+test('equipo: los títulos no cuentan para ordenar ("Dra. Nadieska Soto" va con la N)', () => {
+  assert.equal(nombreParaOrdenar('Dra. Nadieska Soto'), 'Nadieska Soto');
+  assert.equal(nombreParaOrdenar('Lic. María Díaz'), 'María Díaz');
+  assert.equal(nombreParaOrdenar('Dra.'), 'Dra.');
+  const r = equipoPublico([
+    fila({ id: '1', name: 'Paola Jiménez' }),
+    fila({ id: '2', name: 'Dra. Nadieska Soto' }),
+    fila({ id: '3', name: 'Carmen Rodríguez' }),
+    fila({ id: '4', name: 'Lucía Ramos' }),
+  ]);
+  assert.deepEqual(r.map((m) => m.nombre), ['Carmen Rodríguez', 'Lucía Ramos', 'Dra. Nadieska Soto', 'Paola Jiménez']);
 });
 
 test('equipo: textos en blanco quedan en null y una foto en blanco no cuenta', () => {

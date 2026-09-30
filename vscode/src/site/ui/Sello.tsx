@@ -11,7 +11,7 @@ export default function Sello({ className = '' }: { className?: string }) {
         <defs><path id={id} d="M60,60 m-45,0 a45,45 0 1,1 90,0 a45,45 0 1,1 -90,0" /></defs>
         <text><textPath href={`#${id}`} textLength="280">Belleza y bienestar con responsabilidad ·</textPath></text>
       </svg>
-      <img src={MONOGRAMA} alt="" />
+      <img src={MONOGRAMA} alt="" width={497} height={839} />
     </div>
   );
 }

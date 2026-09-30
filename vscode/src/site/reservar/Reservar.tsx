@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { site } from '../../config/site';
 import { servicesMenu } from '../../data/servicesMenu';
-import { isoLocal } from './calendario';
+import { useHoy } from './useHoy';
 import { validarDatos, type ErroresDatos } from './datos';
 import { lineasResumen, textoBarra } from './resumen';
 import { nombreVisible, serviciosParaReservar } from './servicios';
@@ -25,7 +25,7 @@ const irA = (id: string) => document.getElementById(id)?.scrollIntoView({ behavi
 export default function Reservar() {
   const b = useBooking();
   const [params] = useSearchParams();
-  const hoy = useMemo(() => isoLocal(new Date()), []);
+  const hoy = useHoy();
   const servicios = useMemo(() => serviciosParaReservar(servicesMenu, b.services), [b.services]);
   // ?categoria= que no existe se ignora
   const categoriaInicial = useMemo(() => {
@@ -123,12 +123,13 @@ export default function Reservar() {
     }
   };
 
+  // sin la configuración real no se muestra la cuenta de ejemplo (123456789)
   if (confirmada) {
     return (
       <Confirmacion
         cita={confirmada}
         deposito={deposito}
-        cuentas={b.settings.bank_accounts}
+        cuentas={b.settingsCargados ? b.settings.bank_accounts : []}
         whatsapp={b.settings.whatsapp_number || site.whatsapp}
         mensaje={b.whatsappMsg}
         onOtra={() => {

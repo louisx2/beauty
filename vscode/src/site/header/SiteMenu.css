@@ -9,7 +9,7 @@
 .s-menu::-webkit-scrollbar{ width:0 }
 .s-menu .s-wrap{ width:100% }
 .s-menu-glow{ position:absolute; right:-25%; top:-12%; width:80%; aspect-ratio:1; border-radius:50%; background:radial-gradient(circle, rgba(178,150,125,.24), transparent 65%); pointer-events:none }
-.s-menu-mono{ position:absolute; right:-50px; bottom:-40px; height:62%; opacity:.05; pointer-events:none }
+.s-menu-mono{ position:absolute; right:-50px; bottom:-40px; height:62%; width:auto; opacity:.05; pointer-events:none }
 .site[data-site-tema="oscuro"] .s-menu-mono{ filter:brightness(0) invert(1) }
 /* misma altura y márgenes que la barra: el botón Cerrar cae donde estaba MENÚ */
 .s-menu-top{ position:relative; display:flex; align-items:center; justify-content:space-between; height:var(--s-nav-h); flex-shrink:0 }

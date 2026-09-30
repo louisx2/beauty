@@ -30,8 +30,8 @@ export default function SiteHeader({ conSecciones, secciones, activa, solida, me
     <header className={`s-nav ${solida ? 'is-solida' : ''}`} inert={inerte}>
       <div className="s-wrap s-nav-in">
         <a className="s-logo" href="/#s-inicio" onClick={ir('s-inicio')} aria-label="Anadsll Beauty Esthetic, ir al inicio">
-          <img className="s-lc" src={LOGO} alt="" />
-          <img className="s-lw" src={LOGO_CLARO} alt="" />
+          <img className="s-lc" src={LOGO} alt="" width={359} height={200} />
+          <img className="s-lw" src={LOGO_CLARO} alt="" width={359} height={200} />
         </a>
         {conSecciones && (
           <nav className="s-links" aria-label="Secciones">

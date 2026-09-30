@@ -21,12 +21,12 @@ export default function PaquetesAhorro({ paquetes, destacado }: { paquetes: Paqu
           <li key={p.id} className={`s-sc ${esDestacado ? 'is-pop' : ''}`}>
             <div className={`s-sc-img ${foto ? '' : 'is-ph'}`}>
               <img src={foto ?? MONOGRAMA} alt="" loading="lazy" />
-              {esDestacado && <span className="s-sc-flag">Más elegido</span>}
+              {esDestacado && <span className="s-sc-flag" aria-hidden="true">Más elegido</span>}
               {ahorro !== null && <span className="s-sc-sello" aria-hidden="true"><small>Ahorras</small><b>{ahorro}%</b></span>}
               <SesionesOvalos sesiones={p.sesiones} className="s-sc-ovalos" />
             </div>
             <div className="s-sc-bd">
-              <h3 className="s-display">{nombreCorto(p.nombre)}</h3>
+              <h3 className="s-display">{nombreCorto(p.nombre)}{esDestacado && <span className="s-sr"> (el más elegido)</span>}</h3>
               {p.servicio && <p className="s-sc-inc">{p.servicio}</p>}
               {porSesion !== null && <p className="s-sc-per"><b>{formatoRD(porSesion)}</b><span>por sesión</span></p>}
               {ahorro !== null && (

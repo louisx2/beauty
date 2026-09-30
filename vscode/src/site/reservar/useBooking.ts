@@ -43,7 +43,7 @@ export function useBooking() {
   const [busyByStaff, setBusyByStaff] = useState<Record<string, Ocupado[]>>({});
   const [bookingType, setBookingType] = useState<TipoReserva>('service');
   const [form, setForm] = useState<FormReserva>(FORM_VACIO);
-  const { settings, fetchSettings } = useSettingsStore();
+  const { settings, fetchSettings, cargado: settingsCargados } = useSettingsStore();
   const [sending, setSending] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [blocks, setBlocks] = useState<Bloqueo[]>([]);
@@ -299,7 +299,7 @@ export function useBooking() {
   return {
     services, packages, staffList, cargando,
     picks, setPicks, bookingType, form, setForm,
-    settings, sending, loadingSlots, success, bookingError, setBookingError, whatsappMsg, confirmada,
+    settings, settingsCargados, sending, loadingSlots, success, bookingError, setBookingError, whatsappMsg, confirmada,
     selectedPkg, elegidos, duracionTotal, horarios, availableSlots, planElegido, isDayOff,
     cambiarTipo, alternarServicio, elegirEspecialista, elegirPaquete, elegirEspecialistaPaquete, elegirFecha, elegirHora,
     submit, reset,

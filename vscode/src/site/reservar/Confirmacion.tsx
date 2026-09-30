@@ -69,6 +69,9 @@ export default function Confirmacion({ cita, deposito, cuentas, whatsapp, mensaj
           <h2 id="s-banco-t" className="s-eyebrow">Deposita para confirmar</h2>
           <b>{formatoRD(deposito)}</b>
         </div>
+        {cuentas.length === 0 && (
+          <p className="s-banco-sin">Escríbenos por WhatsApp y te pasamos los datos de la cuenta para el depósito.</p>
+        )}
         {cuentas.map((c, i) => (
           <div key={`${c.account_number}-${i}`} className="s-cuenta">
             <div><span>Banco</span>{c.bank_name}</div>

@@ -33,7 +33,33 @@ la fase anterior.
 | 4 | `2026-09-29-rediseno-fase-4-equipo.md` | Equipo desde `staff`: columnas nuevas con su `grant select (col) to anon`, campos en la página Equipo, sección en la landing (spec §6.5) y una sola lista de secciones presentes | Marcar a alguien en el panel lo muestra en la web; si no hay nadie, la sección no aparece |
 | 5 | `2026-09-29-rediseno-fase-5-reservar.md` | `/reservar` en 3 pasos: lógica en `useBooking` sin cambiar su comportamiento, calendario de semana/mes a 90 días, resumen o barra fija y confirmación (spec §6.1–6.2) | Pasan los 6 casos de reserva de la spec §10 |
 | 6 | `2026-09-30-rediseno-fase-6-mis-citas.md` | `/mis-citas` nueva con `get_client_packages` y "Mis paquetes" (spec §6.3) | Búsqueda, cancelación de 12 h y saldo de paquetes funcionan con datos de prueba |
-| 7 | se escribe al empezar | Calidad: revisión completa, **conservar el diseño anterior** en `src/legacy/` con rutas `/diseno-anterior…` (spec §8) y prueba en los aparatos de Louis | Lista de la spec §3.8 en verde, el diseño viejo abre en sus rutas y Louis aprueba en su teléfono |
+| 7 | `2026-09-30-rediseno-fase-7-calidad.md` | Calidad: los pendientes que dejaron las fases 1–6, revisión completa en los 7 anchos y los dos temas, **el diseño anterior** en sus rutas `/diseno-anterior…` (spec §8) y prueba en los aparatos de Louis | Lista de la spec §3.8 en verde, el diseño viejo abre en sus rutas y Louis aprueba en su teléfono |
+| 8 | se escribe al empezar | **Entrega**: datos reales en lugar de los de prueba, usuarios y contraseñas reales, contenido de la dueña y respaldos (lista abajo) | La dueña entra con su usuario, la web muestra su contenido real y no queda ningún dato de prueba |
+
+**Fase Entrega (la última).** Hoy todo en Supabase es de prueba, usuarios incluidos. Lo único posiblemente real son
+los precios de los servicios: se confirman con Louis antes de tocar nada. Lista para su plan:
+- **Respaldo** completo de la base antes de empezar y al terminar.
+- **Borrar los datos de prueba:** clientas, citas y sus servicios, paquetes vendidos (`client_packages`), bloqueos de
+  agenda y cualquier otra fila de prueba. Se conservan los servicios con sus precios, el catálogo de paquetes
+  (`session_packages`) y la configuración.
+- **Usuarios:** crear las cuentas reales (dueña, recepción, especialistas) con sus roles, borrar `admin@anadsll.com` y
+  los demás usuarios de prueba, y poner contraseñas nuevas. En Equipo, quién sale en la web, con su cargo y su foto real.
+- **Configuración real:** cuentas de banco, monto del depósito, número de WhatsApp del salón y estilo de paquetes.
+- **Contenido de la dueña (spec §9):** precios que faltan (hoy RD$ 0), equipo real, testimonios reales o enlace a
+  reseñas, fotos de servicios, "Diseño de Cejas" en el menú (`servicesMenu.ts`) y el "Depilación Laser Brasileño"
+  repetido (unirlo o desactivarlo).
+- **Revisar** que ninguna clienta tenga un número de relleno (809-000-0000): quien lo escriba en Mis citas vería sus
+  paquetes.
+- **Supabase:** revisar los avisos de seguridad (advisors); las funciones públicas por teléfono son intencionales (spec §7).
+- **Cierre:** etiqueta git de la versión entregada y prueba final con la dueña en su teléfono.
+
+**Después del rediseño (proyecto aparte, con su propia spec):** cobro mensual del sistema.
+- El salón se registra como una empresa más en SellAlleS (`louisx2/SellAlleS-WEB`), y Louis lo cobra desde su pantalla
+  de Cobros, con sus correos y su resumen nocturno.
+- En el panel de Anadsll, la dueña tiene "Mi suscripción": lo que debe, las cuentas, subir el comprobante, sus pagos y
+  sus facturas.
+- También ve un banner cuando el pago está por vencer, está atrasado o el comprobante está en revisión.
+- Todo viaja a SellAlleS por funciones del servidor, con una clave secreta.
 
 **El diseño viejo NO se borra** (pedido de Louis): antes de fusionar la Fase 2, que es la primera
 que cambia lo que ve la clienta, se crea y se sube la etiqueta git `diseno-anterior` en `main`. Los
@@ -142,6 +168,24 @@ componentes viejos se mueven a `src/legacy/` en lugar de borrarse (spec §8).
   arreglaría.
 - **Detalles:** el historial no muestra el año; una cita "En curso" pasa al historial al llegar su hora; el resumen cuenta las
   canceladas como "visitas"; el botón "Ver mis citas" sube un poco al pasar el mouse mientras busca.
+
+**Lo que dejó la Fase 7** (de la revisión final y de la auditoría; no bloquean):
+- **Decisión sobre las zonas táctiles:** a 360 px los días del calendario (semana y mes) miden unos 41 px de ancho. La
+  tarjeta no da para 44 sin tocar su borde. Desde 390 px pasan de 44, y la tira de la semana tiene 70 px de alto.
+- **Calendario:**
+  - "Ver mes" puede abrir el mes actual sin días libres si hoy es domingo y último día del mes (raro);
+  - "Ver semana" a veces nombra el mes vecino, cuando los únicos días libres del mes caen en esa semana;
+  - un día elegido antes de la medianoche sigue elegido después (al enviar, el aviso de "ya pasó" lo corrige).
+- **Mis citas:**
+  - el resumen cuenta las canceladas como "visitas";
+  - "desde …" de los paquetes no muestra el año;
+  - en celular la fecha del historial con año baja a dos líneas.
+- **Panel:** el formulario de recepción (ReceptionistDashboard) guarda el teléfono tal como se escribe. Citas y Mis citas ya
+  lo encuentran igual, porque se busca por los últimos 10 dígitos.
+- **Para la Entrega:** si la fila de `settings` no tiene cuentas de banco, el store inyecta la cuenta de ejemplo 123456789.
+  Hay que cargar la cuenta real antes de publicar.
+- **Contraste que se revisó a ojo en el teléfono de Louis:** texto claro sobre las fotos de las tarjetas de servicio y
+  sobre la banda final de listones.
 
 **Notas de la base de datos** (ver la memoria `roles-y-rls`):
 - anon solo lee columnas autorizadas de `staff` y `schedule_blocks`. Toda consulta pública debe nombrar

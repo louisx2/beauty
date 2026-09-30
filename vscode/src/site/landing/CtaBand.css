@@ -2,7 +2,7 @@
 .s-cta{ --s-text:#F5F1EA; --s-soft:rgba(245,241,234,.72); --s-accent:#B2967D; --s-btn-bg:#B2967D; --s-btn-fg:#2A1E17; --s-btn-hover:#CDB8A2;
   position:relative; overflow:hidden; padding:72px 0; text-align:center; background:var(--s-listones-oscuro); color:var(--s-text) }
 .s-cta .s-lead{ margin:0 auto 38px }
-.s-cta-mono{ position:absolute; left:50%; top:50%; height:130%; transform:translate(-50%,-50%); opacity:.05; pointer-events:none; filter:brightness(0) invert(1) }
+.s-cta-mono{ position:absolute; left:50%; top:50%; height:130%; width:auto; transform:translate(-50%,-50%); opacity:.05; pointer-events:none; filter:brightness(0) invert(1) }
 .s-cta-in{ position:relative }
 .s-cta-in .s-eyebrow{ margin-bottom:22px }
 .s-cta-in h2{ margin-bottom:20px }

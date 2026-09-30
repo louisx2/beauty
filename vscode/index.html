@@ -32,11 +32,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <script>
-      // Página principal nueva: el fondo del tema desde el primer instante (sin destello color lino
+      // Páginas nuevas de la clienta (/, /reservar, /mis-citas): el fondo del tema desde el primer instante (sin destello color lino
       // antes de que cargue la app). Las demás páginas y el panel no cambian. Al montarse, SiteLayout
       // toma el control del fondo y de theme-color, y al salir de la página los deja como estaban.
       (function () {
-        if (location.hostname.indexOf('app.') === 0 || location.pathname !== '/') return;
+        if (location.hostname.indexOf('app.') === 0 || ['/', '/reservar', '/mis-citas'].indexOf(location.pathname.replace(/\/+$/, '') || '/') === -1) return;
         var t = null;
         try { t = localStorage.getItem('anadsll-site-tema'); } catch (e) {}
         document.documentElement.style.backgroundColor = t === 'claro' ? '#FBF8F3' : '#2A1E17';
