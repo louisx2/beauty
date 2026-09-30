@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { format12h } from '../../lib/timeFormat';
 import {
-  DIAS_MAXIMOS, deIso, etiquetaMes, flechasMes, flechasSemana, lunesDe, mesDeSemana, mesEnCuadricula, primerDiaReservable,
-  semana, sumarDias, sumarMeses,
+  etiquetaMes, flechasMes, flechasSemana, lunesDe, lunesParaMes, mesAcotado, mesDeSemana, mesEnCuadricula,
+  primerDiaReservable, semana, sumarDias, sumarMeses,
   type Dia, type MesVisto,
 } from './calendario';
 import type { Horario } from './disponibilidad';
@@ -41,32 +41,18 @@ export default function PasoCuando(p: PasoCuandoProps) {
     setEnfocar(null);
   }, [enfocar]);
 
-  // "Ver mes" nunca abre un mes que queda entero fuera de lo reservable (el jueves de la semana puede caer en otro mes)
-  const acotarMes = (m: MesVisto): MesVisto => {
-    const h = deIso(p.hoy);
-    const t = deIso(sumarDias(p.hoy, DIAS_MAXIMOS));
-    const n = m.anio * 12 + m.mes;
-    if (n < h.getFullYear() * 12 + h.getMonth()) return { anio: h.getFullYear(), mes: h.getMonth() };
-    if (n > t.getFullYear() * 12 + t.getMonth()) return { anio: t.getFullYear(), mes: t.getMonth() };
-    return m;
-  };
-
   const flechas = vista === 'semana' ? flechasSemana(lunes, p.hoy) : flechasMes(mes, p.hoy);
   const unidad = vista === 'semana' ? 'Semana' : 'Mes';
   const mover = (n: -1 | 1) => (vista === 'semana' ? setLunes((l) => sumarDias(l, 7 * n)) : setMes((m) => sumarMeses(m, n)));
   const alternarVista = () => {
     if (vista === 'semana') {
-      setMes(acotarMes(mesDeSemana(lunes)));
+      // "Ver mes" nunca abre un mes que queda fuera de lo reservable (el jueves de la semana puede caer en otro mes)
+      setMes(mesAcotado(mesDeSemana(lunes), p.hoy));
       setVista('mes');
     } else {
-      // "Ver semana" sigue al mes que se estaba mirando: si la semana no es de ese mes, se va a su primer día reservable
+      // "Ver semana" sigue al mes que se estaba mirando: si la semana no es de ese mes, va a una semana de ese mes
       const deLaSemana = mesDeSemana(lunes);
-      if (deLaSemana.anio !== mes.anio || deLaSemana.mes !== mes.mes) {
-        const primero = `${mes.anio}-${String(mes.mes + 1).padStart(2, '0')}-01`;
-        let dia = primero < p.hoy ? primerDiaReservable(p.hoy) : primero;
-        if (deIso(dia).getDay() === 0) dia = sumarDias(dia, 1);
-        setLunes(lunesDe(dia));
-      }
+      if (deLaSemana.anio !== mes.anio || deLaSemana.mes !== mes.mes) setLunes(lunesParaMes(mes, p.hoy));
       setVista('semana');
     }
   };
