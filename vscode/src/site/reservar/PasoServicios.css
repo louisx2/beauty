@@ -56,6 +56,7 @@
 .s-pkc b{ display:block; margin-bottom:4px; font:400 18px/1.2 var(--s-f-display); overflow-wrap:anywhere }
 .s-pkc > span{ font-size:12.5px; color:var(--s-soft) }
 .s-pkc .s-ovalos{ margin-top:10px }
+.s-pkc.is-on .s-ovalos span{ color:var(--s-text) }
 .s-pkgs + .s-pick{ margin-top:16px }
 
 @media (min-width: 761px){
