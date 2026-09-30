@@ -32,7 +32,7 @@ la fase anterior.
 | 3 | `2026-09-29-rediseno-fase-3-paquetes.md` | Los otros 2 estilos de paquetes (Membresía y Ahorro), `settings.estilo_paquetes` y la tarjeta "Página web" del panel (spec §6.4) | Cambiar el estilo en el panel cambia la landing; el % de ahorro está probado |
 | 4 | `2026-09-29-rediseno-fase-4-equipo.md` | Equipo desde `staff`: columnas nuevas con su `grant select (col) to anon`, campos en la página Equipo, sección en la landing (spec §6.5) y una sola lista de secciones presentes | Marcar a alguien en el panel lo muestra en la web; si no hay nadie, la sección no aparece |
 | 5 | `2026-09-29-rediseno-fase-5-reservar.md` | `/reservar` en 3 pasos: lógica en `useBooking` sin cambiar su comportamiento, calendario de semana/mes a 90 días, resumen o barra fija y confirmación (spec §6.1–6.2) | Pasan los 6 casos de reserva de la spec §10 |
-| 6 | se escribe al empezar | `/mis-citas` nueva con `get_client_packages` y "Mis paquetes" (spec §6.3) | Búsqueda, cancelación de 12 h y saldo de paquetes funcionan con datos de prueba |
+| 6 | `2026-09-30-rediseno-fase-6-mis-citas.md` | `/mis-citas` nueva con `get_client_packages` y "Mis paquetes" (spec §6.3) | Búsqueda, cancelación de 12 h y saldo de paquetes funcionan con datos de prueba |
 | 7 | se escribe al empezar | Calidad: revisión completa, **conservar el diseño anterior** en `src/legacy/` con rutas `/diseno-anterior…` (spec §8) y prueba en los aparatos de Louis | Lista de la spec §3.8 en verde, el diseño viejo abre en sus rutas y Louis aprueba en su teléfono |
 
 **El diseño viejo NO se borra** (pedido de Louis): antes de fusionar la Fase 2, que es la primera
@@ -121,6 +121,27 @@ componentes viejos se mueven a `src/legacy/` en lugar de borrarse (spec §8).
   - `numeroWhatsApp` (`reservar/datos.ts`) normaliza el número para `wa.me`;
   - `/reservar?paquete=<id>` ya abre con el paquete elegido;
   - `--s-warn` y `--s-bad` ya existen en `tokens.css`, y falta `--s-ok`.
+
+**Lo que dejó la Fase 6** (de la revisión final; no bloquean):
+- **Prueba pendiente en el teléfono y el iPad de Louis.** El panel del navegador estaba oculto, así que no se vieron capturas ni
+  desplazamientos. Hay que revisar:
+  - que la página baje a los resultados después de "Ver mis citas";
+  - cómo se ven las tarjetas en los dos temas;
+  - "Recordar mi número" al cerrar y abrir el navegador.
+- **Teléfonos:**
+  - Las citas se buscan con todos los dígitos iguales, pero los paquetes usan `telefono_clave` (los últimos 10). La recepción
+    guarda el teléfono tal como se escribe (por ejemplo "+1 809…"), y esas citas no aparecen en Mis citas. Hay que pasar
+    `get_client_appointments`, `get_client_appointment_services` y `cancel_client_appointment` a `telefono_clave` juntas, o
+    normalizar el campo de la recepción.
+  - `formatoTelefono` (`reservar/datos.ts`) se queda con los primeros 10 dígitos: pegar "+1 829…" da un número equivocado.
+    Hay que quitar el 1 cuando llegan 11 dígitos (afecta también a `/reservar`).
+  - **Antes de entregar:** revisar que en los datos reales no haya clientas con un número de relleno (809-000-0000). Quien lo
+    escriba vería los paquetes de todas ellas.
+- **Paquetes terminados:** la ventana de 90 días busca la última sesión por `service_id`. Las citas guardadas sin servicio no
+  cuentan, así que un paquete viejo terminado hace poco puede no salir. Una columna `completed_at` que llene el panel lo
+  arreglaría.
+- **Detalles:** el historial no muestra el año; una cita "En curso" pasa al historial al llegar su hora; el resumen cuenta las
+  canceladas como "visitas"; el botón "Ver mis citas" sube un poco al pasar el mouse mientras busca.
 
 **Notas de la base de datos** (ver la memoria `roles-y-rls`):
 - anon solo lee columnas autorizadas de `staff` y `schedule_blocks`. Toda consulta pública debe nombrar

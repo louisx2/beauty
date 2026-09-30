@@ -52,7 +52,7 @@ export default function Confirmacion({ cita, deposito, cuentas, whatsapp, mensaj
       <section className="s-ticket" aria-label="Tu cita">
         <div className="s-tk-h">
           <b>{fechaTitulo(cita.fecha)}</b>
-          <span className="s-estado"><i aria-hidden="true" />Pendiente de depósito</span>
+          <span className="s-estado is-warn"><i aria-hidden="true" />Pendiente de depósito</span>
         </div>
         <dl className="s-tk-b">
           <div><dt>Hora</dt><dd>{rangoHoras(cita.hora, cita.duracionTotal)}</dd></div>
