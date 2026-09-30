@@ -122,6 +122,27 @@ componentes viejos se mueven a `src/legacy/` en lugar de borrarse (spec §8).
   - `/reservar?paquete=<id>` ya abre con el paquete elegido;
   - `--s-warn` y `--s-bad` ya existen en `tokens.css`, y falta `--s-ok`.
 
+**Lo que dejó la Fase 6** (de la revisión final; no bloquean):
+- **Prueba pendiente en el teléfono y el iPad de Louis.** El panel del navegador estaba oculto, así que no se vieron capturas ni
+  desplazamientos. Hay que revisar:
+  - que la página baje a los resultados después de "Ver mis citas";
+  - cómo se ven las tarjetas en los dos temas;
+  - "Recordar mi número" al cerrar y abrir el navegador.
+- **Teléfonos:**
+  - Las citas se buscan con todos los dígitos iguales, pero los paquetes usan `telefono_clave` (los últimos 10). La recepción
+    guarda el teléfono tal como se escribe (por ejemplo "+1 809…"), y esas citas no aparecen en Mis citas. Hay que pasar
+    `get_client_appointments`, `get_client_appointment_services` y `cancel_client_appointment` a `telefono_clave` juntas, o
+    normalizar el campo de la recepción.
+  - `formatoTelefono` (`reservar/datos.ts`) se queda con los primeros 10 dígitos: pegar "+1 829…" da un número equivocado.
+    Hay que quitar el 1 cuando llegan 11 dígitos (afecta también a `/reservar`).
+  - **Antes de entregar:** revisar que en los datos reales no haya clientas con un número de relleno (809-000-0000). Quien lo
+    escriba vería los paquetes de todas ellas.
+- **Paquetes terminados:** la ventana de 90 días busca la última sesión por `service_id`. Las citas guardadas sin servicio no
+  cuentan, así que un paquete viejo terminado hace poco puede no salir. Una columna `completed_at` que llene el panel lo
+  arreglaría.
+- **Detalles:** el historial no muestra el año; una cita "En curso" pasa al historial al llegar su hora; el resumen cuenta las
+  canceladas como "visitas"; el botón "Ver mis citas" sube un poco al pasar el mouse mientras busca.
+
 **Notas de la base de datos** (ver la memoria `roles-y-rls`):
 - anon solo lee columnas autorizadas de `staff` y `schedule_blocks`. Toda consulta pública debe nombrar
   sus columnas, y una columna nueva necesita su propio `grant select (col) ... to anon`.
