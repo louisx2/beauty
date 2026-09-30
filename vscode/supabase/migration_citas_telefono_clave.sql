@@ -44,3 +44,10 @@ begin
   return v_count > 0;
 end;
 $$;
+
+revoke all on function public.get_client_appointments(text) from public;
+revoke all on function public.get_client_appointment_services(text) from public;
+revoke all on function public.cancel_client_appointment(uuid, text) from public;
+grant execute on function public.get_client_appointments(text) to anon, authenticated;
+grant execute on function public.get_client_appointment_services(text) to anon, authenticated;
+grant execute on function public.cancel_client_appointment(uuid, text) to anon, authenticated;
