@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   duracionTexto, fechaLarga, fechaTitulo, lineasResumen, mensajeWhatsApp, rangoHoras, textoBarra,
 } from '../src/site/reservar/resumen.ts';
-import { formatoTelefono, validarDatos } from '../src/site/reservar/datos.ts';
+import { formatoTelefono, numeroWhatsApp, validarDatos } from '../src/site/reservar/datos.ts';
 import { repartirDesde, type Elegido, type Especialista } from '../src/site/reservar/disponibilidad.ts';
 
 const L_S = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
@@ -79,4 +79,10 @@ test('datos: nombre y los 10 dígitos del WhatsApp', () => {
     telefono: 'Escribe los 10 dígitos de tu WhatsApp.',
   });
   assert.deepEqual(validarDatos('  María ', '829-555-0102'), {});
+});
+
+test('número de WhatsApp para wa.me: solo dígitos y con el 1 del país', () => {
+  assert.equal(numeroWhatsApp('829-322-4014'), '18293224014');
+  assert.equal(numeroWhatsApp('18293224014'), '18293224014');
+  assert.equal(numeroWhatsApp('+1 (829) 322-4014'), '18293224014');
 });

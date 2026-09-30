@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { BankAccount } from '../../store/settingsStore';
 import { formatoRD } from '../landing/catalogo';
+import { numeroWhatsApp } from './datos';
 import { fechaTitulo, lineasResumen, rangoHoras } from './resumen';
 import { nombreVisible } from './servicios';
 import type { Confirmada } from './useBooking';
@@ -20,16 +21,25 @@ export interface ConfirmacionProps {
 /** ¡Tu cita está pre-reservada! Boleta, depósito con "Copiar" y los tres pasos que siguen (spec §6.2). */
 export default function Confirmacion({ cita, deposito, cuentas, whatsapp, mensaje, onOtra }: ConfirmacionProps) {
   const titulo = useRef<HTMLHeadingElement>(null);
-  const [copiada, setCopiada] = useState<number | null>(null);
+  const [copia, setCopia] = useState<{ i: number; ok: boolean } | null>(null);
+  const reloj = useRef<number | undefined>(undefined);
   const lineas = lineasResumen([], [], cita.hora, cita.plan);
 
   // quien usa lector de pantalla llega directo a la noticia
   useEffect(() => { titulo.current?.focus(); }, []);
+  useEffect(() => () => window.clearTimeout(reloj.current), []);
 
-  const copiar = (texto: string, i: number) => {
-    navigator.clipboard?.writeText(texto).catch(() => {});
-    setCopiada(i);
-    window.setTimeout(() => setCopiada((c) => (c === i ? null : c)), 2000);
+  const copiar = async (texto: string, i: number) => {
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(texto);
+      ok = true;
+    } catch {
+      ok = false; // sin permiso o sin portapapeles (algunos navegadores dentro de Instagram): que lo copie a mano
+    }
+    setCopia({ i, ok });
+    window.clearTimeout(reloj.current);
+    reloj.current = window.setTimeout(() => setCopia(null), 2500);
   };
 
   return (
@@ -68,14 +78,14 @@ export default function Confirmacion({ cita, deposito, cuentas, whatsapp, mensaj
                 {c.account_number}
                 <button type="button" onClick={() => copiar(c.account_number, i)}
                   aria-label={`Copiar el número de cuenta ${c.account_number}`}>
-                  {copiada === i ? 'Copiado' : 'Copiar'}
+                  {copia?.i === i ? (copia.ok ? 'Copiado' : 'Cópialo a mano') : 'Copiar'}
                 </button>
               </span>
             </div>
             <div><span>A nombre de</span>{c.account_name}</div>
           </div>
         ))}
-        <p className="s-sr" aria-live="polite">{copiada !== null ? 'Número de cuenta copiado' : ''}</p>
+        <p className="s-sr" aria-live="polite">{copia ? (copia.ok ? `Número de cuenta ${cuentas[copia.i]?.account_number ?? ''} copiado` : 'No se pudo copiar; cópialo a mano') : ''}</p>
       </section>
 
       <ol className="s-next3">
@@ -85,7 +95,7 @@ export default function Confirmacion({ cita, deposito, cuentas, whatsapp, mensaj
       </ol>
 
       <div className="s-conf-btns">
-        <a className="s-btn s-btn-solid" href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(mensaje)}`}
+        <a className="s-btn s-btn-solid" href={`https://wa.me/${numeroWhatsApp(whatsapp)}?text=${encodeURIComponent(mensaje)}`}
           target="_blank" rel="noopener noreferrer">Enviar comprobante por WhatsApp</a>
         <Link className="s-btn s-btn-line" to="/mis-citas">Ver mis citas</Link>
       </div>

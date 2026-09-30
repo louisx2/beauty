@@ -17,3 +17,9 @@ export function validarDatos(nombre: string, telefono: string): ErroresDatos {
   if (telefono.replace(/\D/g, '').length !== 10) errores.telefono = 'Escribe los 10 dígitos de tu WhatsApp.';
   return errores;
 }
+
+/** Número para wa.me: solo dígitos; con 10 dígitos (como lo guarda el panel, "829-322-4014") se antepone el 1 del país. */
+export function numeroWhatsApp(raw: string): string {
+  const digitos = raw.replace(/\D/g, '');
+  return digitos.length === 10 ? `1${digitos}` : digitos;
+}
