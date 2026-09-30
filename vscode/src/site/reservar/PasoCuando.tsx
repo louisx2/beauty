@@ -1,7 +1,8 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { format12h } from '../../lib/timeFormat';
 import {
-  DIAS_MAXIMOS, deIso, etiquetaMes, flechasMes, flechasSemana, lunesDe, mesDeSemana, mesEnCuadricula, semana, sumarDias, sumarMeses,
+  DIAS_MAXIMOS, deIso, etiquetaMes, flechasMes, flechasSemana, lunesDe, mesDeSemana, mesEnCuadricula, primerDiaReservable,
+  semana, sumarDias, sumarMeses,
   type Dia, type MesVisto,
 } from './calendario';
 import type { Horario } from './disponibilidad';
@@ -28,8 +29,17 @@ const MOTIVO = { domingo: 'cerrado', pasado: 'ya pasó', lejos: 'todavía no se 
 /** Paso 2 (spec §6.1): tira de 7 días con flechas, "Ver mes" y las horas en Mañana y Tarde. */
 export default function PasoCuando(p: PasoCuandoProps) {
   const [vista, setVista] = useState<'semana' | 'mes'>('semana');
-  const [lunes, setLunes] = useState(() => lunesDe(p.fecha || p.hoy));
-  const [mes, setMes] = useState<MesVisto>(() => mesDeSemana(lunesDe(p.fecha || p.hoy)));
+  // sin día elegido, la tira abre en el primer día reservable (un domingo, la semana que sigue no está toda apagada)
+  const [lunes, setLunes] = useState(() => lunesDe(p.fecha || primerDiaReservable(p.hoy)));
+  const [mes, setMes] = useState<MesVisto>(() => mesDeSemana(lunesDe(p.fecha || primerDiaReservable(p.hoy))));
+  // día de la tira que debe recibir el foco después de pintarse (al elegir en el mes, el botón tocado desaparece)
+  const [enfocar, setEnfocar] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!enfocar) return;
+    document.querySelector<HTMLButtonElement>(`[data-iso="${enfocar}"]`)?.focus();
+    setEnfocar(null);
+  }, [enfocar]);
 
   // "Ver mes" nunca abre un mes que queda entero fuera de lo reservable (el jueves de la semana puede caer en otro mes)
   const acotarMes = (m: MesVisto): MesVisto => {
@@ -49,6 +59,14 @@ export default function PasoCuando(p: PasoCuandoProps) {
       setMes(acotarMes(mesDeSemana(lunes)));
       setVista('mes');
     } else {
+      // "Ver semana" sigue al mes que se estaba mirando: si la semana no es de ese mes, se va a su primer día reservable
+      const deLaSemana = mesDeSemana(lunes);
+      if (deLaSemana.anio !== mes.anio || deLaSemana.mes !== mes.mes) {
+        const primero = `${mes.anio}-${String(mes.mes + 1).padStart(2, '0')}-01`;
+        let dia = primero < p.hoy ? primerDiaReservable(p.hoy) : primero;
+        if (deIso(dia).getDay() === 0) dia = sumarDias(dia, 1);
+        setLunes(lunesDe(dia));
+      }
       setVista('semana');
     }
   };
@@ -58,14 +76,19 @@ export default function PasoCuando(p: PasoCuandoProps) {
     if (vista === 'mes') {
       setLunes(lunesDe(iso));
       setVista('semana');
+      setEnfocar(iso);
     }
   };
+
+  // el nombre accesible empieza con el texto visible ("Jue 1 oct") y sigue con el largo, así la voz del usuario coincide
+  const nombreDia = (d: Dia) =>
+    `${d.corto} ${d.numero} ${d.mes}, ${fechaLarga(d.iso)}${d.esHoy ? ', hoy' : ''}${d.motivo ? `, ${MOTIVO[d.motivo]}` : ''}`;
 
   const boton = (d: Dia, clase: string, contenido: ReactNode) => (
     <button key={d.iso} type="button"
       className={`${clase} ${d.iso === p.fecha ? 'is-on' : ''} ${d.esHoy ? 'is-hoy' : ''}`}
-      disabled={d.motivo !== null} aria-pressed={d.iso === p.fecha}
-      aria-label={`${fechaLarga(d.iso)}${d.motivo ? `, ${MOTIVO[d.motivo]}` : ''}`}
+      data-iso={d.iso} disabled={d.motivo !== null} aria-pressed={d.iso === p.fecha}
+      aria-label={nombreDia(d)}
       onClick={() => elegir(d.iso)}>
       {contenido}
     </button>
@@ -73,6 +96,19 @@ export default function PasoCuando(p: PasoCuandoProps) {
 
   const manana = p.horarios.filter((h) => h.hora < '12:00');
   const tarde = p.horarios.filter((h) => h.hora >= '12:00');
+
+  const textoSinHuecos = p.variosServicios
+    ? 'Ese día no hay un hueco donde quepan todos los servicios seguidos. Prueba otra fecha o quita alguno.'
+    : 'No hay horarios libres para esta fecha. Prueba otro día.';
+  // un solo aviso para el lector de pantalla, siempre en la página: así sí se anuncian los cambios
+  const libres = p.horarios.filter((h) => h.plan).length;
+  const anuncio = !p.fecha
+    ? ''
+    : p.cargando
+      ? 'Buscando horarios disponibles'
+      : p.sinHuecos
+        ? textoSinHuecos
+        : `${libres} ${libres === 1 ? 'hora libre' : 'horas libres'} el ${fechaLarga(p.fecha)}`;
 
   return (
     <>
@@ -108,13 +144,9 @@ export default function PasoCuando(p: PasoCuandoProps) {
         {!p.fecha ? (
           <p className="s-hint">Elige un día para ver las horas libres. Puedes moverte por semanas con las flechas o ver el mes completo.</p>
         ) : p.cargando ? (
-          <p className="s-hint" role="status">Buscando horarios disponibles…</p>
+          <p className="s-hint">Buscando horarios disponibles…</p>
         ) : p.sinHuecos ? (
-          <p className="s-aviso" role="status">
-            {p.variosServicios
-              ? 'Ese día no hay un hueco donde quepan todos los servicios seguidos. Prueba otra fecha o quita alguno.'
-              : 'No hay horarios libres para esta fecha. Prueba otro día.'}
-          </p>
+          <p className="s-aviso">{textoSinHuecos}</p>
         ) : (
           <>
             <Grupo titulo="Mañana" horas={manana} hora={p.hora} onHora={p.onHora} />
@@ -123,6 +155,7 @@ export default function PasoCuando(p: PasoCuandoProps) {
           </>
         )}
       </div>
+      <p className="s-sr" aria-live="polite">{anuncio}</p>
     </>
   );
 }

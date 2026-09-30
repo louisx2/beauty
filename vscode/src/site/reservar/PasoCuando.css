@@ -1,6 +1,6 @@
 /* Paso 2 de /reservar: semana, mes y horas (boceto citas-v2, #sec2). Celular primero. */
 .s-cal-h{ display:flex; align-items:center; gap:8px; margin-bottom:14px }
-.s-cal-mes{ flex:1; min-width:0; display:flex; align-items:center; gap:8px; min-height:44px; padding:0; border:0; background:none; text-align:left }
+.s-cal-mes{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-height:44px; padding:0; border:0; background:none; text-align:left }
 .s-cal-mes b{ min-width:0; font:400 18px var(--s-f-display); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
 .s-cal-mes span{ flex-shrink:0; padding:4px 8px; border-radius:999px; border:1px solid var(--s-line); font:500 10px var(--s-f-body); letter-spacing:.12em; text-transform:uppercase; color:var(--s-accent); white-space:nowrap }
 .s-cal-arr{ display:grid; place-items:center; width:44px; height:44px; flex-shrink:0; border-radius:50%; border:1px solid var(--s-line); background:none; font-size:18px; line-height:1 }
@@ -33,7 +33,7 @@
 
 @media (min-width: 761px){
   .s-cal-h{ gap:10px }
-  .s-cal-mes{ gap:12px }
+  .s-cal-mes{ flex-direction:row; align-items:center; gap:12px }
   .s-cal-mes b{ font-size:22px }
   .s-cal-mes span{ padding:5px 11px; font-size:11.5px }
   .s-dias{ gap:8px }

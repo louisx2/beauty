@@ -51,6 +51,13 @@ export function motivoNoReservable(iso: string, hoy: string, max = DIAS_MAXIMOS)
   return null;
 }
 
+/** El primer día que se puede reservar desde hoy (si hoy es domingo, el lunes). */
+export function primerDiaReservable(hoy: string): string {
+  let d = hoy;
+  for (let i = 0; i <= DIAS_MAXIMOS && motivoNoReservable(d, hoy) !== null; i++) d = sumarDias(d, 1);
+  return d;
+}
+
 export interface Dia {
   iso: string;
   /** "Lun" */

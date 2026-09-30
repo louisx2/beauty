@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DIAS_MAXIMOS, deIso, diasEntre, etiquetaMes, flechasMes, flechasSemana, isoLocal, lunesDe, mesDeSemana,
-  mesEnCuadricula, motivoNoReservable, semana, sumarDias, sumarMeses,
+  mesEnCuadricula, motivoNoReservable, primerDiaReservable, semana, sumarDias, sumarMeses,
 } from '../src/site/reservar/calendario.ts';
 
 // "hoy" en las pruebas: martes 29 de septiembre de 2026
@@ -29,6 +29,11 @@ test('se reserva desde hoy hasta 90 días; nunca un domingo ni un día pasado', 
   assert.equal(motivoNoReservable('2026-10-04', HOY), 'domingo');
   assert.equal(motivoNoReservable('2026-12-28', HOY), null);
   assert.equal(motivoNoReservable('2026-12-29', HOY), 'lejos');
+});
+
+test('el primer día reservable: hoy, o el lunes si hoy es domingo', () => {
+  assert.equal(primerDiaReservable('2026-09-29'), '2026-09-29');
+  assert.equal(primerDiaReservable('2026-10-04'), '2026-10-05');
 });
 
 test('semana: siete días con su nombre corto, número, mes y motivo', () => {
