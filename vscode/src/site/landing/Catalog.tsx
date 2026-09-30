@@ -80,6 +80,7 @@ export default function Catalog({ catalogo, elegida, onElegir, pedido }: Props) 
   // un destacado pidió esta especialidad: se elige su familia, se abre y la pantalla baja hasta ella
   useEffect(() => {
     if (!pedido) return;
+    setAnuncio(''); // así el próximo clic en una especialidad siempre se anuncia, aunque repita el texto de antes
     const fam = catalogo.find((c) => c.id === elegida)?.familia;
     if (fam) setFamilia(fam);
     setAbiertaMovil(elegida);

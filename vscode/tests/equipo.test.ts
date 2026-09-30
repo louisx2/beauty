@@ -60,8 +60,9 @@ test('equipo: los títulos no cuentan para ordenar ("Dra. Nadieska Soto" va con 
     fila({ id: '1', name: 'Paola Jiménez' }),
     fila({ id: '2', name: 'Dra. Nadieska Soto' }),
     fila({ id: '3', name: 'Carmen Rodríguez' }),
+    fila({ id: '4', name: 'Lucía Ramos' }),
   ]);
-  assert.deepEqual(r.map((m) => m.nombre), ['Carmen Rodríguez', 'Dra. Nadieska Soto', 'Paola Jiménez']);
+  assert.deepEqual(r.map((m) => m.nombre), ['Carmen Rodríguez', 'Lucía Ramos', 'Dra. Nadieska Soto', 'Paola Jiménez']);
 });
 
 test('equipo: textos en blanco quedan en null y una foto en blanco no cuenta', () => {
