@@ -98,6 +98,30 @@ componentes viejos se mueven a `src/legacy/` en lugar de borrarse (spec §8).
   - revisa el tema claro;
   - sube una foto vertical del teléfono.
 
+**Lo que dejó la Fase 5** (de la revisión final; no bloquean):
+- **Prueba pendiente en el teléfono y el iPad de Louis.** El panel del navegador no dejó comprobar los desplazamientos.
+  Hay que revisar:
+  - que la página baje a cada paso ("Continuar", el error de datos y la hora ocupada);
+  - que se pueda deslizar la página pasando por encima de la lista de servicios;
+  - la barra de abajo con el teclado abierto;
+  - el botón del resumen en el iPad acostado (1180 px).
+- **Contenido para Louis:**
+  - "Diseño de Cejas" (RD$ 600) y el "Depilación Laser Brasileño" repetido no están en el menú de la página, así que salen
+    solo en "Todos" y en el buscador. Hay que sumarlos al menú (`servicesMenu.ts`), o unirlos o desactivarlos en el panel.
+  - El nombre del servicio de un paquete se guarda como "Paquete: Paquete …". La página ya lo muestra limpio.
+- **Cuenta de ejemplo:** si la configuración no carga, la confirmación muestra la cuenta de ejemplo (123456789). Viene de
+  antes. Conviene ocultarla usando `cargado` del store.
+- **Pendientes chicos:**
+  - "Ver semana" desde un mes que empieza viernes o sábado muestra la semana del mes anterior;
+  - el día 90, si cae domingo 1 de mes, deja una semana toda apagada;
+  - el WhatsApp sigue elevado en la confirmación;
+  - `hoy` no cambia si la pestaña queda abierta pasada la medianoche.
+- **Para la Fase 6:**
+  - `useSeccionesPresentes` (`header/usePresencia.ts`) da el menú fuera de la página principal;
+  - `numeroWhatsApp` (`reservar/datos.ts`) normaliza el número para `wa.me`;
+  - `/reservar?paquete=<id>` ya abre con el paquete elegido;
+  - `--s-warn` y `--s-bad` ya existen en `tokens.css`, y falta `--s-ok`.
+
 **Notas de la base de datos** (ver la memoria `roles-y-rls`):
 - anon solo lee columnas autorizadas de `staff` y `schedule_blocks`. Toda consulta pública debe nombrar
   sus columnas, y una columna nueva necesita su propio `grant select (col) ... to anon`.
