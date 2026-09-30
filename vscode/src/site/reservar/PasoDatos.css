@@ -2,7 +2,7 @@
 .s-campos{ display:grid; gap:16px }
 .s-campo{ min-width:0 }
 .s-campo label{ display:block; margin-bottom:7px; font-size:12.5px; color:var(--s-soft) }
-.s-campo input, .s-campo textarea{ width:100%; min-height:50px; padding:0 16px; border-radius:14px; border:1px solid var(--s-line); background:var(--s-input); color:var(--s-text); font:400 16px var(--s-f-body) }
+.s-campo input, .s-campo textarea{ width:100%; min-height:50px; padding:0 16px; border-radius:14px; border:1px solid var(--s-faint); background:var(--s-input); color:var(--s-text); font:400 16px var(--s-f-body) }
 .s-campo textarea{ min-height:96px; padding:14px 16px; line-height:1.5; resize:vertical }
 .s-campo input::placeholder, .s-campo textarea::placeholder{ color:var(--s-faint) }
 .s-campo input[aria-invalid="true"]{ border-color:var(--s-bad) }

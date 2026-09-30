@@ -25,7 +25,7 @@
 .s-av img, .s-av i{ display:grid; place-items:center; width:30px; height:30px; flex-shrink:0; border-radius:50%; object-fit:cover; object-position:50% 18%; background:var(--s-arch-bg); font-style:normal; font-size:11px; color:var(--s-text) }
 .s-av.is-on{ border-color:var(--s-accent); background:var(--s-chip-on); color:var(--s-chip-on-fg) }
 
-.s-buscar{ display:flex; align-items:center; gap:10px; min-height:48px; margin-bottom:14px; padding:0 16px; border-radius:14px; border:1px solid var(--s-line); background:var(--s-input) }
+.s-buscar{ display:flex; align-items:center; gap:10px; min-height:48px; margin-bottom:14px; padding:0 16px; border-radius:14px; border:1px solid var(--s-faint); background:var(--s-input) }
 .s-buscar svg{ width:17px; height:17px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:2; opacity:.7 }
 .s-buscar input{ flex:1; min-width:0; height:46px; border:0; background:none; color:var(--s-text); font:400 16px var(--s-f-body); outline:none }
 .s-buscar input::placeholder{ color:var(--s-faint) }
