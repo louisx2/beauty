@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useSettingsStore } from '../../store/settingsStore';
 import { isoLocal } from './calendario';
@@ -26,7 +26,7 @@ export interface FormReserva {
 }
 /** Lo que queda al pre-reservar, para la confirmación. */
 export interface Confirmada { fecha: string; hora: string; plan: LineaPlan[]; nombre: string; duracionTotal: number }
-export type ResultadoEnvio = 'ok' | 'ocupado' | 'error' | 'incompleto';
+export type ResultadoEnvio = 'ok' | 'ocupado' | 'error' | 'incompleto' | 'pasada';
 
 const FORM_VACIO: FormReserva = { name: '', phone: '', serviceId: '', packageId: '', staffId: '', date: '', time: '', notes: '' };
 const HORA_OCUPADA = 'Ese horario se acaba de ocupar. Por favor elige otra hora.';
@@ -51,6 +51,8 @@ export function useBooking() {
   const [confirmada, setConfirmada] = useState<Confirmada | null>(null);
   const [bookingError, setBookingError] = useState('');
   const [whatsappMsg, setWhatsappMsg] = useState('');
+  /** Un doble toque en "Solicitar" no guarda la cita dos veces (el estado `sending` llega tarde). */
+  const enviandoRef = useRef(false);
 
   useEffect(() => {
     fetchSettings();
@@ -203,22 +205,27 @@ export function useBooking() {
     if (!planElegido || !form.time) return 'incompleto';
     if (form.date < isoLocal(new Date())) {
       setBookingError('No puedes reservar una cita en una fecha pasada.');
-      return 'error';
+      return 'pasada';
     }
+    if (enviandoRef.current) return 'incompleto';
+    enviandoRef.current = true;
 
     setSending(true);
     setBookingError('');
     try {
       // La lista de horarios se cargó hace rato: alguien pudo tomar la hora mientras la clienta llenaba el
       // formulario. Se relee antes de guardar.
-      const frescos = await Promise.all(
-        planElegido.map((linea) =>
-          supabase
-            .rpc('get_busy_slots', { p_date: form.date, p_employee: linea.staff.name })
-            .then(({ data }) => [linea.staff.id, (data as Ocupado[]) ?? []] as const),
-        ),
-      );
-      const agendaFresca = Object.fromEntries(frescos);
+      const leerAgendaFresca = async () => {
+        const frescos = await Promise.all(
+          planElegido.map((linea) =>
+            supabase
+              .rpc('get_busy_slots', { p_date: form.date, p_employee: linea.staff.name })
+              .then(({ data }) => [linea.staff.id, (data as Ocupado[]) ?? []] as const),
+          ),
+        );
+        return Object.fromEntries(frescos);
+      };
+      const agendaFresca = await leerAgendaFresca();
       if (chocaConAgenda(planElegido, form.time, agendaFresca)) {
         setBusyByStaff((prev) => ({ ...prev, ...agendaFresca }));
         setForm((prev) => ({ ...prev, time: '' }));
@@ -252,6 +259,9 @@ export function useBooking() {
         // 23P01 = la base rechazó la cita porque otra persona tomó ese horario en el mismo instante.
         // Es el único caso que la clienta puede resolver.
         if (error.code === '23P01') {
+          // La agenda que se ve quedó vieja: se relee para que esa hora se vea ocupada (solo cambia lo que se muestra)
+          const fresca = await leerAgendaFresca();
+          setBusyByStaff((prev) => ({ ...prev, ...fresca }));
           setForm((prev) => ({ ...prev, time: '' }));
           setBookingError(HORA_OCUPADA);
           return 'ocupado';
@@ -273,6 +283,7 @@ export function useBooking() {
       setSuccess(true);
       return 'ok';
     } finally {
+      enviandoRef.current = false;
       setSending(false);
     }
   }, [planElegido, form]);
