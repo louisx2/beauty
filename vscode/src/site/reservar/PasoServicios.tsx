@@ -109,7 +109,11 @@ export default function PasoServicios(p: PasoServiciosProps) {
             {p.cargando ? (
               <p className="s-vacio">Cargando servicios…</p>
             ) : lista.length === 0 ? (
-              <p className="s-vacio">No encontramos ese servicio. Prueba con otra palabra o escríbenos por WhatsApp.</p>
+              <p className="s-vacio">
+                {p.servicios.length === 0
+                  ? 'No pudimos cargar los servicios. Revisa tu conexión o escríbenos por WhatsApp.'
+                  : 'No encontramos ese servicio. Prueba con otra palabra o escríbenos por WhatsApp.'}
+              </p>
             ) : (
               lista.map((s) => {
                 const on = p.picks.some((x) => x.serviceId === s.id);

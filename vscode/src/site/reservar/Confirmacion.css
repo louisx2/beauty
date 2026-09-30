@@ -21,7 +21,7 @@
 
 .s-banco{ margin-bottom:22px; padding:22px 24px; border-radius:26px; border:1px solid var(--s-accent); background:var(--s-surface-2); text-align:left }
 .s-banco-h{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px }
-.s-banco-h h2{ margin:0 }
+.s-banco-h h2{ margin:0; color:var(--s-text) }
 .s-banco-h b{ font:400 26px var(--s-f-display); color:var(--s-accent) }
 .s-cuenta{ display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:14px 0; border-top:1px solid var(--s-line); font-size:14px; align-items:center; overflow-wrap:anywhere }
 .s-cuenta > div:last-child{ grid-column:1 / -1 }
