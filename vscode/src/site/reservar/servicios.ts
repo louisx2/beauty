@@ -17,14 +17,14 @@ export interface ServicioReserva {
   categoria: string | null;
 }
 
-/** "Depilación Láser - Axilas" → "Depilación Láser · Axilas" */
+/** "Depilación Láser - Axilas" → "Depilación Láser · Axilas"; "Paquete: Paquete X" → "Paquete X" (solo lo que se ve). */
 export function nombreVisible(nombre: string): string {
-  return nombre.replace(/\s+-\s+/g, ' · ');
+  return nombre.replace(/\s+-\s+/g, ' · ').replace(/^Paquete: (?=Paquete\b)/, '');
 }
 
 /** Sin tildes ni mayúsculas, para que "laser" encuentre "Láser". */
 export function sinTildes(texto: string): string {
-  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
 interface DelMenu { categoria: string; familia: FamiliaId; opcion: string; enTabla: string; orden: number }
@@ -69,10 +69,13 @@ export function serviciosParaReservar(menu: ServiceCategory[], filas: FilaServic
 
 export interface Filtro { texto: string; familia: FamiliaId | 'todas'; categoria: string | null }
 
-/** La especialidad (que viene del catálogo) manda sobre la familia; el texto busca en el nombre, sin tildes. */
+/** La especialidad (que viene del catálogo) manda sobre la familia; el texto busca por palabras en el nombre, sin tildes:
+ *  entra el servicio que las tiene todas, en cualquier orden ("laser axilas" encuentra "Depilación Láser · Axilas"). */
 export function filtrarServicios(lista: ServicioReserva[], { texto, familia, categoria }: Filtro): ServicioReserva[] {
-  const t = sinTildes(texto.trim());
-  return lista.filter((s) =>
-    (categoria ? s.categoria === categoria : familia === 'todas' || s.familia === familia) &&
-    (!t || sinTildes(s.nombre).includes(t)));
+  const palabras = sinTildes(texto).split(/\s+/).filter(Boolean);
+  return lista.filter((s) => {
+    const nombre = sinTildes(s.nombre);
+    return (categoria ? s.categoria === categoria : familia === 'todas' || s.familia === familia) &&
+      palabras.every((w) => nombre.includes(w));
+  });
 }

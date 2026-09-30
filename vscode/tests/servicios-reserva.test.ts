@@ -19,6 +19,7 @@ const por = (id: string) => lista.find((s) => s.id === id)!;
 test('nombre visible: el guion de la tabla se vuelve un punto medio', () => {
   assert.equal(nombreVisible('Depilación Láser - Axilas'), 'Depilación Láser · Axilas');
   assert.equal(nombreVisible('Hidrafacial'), 'Hidrafacial');
+  assert.equal(nombreVisible('Paquete: Paquete Peeling Químico x3'), 'Paquete Peeling Químico x3');
 });
 
 test('sin tildes ni mayúsculas, para buscar', () => {
@@ -51,6 +52,7 @@ test('buscador sin tildes y filtros de familia y especialidad', () => {
   const ids = (f: Parameters<typeof filtrarServicios>[1]) => filtrarServicios(lista, f).map((s) => s.id);
   assert.deepEqual(ids({ texto: 'laser', familia: 'todas', categoria: null }), ['1']);
   assert.deepEqual(ids({ texto: 'CEJAS', familia: 'todas', categoria: null }), ['5', '4']);
+  assert.deepEqual(ids({ texto: 'laser axilas', familia: 'todas', categoria: null }), ['1']);
   assert.deepEqual(ids({ texto: '', familia: 'medicina', categoria: null }), ['3']);
   // la especialidad que viene del catálogo manda sobre la familia
   assert.deepEqual(ids({ texto: '', familia: 'facial', categoria: 'depilacion-laser' }), ['1']);
