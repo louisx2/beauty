@@ -27,6 +27,9 @@ export async function reducirFoto(archivo: File): Promise<File> {
     lienzo.height = alto;
     const ctx = lienzo.getContext('2d');
     if (!ctx) return archivo;
+    // achicado de mejor calidad (sin esto algunos navegadores usan el más rápido y la foto sale con dientes)
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     // fondo blanco primero: un PNG con transparencia no debe quedar negro al pasar a JPEG
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, ancho, alto);

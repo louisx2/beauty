@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
+import { capitalizarNombre } from '../../lib/nombres';
 import './Clients.css';
 
 const SKIN_TYPES = ['Normal', 'Seca', 'Grasa', 'Mixta', 'Sensible'];
@@ -19,11 +20,6 @@ const emptyForm = {
 };
 
 // ── Formatters ──────────────────────────────────────────────
-/** Capitalizes each word: "maria jose" → "Maria Jose" */
-function capitalizeName(val: string) {
-  return val.replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
 /** RD phone format: 3 digits, dash, 3 digits, dash, 4 digits → 829-000-0000 */
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 10);
@@ -311,7 +307,7 @@ export default function Clients() {
                     placeholder="Nombre de la clienta"
                     value={form.name}
                     onChange={(e) => {
-                      setForm({ ...form, name: capitalizeName(e.target.value) });
+                      setForm({ ...form, name: capitalizarNombre(e.target.value) });
                       setErrors({ ...errors, name: undefined });
                     }}
                     className={errors.name ? 'input--error' : ''}
