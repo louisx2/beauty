@@ -169,6 +169,24 @@ componentes viejos se mueven a `src/legacy/` en lugar de borrarse (spec §8).
 - **Detalles:** el historial no muestra el año; una cita "En curso" pasa al historial al llegar su hora; el resumen cuenta las
   canceladas como "visitas"; el botón "Ver mis citas" sube un poco al pasar el mouse mientras busca.
 
+**Lo que dejó la Fase 7** (de la revisión final y de la auditoría; no bloquean):
+- **Decisión sobre las zonas táctiles:** a 360 px los días del calendario (semana y mes) miden unos 41 px de ancho. La
+  tarjeta no da para 44 sin tocar su borde. Desde 390 px pasan de 44, y la tira de la semana tiene 70 px de alto.
+- **Calendario:**
+  - "Ver mes" puede abrir el mes actual sin días libres si hoy es domingo y último día del mes (raro);
+  - "Ver semana" a veces nombra el mes vecino, cuando los únicos días libres del mes caen en esa semana;
+  - un día elegido antes de la medianoche sigue elegido después (al enviar, el aviso de "ya pasó" lo corrige).
+- **Mis citas:**
+  - el resumen cuenta las canceladas como "visitas";
+  - "desde …" de los paquetes no muestra el año;
+  - en celular la fecha del historial con año baja a dos líneas.
+- **Panel:** el formulario de recepción (ReceptionistDashboard) guarda el teléfono tal como se escribe. Citas y Mis citas ya
+  lo encuentran igual, porque se busca por los últimos 10 dígitos.
+- **Para la Entrega:** si la fila de `settings` no tiene cuentas de banco, el store inyecta la cuenta de ejemplo 123456789.
+  Hay que cargar la cuenta real antes de publicar.
+- **Contraste que se revisó a ojo en el teléfono de Louis:** texto claro sobre las fotos de las tarjetas de servicio y
+  sobre la banda final de listones.
+
 **Notas de la base de datos** (ver la memoria `roles-y-rls`):
 - anon solo lee columnas autorizadas de `staff` y `schedule_blocks`. Toda consulta pública debe nombrar
   sus columnas, y una columna nueva necesita su propio `grant select (col) ... to anon`.
