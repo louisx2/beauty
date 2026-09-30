@@ -39,7 +39,7 @@ function Miembro({ m }: { m: MiembroPublico }) {
         ) : m.iniciales ? (
           <span className="s-tm-ini" aria-hidden="true">{m.iniciales}</span>
         ) : (
-          <img src={MONOGRAMA} alt="" />
+          <img src={MONOGRAMA} alt="" width={497} height={839} loading="lazy" />
         )}
       </div>
       <h3 className="s-display s-tm-nombre">{m.nombre}</h3>

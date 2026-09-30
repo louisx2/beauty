@@ -10,7 +10,7 @@ export default function CtaBand() {
   const whatsapp = `https://wa.me/${site.whatsapp}?text=${encodeURIComponent('Hola, quiero agendar una cita')}`;
   return (
     <section className="s-cta" aria-labelledby="s-cta-tit">
-      <img className="s-cta-mono" src={MONOGRAMA} alt="" aria-hidden="true" />
+      <img className="s-cta-mono" src={MONOGRAMA} alt="" aria-hidden="true" width={497} height={839} loading="lazy" />
       <div className="s-wrap s-cta-in s-rv" ref={bloque}>
         <p className="s-eyebrow">Reserva en línea</p>
         <h2 id="s-cta-tit" className="s-display s-h2">¿Lista para tu <em>mejor versión</em>?</h2>

@@ -20,7 +20,7 @@ const reducir = () => window.matchMedia('(prefers-reduced-motion: reduce)').matc
 const altoBarra = () => document.querySelector('.s-nav')?.getBoundingClientRect().height ?? 64;
 
 function Foto({ c, clase }: { c: EspecialidadVista; clase: string }) {
-  if (!c.imagen) return <div className={`s-arco is-ph ${clase}`} aria-hidden="true"><img src={MONOGRAMA} alt="" /></div>;
+  if (!c.imagen) return <div className={`s-arco is-ph ${clase}`} aria-hidden="true"><img src={MONOGRAMA} alt="" width={497} height={839} loading="lazy" /></div>;
   return (
     <div className={`s-arco ${clase}`}>
       <img src={c.imagen} alt="" loading="lazy" style={{ objectPosition: c.posicion ?? '50% 50%' }} />

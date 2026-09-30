@@ -19,9 +19,9 @@ export default function PaquetesMembresia({ paquetes, destacado }: { paquetes: P
           <li key={p.id} className={`s-mc-item ${esDestacado ? 'is-pop' : ''}`}>
             {esDestacado && <span className="s-mc-badge" aria-hidden="true">Más elegido</span>}
             <div className="s-mc">
-              <img className="s-mc-mono" src={MONOGRAMA} alt="" aria-hidden="true" />
+              <img className="s-mc-mono" src={MONOGRAMA} alt="" aria-hidden="true" width={497} height={839} />
               <div className="s-mc-top">
-                <img className="s-mc-logo" src={LOGO_CLARO} alt="" aria-hidden="true" />
+                <img className="s-mc-logo" src={LOGO_CLARO} alt="" aria-hidden="true" width={359} height={200} />
                 <SesionesOvalos sesiones={p.sesiones} conTexto={false} />
               </div>
               <div className="s-mc-mid">

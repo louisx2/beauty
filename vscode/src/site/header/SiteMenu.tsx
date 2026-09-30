@@ -78,11 +78,11 @@ export default function SiteMenu({ abierto, origen, activa, secciones, tema, onT
     <div id="s-menu" ref={panel} role="dialog" aria-modal="true" aria-label="Menú" aria-hidden={!abierto} {...(!abierto ? { inert: true } : {})}
       className={`s-menu ${abierto ? 'is-open' : ''} ${listo ? 'is-listo' : ''}`} style={estilo}>
       <div className="s-menu-glow" aria-hidden="true" />
-      <img className="s-menu-mono" src={MONOGRAMA} alt="" aria-hidden="true" />
+      <img className="s-menu-mono" src={MONOGRAMA} alt="" aria-hidden="true" width={497} height={839} />
 
       <div className="s-wrap s-menu-top">
         <a className="s-logo" href="/#s-inicio" onClick={irA('s-inicio')} aria-label="Ir al inicio">
-          <img className="s-lc" src={LOGO} alt="" /><img className="s-lw" src={LOGO_CLARO} alt="" />
+          <img className="s-lc" src={LOGO} alt="" width={359} height={200} /><img className="s-lw" src={LOGO_CLARO} alt="" width={359} height={200} />
         </a>
         <MenuButton ref={cerrar} cerrar={x} etiqueta="Cerrar menú" controla="s-menu" expandido onClick={onCerrar} />
       </div>
@@ -101,7 +101,7 @@ export default function SiteMenu({ abierto, origen, activa, secciones, tema, onT
           ))}
         </nav>
         <aside className="s-menu-side" aria-hidden="true">
-          <div className="s-ms-arch"><img src={FOTO_MENU} alt="" loading="lazy" /></div>
+          <div className="s-ms-arch"><img src={FOTO_MENU} alt="" width={900} height={1200} loading="lazy" /></div>
           <p className="s-ms-q">“Belleza y bienestar con responsabilidad.”</p>
         </aside>
       </div>
