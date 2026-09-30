@@ -1,6 +1,7 @@
 // Catálogo de la página principal: familias, especialidades, precios y duración (spec §5.3).
 // Puro: recibe el menú y los servicios de la base, así se prueba con node --test.
 import type { FamiliaId, ServiceCategory } from '../../data/servicesMenu';
+import { iniciales } from './equipo.ts';
 
 export interface Familia { id: FamiliaId; nombre: string; corto: string }
 
@@ -97,11 +98,6 @@ function gruposDe(cat: ServiceCategory): { etiqueta?: string; opciones: string[]
   }
   if (sueltos.length) grupos.unshift({ opciones: sueltos });
   return grupos;
-}
-
-/** "Dra. Nadieska Soto" → "NS" */
-function iniciales(nombre: string): string {
-  return nombre.replace(/^Dra?\.\s*/, '').split(/\s+/).slice(0, 2).map((p) => p[0] ?? '').join('').toUpperCase();
 }
 
 /** Menú + tabla → especialidades listas para mostrar, ordenadas por familia. */

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import type { ServicioPublico } from './catalogo';
 import { ESTILO_POR_DEFECTO, estiloValido, type EstiloPaquetes, type PaquetePublico } from './paquetes';
+import { equipoPublico, type FilaEquipo, type MiembroPublico } from './equipo';
 
 interface FilaServicio { name: string; price: number | string | null; duration: number | string | null }
 interface FilaPaquete {
@@ -64,4 +65,24 @@ export function usePaquetesPublicos(): { cargando: boolean; paquetes: PaquetePub
     return () => { vivo = false; };
   }, []);
   return estado;
+}
+
+/** Quienes la dueña marcó en el panel para la web y están activas. Sin red o sin permiso: nadie, y no hay sección. */
+export function useEquipoPublico(): MiembroPublico[] {
+  const [equipo, setEquipo] = useState<MiembroPublico[]>([]);
+  useEffect(() => {
+    let vivo = true;
+    supabase
+      .from('staff')
+      .select('id, name, role, active, avatar_url, mostrar_en_web, cargo_web, especialidades_web')
+      .eq('mostrar_en_web', true)
+      .eq('active', true)
+      .then(({ data, error }) => {
+        if (!vivo) return;
+        if (error) { console.warn('No se pudo leer el equipo:', error.message); return; }
+        setEquipo(equipoPublico((data ?? []) as unknown as FilaEquipo[]));
+      });
+    return () => { vivo = false; };
+  }, []);
+  return equipo;
 }

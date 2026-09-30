@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SECCIONES, lineaDeSeccion, seccionActiva, seccionesVisibles } from '../src/site/header/secciones.ts';
+import { SECCIONES, lineaDeSeccion, seccionActiva, seccionesVisibles, seccionesPresentes } from '../src/site/header/secciones.ts';
 
 const marcas = [
   { id: 's-inicio', top: -900 },
@@ -44,4 +44,33 @@ test('línea de la sección activa: un tercio de la pantalla, o debajo de la bar
 test('secciones visibles: solo las que la página tiene; sin lista, todas', () => {
   assert.deepEqual(seccionesVisibles(['s-inicio', 's-contacto']).map((s) => s.id), ['s-inicio', 's-contacto']);
   assert.equal(seccionesVisibles().length, 7);
+});
+
+test('secciones presentes: sin paquetes, equipo ni opiniones quedan las 4 fijas', () => {
+  assert.deepEqual(
+    seccionesPresentes({ paquetes: false, equipo: false, opiniones: false }),
+    ['s-inicio', 's-servicios', 's-nosotros', 's-contacto'],
+  );
+});
+
+test('secciones presentes: Equipo va entre Nosotros y Opiniones, en el orden de la página', () => {
+  assert.deepEqual(
+    seccionesPresentes({ paquetes: false, equipo: true, opiniones: false }),
+    ['s-inicio', 's-servicios', 's-nosotros', 's-equipo', 's-contacto'],
+  );
+  assert.deepEqual(
+    seccionesPresentes({ paquetes: true, equipo: true, opiniones: true }),
+    SECCIONES.map((s) => s.id),
+  );
+});
+
+test('secciones presentes: cada bandera enciende solo su sección', () => {
+  assert.deepEqual(
+    seccionesPresentes({ paquetes: true, equipo: false, opiniones: false }),
+    ['s-inicio', 's-servicios', 's-paquetes', 's-nosotros', 's-contacto'],
+  );
+  assert.deepEqual(
+    seccionesPresentes({ paquetes: false, equipo: false, opiniones: true }),
+    ['s-inicio', 's-servicios', 's-nosotros', 's-opiniones', 's-contacto'],
+  );
 });

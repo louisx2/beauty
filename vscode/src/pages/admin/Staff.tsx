@@ -6,10 +6,13 @@ import { supabase } from '../../lib/supabase';
 import {
   Plus, Search, User, UserPlus, Phone, Mail, Edit2, Trash2, X,
   Clock, Shield, Sparkles, CheckCircle2, XCircle, AlertCircle,
-  Percent, Calendar, TrendingUp, Filter, Key, Lock, Unlock, UserCog,
+  Percent, Calendar, TrendingUp, Filter, Key, Lock, Unlock, UserCog, Globe,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
+import { textoONull } from '../../site/landing/equipo';
+import { capitalizarNombre } from '../../lib/nombres';
+import { reducirFoto } from '../../lib/fotos';
 import './Staff.css';
 
 const ROLES: { key: StaffRole; label: string }[] = [
@@ -36,11 +39,8 @@ const emptyForm: Omit<StaffMember, 'id' | 'createdAt'> = {
   workingDays: ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'],
   workingStart: '09:00', workingEnd: '18:00',
   serviceIds: [], active: true, avatarUrl: null,
+  mostrarEnWeb: false, cargoWeb: null, especialidadesWeb: null,
 };
-
-function capitalizeName(val: string) {
-  return val.replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 10);
@@ -242,11 +242,13 @@ export default function Staff() {
 
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
+      // la foto de un teléfono pesa 2–6 MB y en la web se ve a 150–300 px: se reduce antes de subir
+      const foto = await reducirFoto(file);
+      const ext = foto.type === 'image/jpeg' ? 'jpg' : file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file);
+        .upload(fileName, foto, { contentType: foto.type });
 
       if (error) throw error;
 
@@ -271,6 +273,7 @@ export default function Staff() {
       workingDays: [...m.workingDays], workingStart: m.workingStart,
       workingEnd: m.workingEnd, serviceIds: [...m.serviceIds], active: m.active,
       avatarUrl: m.avatarUrl || null,
+      mostrarEnWeb: m.mostrarEnWeb, cargoWeb: m.cargoWeb, especialidadesWeb: m.especialidadesWeb,
     });
     setErrors({});
     setShowModal(true);
@@ -372,6 +375,8 @@ export default function Staff() {
         name: form.name.trim(),
         phone: form.phone.trim(),
         email: form.email?.trim() || null,
+        cargoWeb: textoONull(form.cargoWeb),
+        especialidadesWeb: textoONull(form.especialidadesWeb),
       };
       if (editingId) {
         const updated = await updateStaff(editingId, payload);
@@ -531,6 +536,11 @@ export default function Staff() {
                   <div className="staff-card__name-role">
                     <h3>{m.name}</h3>
                     <span className={roleBadgeClass(m.role)}>{roleLabel(m.role)}</span>
+                    {m.active && m.mostrarEnWeb && (
+                      <span className="staff-card__web-badge" title="Aparece en «Nuestro equipo» de la página web">
+                        <Globe size={10} /> En la web
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -756,7 +766,7 @@ export default function Staff() {
                     placeholder="Nombre de la empleada"
                     value={form.name}
                     onChange={(e) => {
-                      setForm({ ...form, name: capitalizeName(e.target.value) });
+                      setForm({ ...form, name: capitalizarNombre(e.target.value) });
                       setErrors({ ...errors, name: undefined });
                     }}
                     className={errors.name ? 'input--error' : ''}
@@ -845,7 +855,7 @@ export default function Staff() {
                       onChange={(e) => setForm({ ...form, active: e.target.checked })}
                     />
                     <span className="toggle-slider" />
-                    <span style={{ marginLeft: 8, fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>
+                    <span className="staff-toggle__txt">
                       {form.active ? 'Activa' : 'Inactiva'}
                     </span>
                   </label>
@@ -924,6 +934,54 @@ export default function Staff() {
                   </div>
                 </div>
               )}
+
+              {/* Página web (spec §6.5): quién sale en "Nuestro equipo" */}
+              <fieldset className="staff-web">
+                <legend className="staff-web__titulo"><Globe size={14} /> Página web</legend>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={form.mostrarEnWeb}
+                    onChange={(e) => setForm({ ...form, mostrarEnWeb: e.target.checked })}
+                  />
+                  <span className="toggle-slider" />
+                  <span className="staff-toggle__txt">Mostrar en la página web</span>
+                </label>
+                {form.mostrarEnWeb && (
+                  <>
+                    <div className="modal__row">
+                      <div className="modal__field">
+                        <label htmlFor="staff-cargo-web">Cargo para la web</label>
+                        <input
+                          id="staff-cargo-web"
+                          type="text"
+                          maxLength={60}
+                          placeholder="Médico estético y cosmiatra"
+                          value={form.cargoWeb ?? ''}
+                          onChange={(e) => setForm({ ...form, cargoWeb: e.target.value })}
+                        />
+                      </div>
+                      <div className="modal__field">
+                        <label htmlFor="staff-especialidades-web">Especialidades para la web</label>
+                        <input
+                          id="staff-especialidades-web"
+                          type="text"
+                          maxLength={80}
+                          placeholder="Facial · Medicina estética"
+                          value={form.especialidadesWeb ?? ''}
+                          onChange={(e) => setForm({ ...form, especialidadesWeb: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    {(!form.active || !form.avatarUrl) && (
+                      <p className="staff-web__aviso">
+                        {!form.active && 'Está inactiva: no saldrá en la web hasta activarla. '}
+                        {!form.avatarUrl && 'Sin foto, la web muestra sus iniciales.'}
+                      </p>
+                    )}
+                  </>
+                )}
+              </fieldset>
 
               <div className="modal__actions">
                 <div style={{ flex: 1 }} />

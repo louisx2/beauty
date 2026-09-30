@@ -7,37 +7,38 @@ import Services from '../site/landing/Services';
 import Packages from '../site/landing/Packages';
 import About from '../site/landing/About';
 import Philosophy from '../site/landing/Philosophy';
+import Team from '../site/landing/Team';
 import Testimonials from '../site/landing/Testimonials';
 import CtaBand from '../site/landing/CtaBand';
 import Contact from '../site/landing/Contact';
-import { usePaquetesPublicos, useServiciosPublicos } from '../site/landing/useDatosPublicos';
+import { useEquipoPublico, usePaquetesPublicos, useServiciosPublicos } from '../site/landing/useDatosPublicos';
+import { seccionesPresentes } from '../site/header/secciones';
 import { testimonios } from '../config/testimonios';
 
 /**
- * Página principal (spec §5). Solo lista en el menú las secciones que existen: Paquetes aparece si hay
- * paquetes activos y Opiniones si hay testimonios. El equipo llega en la Fase 4.
+ * Página principal (spec §5). Paquetes, Equipo y Opiniones dependen de datos: una sola lista decide qué
+ * se pinta y qué ofrecen el menú y las pestañas.
  */
 export default function LandingPage() {
   const servicios = useServiciosPublicos();
   const { paquetes, estilo } = usePaquetesPublicos();
-  const conPaquetes = paquetes.length > 0; // sin paquetes activos (o sin red) la sección no aparece
-  const conOpiniones = testimonios.length > 0;
-  const secciones = [
-    's-inicio', 's-servicios',
-    ...(conPaquetes ? ['s-paquetes'] : []),
-    's-nosotros',
-    ...(conOpiniones ? ['s-opiniones'] : []),
-    's-contacto',
-  ];
+  const equipo = useEquipoPublico();
+  const secciones = seccionesPresentes({
+    paquetes: paquetes.length > 0, // sin paquetes activos (o sin red) la sección no aparece
+    equipo: equipo.length > 0, // nadie marcado para la web: tampoco
+    opiniones: testimonios.length > 0,
+  });
+  const hay = (id: string) => secciones.includes(id);
   return (
     <SiteLayout conSecciones secciones={secciones}>
       <Hero />
       <TrustStrip />
       <Services servicios={servicios} />
-      {conPaquetes && <Packages paquetes={paquetes} estilo={estilo} />}
+      {hay('s-paquetes') && <Packages paquetes={paquetes} estilo={estilo} />}
       <About />
       <Philosophy />
-      <Testimonials />
+      {hay('s-equipo') && <Team miembros={equipo} />}
+      {hay('s-opiniones') && <Testimonials />}
       <CtaBand />
       <Contact />
     </SiteLayout>
