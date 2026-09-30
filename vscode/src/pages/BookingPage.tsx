@@ -1,20 +1,17 @@
 import { useEffect } from 'react';
-import Navbar from '../legacy/Navbar';
-import Booking from '../legacy/Booking';
-import Footer from '../legacy/Footer';
+import SiteLayout from '../site/SiteLayout';
+import Reservar from '../site/reservar/Reservar';
+import { useSeccionesPresentes } from '../site/header/usePresencia';
 
+/** /reservar con la cara nueva (spec §6.1). El diseño anterior sigue en /diseno-anterior/reservar. */
 export default function BookingPage() {
+  const secciones = useSeccionesPresentes();
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
   return (
-    <>
-      <Navbar />
-      <div style={{ minHeight: '80vh', paddingTop: '60px' }}>
-        <Booking />
-      </div>
-      <Footer />
-    </>
+    <SiteLayout secciones={secciones} whatsappElevado>
+      <Reservar />
+    </SiteLayout>
   );
 }

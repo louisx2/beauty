@@ -1,0 +1,42 @@
+/* /reservar (boceto citas-v2): cabecera con listones, pasos en tarjetas y resumen. Celular primero. */
+.s-r{ position:relative }
+.s-r-head{ padding:34px 0 28px; background:var(--s-tex); border-bottom:1px solid var(--s-line) }
+.s-r-head .s-eyebrow{ margin:0 0 16px }
+.s-r-titulo{ margin:0 0 14px; font-size:36px }
+.s-r-intro{ max-width:36em; margin:0; font-size:15px; font-weight:300; line-height:1.65; color:var(--s-soft) }
+.s-pasos{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:6px; margin:20px 0 0; padding:0; list-style:none }
+.s-pasos-i{ display:flex; align-items:center; justify-content:center; gap:6px; min-width:0; padding:5px 6px; border-radius:999px; border:1px solid var(--s-line); font-size:12px; color:var(--s-soft); white-space:nowrap }
+.s-pasos-i b{ display:grid; place-items:center; width:22px; height:22px; flex-shrink:0; border-radius:50%; border:1px solid var(--s-line); font:500 11px var(--s-f-body) }
+.s-pasos-i.is-hecho{ color:var(--s-text) }
+.s-pasos-i.is-hecho b{ background:var(--s-btn-bg); color:var(--s-btn-fg); border-color:transparent }
+.s-pasos-i.is-ahora{ color:var(--s-text); border-color:var(--s-accent) }
+
+.s-r-grid{ padding-top:22px; padding-bottom:24px }
+.s-r-paso{ margin-bottom:14px; padding:22px 18px; border-radius:20px; background:var(--s-surface); border:1px solid var(--s-surface-line); transition:opacity .4s }
+.s-r-paso.is-bloqueado{ opacity:.45 }
+.s-r-paso-t{ display:flex; align-items:center; gap:10px; margin-bottom:16px }
+.s-r-n{ font:italic 400 24px/1 var(--s-f-display); color:var(--s-accent) }
+.s-r-paso-t h2{ min-width:0; font-size:22px }
+.s-r-paso-t small{ display:none; margin-left:auto; font-size:12.5px; color:var(--s-faint); text-align:right }
+.s-r-alerta{ margin:0 0 16px; padding:12px 14px; border-radius:14px; border:1px solid var(--s-bad); background:var(--s-surface-2); font-size:14px; line-height:1.5 }
+.s-hint{ margin:10px 0 0; font-size:12.5px; line-height:1.5; color:var(--s-faint) }
+@keyframes s-r-entra{ from{ opacity:0; transform:translateY(8px) } to{ opacity:1; transform:none } }
+
+@media (min-width: 761px){
+  .s-r-head{ padding:56px 0 46px }
+  .s-r-titulo{ font-size:46px }
+  .s-r-intro{ font-size:16.5px }
+  .s-pasos{ display:flex; flex-wrap:wrap; gap:10px; margin-top:30px }
+  .s-pasos-i{ gap:10px; padding:8px 16px 8px 8px; font-size:13.5px }
+  .s-pasos-i b{ width:26px; height:26px; font-size:12px }
+  .s-r-grid{ padding-top:30px; padding-bottom:30px }
+  .s-r-paso{ margin-bottom:22px; padding:28px 30px; border-radius:24px }
+  .s-r-paso-t{ gap:14px; margin-bottom:20px }
+  .s-r-n{ font-size:30px }
+  .s-r-paso-t h2{ font-size:26px }
+  .s-r-paso-t small{ display:block }
+}
+@media (min-width: 1101px){
+  .s-r-titulo{ font-size:54px }
+  .s-r-grid{ display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:40px; align-items:start; padding-top:44px; padding-bottom:90px }
+}
