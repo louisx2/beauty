@@ -33,7 +33,25 @@ la fase anterior.
 | 4 | `2026-09-29-rediseno-fase-4-equipo.md` | Equipo desde `staff`: columnas nuevas con su `grant select (col) to anon`, campos en la página Equipo, sección en la landing (spec §6.5) y una sola lista de secciones presentes | Marcar a alguien en el panel lo muestra en la web; si no hay nadie, la sección no aparece |
 | 5 | `2026-09-29-rediseno-fase-5-reservar.md` | `/reservar` en 3 pasos: lógica en `useBooking` sin cambiar su comportamiento, calendario de semana/mes a 90 días, resumen o barra fija y confirmación (spec §6.1–6.2) | Pasan los 6 casos de reserva de la spec §10 |
 | 6 | `2026-09-30-rediseno-fase-6-mis-citas.md` | `/mis-citas` nueva con `get_client_packages` y "Mis paquetes" (spec §6.3) | Búsqueda, cancelación de 12 h y saldo de paquetes funcionan con datos de prueba |
-| 7 | se escribe al empezar | Calidad: revisión completa, **conservar el diseño anterior** en `src/legacy/` con rutas `/diseno-anterior…` (spec §8) y prueba en los aparatos de Louis | Lista de la spec §3.8 en verde, el diseño viejo abre en sus rutas y Louis aprueba en su teléfono |
+| 7 | `2026-09-30-rediseno-fase-7-calidad.md` | Calidad: los pendientes que dejaron las fases 1–6, revisión completa en los 7 anchos y los dos temas, **el diseño anterior** en sus rutas `/diseno-anterior…` (spec §8) y prueba en los aparatos de Louis | Lista de la spec §3.8 en verde, el diseño viejo abre en sus rutas y Louis aprueba en su teléfono |
+| 8 | se escribe al empezar | **Entrega**: datos reales en lugar de los de prueba, usuarios y contraseñas reales, contenido de la dueña y respaldos (lista abajo) | La dueña entra con su usuario, la web muestra su contenido real y no queda ningún dato de prueba |
+
+**Fase Entrega (la última).** Hoy todo en Supabase es de prueba, usuarios incluidos. Lo único posiblemente real son
+los precios de los servicios: se confirman con Louis antes de tocar nada. Lista para su plan:
+- **Respaldo** completo de la base antes de empezar y al terminar.
+- **Borrar los datos de prueba:** clientas, citas y sus servicios, paquetes vendidos (`client_packages`), bloqueos de
+  agenda y cualquier otra fila de prueba. Se conservan los servicios con sus precios, el catálogo de paquetes
+  (`session_packages`) y la configuración.
+- **Usuarios:** crear las cuentas reales (dueña, recepción, especialistas) con sus roles, borrar `admin@anadsll.com` y
+  los demás usuarios de prueba, y poner contraseñas nuevas. En Equipo, quién sale en la web, con su cargo y su foto real.
+- **Configuración real:** cuentas de banco, monto del depósito, número de WhatsApp del salón y estilo de paquetes.
+- **Contenido de la dueña (spec §9):** precios que faltan (hoy RD$ 0), equipo real, testimonios reales o enlace a
+  reseñas, fotos de servicios, "Diseño de Cejas" en el menú (`servicesMenu.ts`) y el "Depilación Laser Brasileño"
+  repetido (unirlo o desactivarlo).
+- **Revisar** que ninguna clienta tenga un número de relleno (809-000-0000): quien lo escriba en Mis citas vería sus
+  paquetes.
+- **Supabase:** revisar los avisos de seguridad (advisors); las funciones públicas por teléfono son intencionales (spec §7).
+- **Cierre:** etiqueta git de la versión entregada y prueba final con la dueña en su teléfono.
 
 **El diseño viejo NO se borra** (pedido de Louis): antes de fusionar la Fase 2, que es la primera
 que cambia lo que ve la clienta, se crea y se sube la etiqueta git `diseno-anterior` en `main`. Los
