@@ -4,8 +4,11 @@ import type { PaqueteVista } from './portal';
 import './MisPaquetes.css';
 
 /** Mis paquetes (spec §6.3): nombre, servicio y fecha de compra, las sesiones en ovalitos (llenos los usados) y
- *  "Reservar mi próxima sesión". Los terminados se muestran sin botón. */
-export default function MisPaquetes({ paquetes }: { paquetes: PaqueteVista[] }) {
+ *  "Reservar mi próxima sesión". Los terminados se muestran sin botón. Con `fallo` (no se pudieron cargar) solo el aviso. */
+export default function MisPaquetes({ paquetes, fallo = false }: { paquetes: PaqueteVista[]; fallo?: boolean }) {
+  if (fallo) {
+    return <p className="s-pk-vacio" role="status">No pudimos cargar tus paquetes ahora. Intenta de nuevo en un momento.</p>;
+  }
   if (!paquetes.length) {
     return <p className="s-pk-vacio">No tienes paquetes activos.</p>;
   }

@@ -11,7 +11,7 @@ returns table(
 language sql stable security definer set search_path = public
 as $$
   select cp.id, cp.package_id, sp.name, s.name, cp.total_sessions, cp.used_sessions,
-         cp.purchased_at::date, cp.status, sp.active, c.name
+         (cp.purchased_at at time zone 'America/Santo_Domingo')::date, cp.status, sp.active, c.name
   from public.client_packages cp
   join public.clients c on c.id = cp.client_id
   left join public.session_packages sp on sp.id = cp.package_id
@@ -25,7 +25,7 @@ as $$
                from public.appointments a
                join public.appointment_services x on x.appointment_id = a.id
               where a.client_id = cp.client_id and x.service_id = sp.service_id and a.status = 'completed'),
-            cp.purchased_at::date) >= current_date - 90)
+            (cp.purchased_at at time zone 'America/Santo_Domingo')::date) >= (now() at time zone 'America/Santo_Domingo')::date - 90)
     )
   order by (cp.status = 'active') desc, cp.purchased_at desc
 $$;

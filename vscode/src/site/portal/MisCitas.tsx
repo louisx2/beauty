@@ -22,8 +22,10 @@ export default function MisCitas() {
 
   const vistas = p.datos ? vistaCitas(p.datos.citas, p.datos.servicios, new Date()) : null;
   const paquetes = p.datos ? vistaPaquetes(p.datos.paquetes) : [];
-  const nombre = p.datos ? primerNombre(p.datos.citas[0]?.client_name ?? p.datos.paquetes[0]?.cliente ?? '') : '';
-  const hayAlgo = !!p.datos && (p.datos.citas.length > 0 || p.datos.paquetes.length > 0);
+  // el nombre que guarda el personal en la ficha (el del paquete); si no hay, el de la primera cita
+  const nombre = p.datos ? primerNombre(p.datos.paquetes[0]?.cliente || p.datos.citas[0]?.client_name || '') : '';
+  // si fallaron los paquetes no se sabe si tiene: se muestra la página igual, con el aviso, y no el "no encontramos"
+  const hayAlgo = !!p.datos && (p.datos.citas.length > 0 || p.datos.paquetes.length > 0 || p.datos.paquetesFallaron);
 
   // al terminar una búsqueda pedida por la clienta, el foco pasa a lo primero del resultado (no en la búsqueda automática al abrir)
   useEffect(() => {
@@ -109,7 +111,13 @@ export default function MisCitas() {
             <div className="s-hello">
               <div>
                 <h2 className="s-display s-citas-foco" tabIndex={-1} ref={ponerResultado}>Hola{nombre ? <>, <em>{nombre}</em></> : ''}</h2>
-                <p>{textoResumen(vistas!.proximas.length, paquetes.filter((x) => !x.terminado).length, vistas!.historial.length)}</p>
+                <p>
+                  {textoResumen(
+                    vistas!.proximas.length,
+                    p.datos.paquetesFallaron ? null : paquetes.filter((x) => !x.terminado).length,
+                    vistas!.historial.length,
+                  )}
+                </p>
               </div>
               <Link className="s-btn s-btn-line s-btn-sm" to="/reservar">Reservar otra cita</Link>
             </div>
@@ -138,7 +146,7 @@ export default function MisCitas() {
               </div>
               <div>
                 <h2 className="s-blk-t">Mis paquetes</h2>
-                <MisPaquetes paquetes={paquetes} />
+                <MisPaquetes paquetes={paquetes} fallo={p.datos.paquetesFallaron} />
               </div>
             </div>
           </>

@@ -10,11 +10,9 @@
 .s-ap-lineas b{ color:var(--s-text); font-weight:500 }
 .s-ap-acciones, .s-ap-confirma{ display:flex; flex-wrap:wrap; align-items:center; gap:10px }
 .s-ap-acciones small{ width:100%; font-size:12.5px; line-height:1.5; color:var(--s-soft) }
-.s-ap-acciones a:not(.s-btn){ color:var(--s-accent); text-decoration:underline; text-underline-offset:3px }
-/* el aviso va sobre --s-surface-2: el acento ahí no llega a 4.5:1 en el tema oscuro */
-.s-ap-aviso a{ color:var(--s-text); font-weight:500; text-decoration:underline; text-underline-offset:3px }
 .s-ap-confirma p{ width:100%; margin:0; font-size:14px }
-.s-ap-aviso{ margin:0 0 12px; padding:10px 12px; border-radius:12px; border:1px solid var(--s-bad); background:var(--s-surface-2); font-size:13.5px; line-height:1.5 }
+.s-ap-aviso{ margin:0 0 10px; padding:10px 12px; border-radius:12px; border:1px solid var(--s-bad); background:var(--s-surface-2); font-size:13.5px; line-height:1.5 }
+.s-ap-aviso-wa{ margin-bottom:12px }
 @media (min-width: 761px){
   .s-ap{ grid-template-columns:78px minmax(0,1fr); gap:20px; padding:20px }
   .s-ap-fecha{ height:112px }

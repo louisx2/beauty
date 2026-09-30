@@ -3,7 +3,11 @@ import { supabase } from '../../lib/supabase';
 import type { FilaCita, FilaPaqueteCliente, FilaServicioCita } from './portal';
 
 export type ResultadoCancelar = 'ok' | 'tarde' | 'error';
-export interface DatosPortal { citas: FilaCita[]; servicios: FilaServicioCita[]; paquetes: FilaPaqueteCliente[] }
+export interface DatosPortal {
+  citas: FilaCita[]; servicios: FilaServicioCita[]; paquetes: FilaPaqueteCliente[];
+  /** la consulta de paquetes falló: no se sabe si tiene, así que no se dice que no */
+  paquetesFallaron: boolean;
+}
 
 const CLAVE = 'anadsll-mis-citas-tel';
 // sin almacenamiento (modo privado, bloqueado) "Recordar" simplemente no guarda: la página funciona igual
@@ -59,6 +63,7 @@ export function usePortal() {
       citas: (c.data ?? []) as unknown as FilaCita[],
       servicios: s.error ? [] : ((s.data ?? []) as unknown as FilaServicioCita[]),
       paquetes: p.error ? [] : ((p.data ?? []) as unknown as FilaPaqueteCliente[]),
+      paquetesFallaron: !!p.error,
     });
     setBuscado(tel);
     guardar(recordarRef.current ? tel : null);

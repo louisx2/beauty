@@ -82,9 +82,14 @@ export default function CitaProxima({ cita, onCancelar }: Props) {
           ))}
         </ul>
         {aviso && (
-          <p ref={avisoRef} tabIndex={-1} className="s-ap-aviso" role="alert">
-            {aviso} <a href={whatsapp} target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a> y te ayudamos.
-          </p>
+          <>
+            <p ref={avisoRef} tabIndex={-1} className="s-ap-aviso" role="alert">
+              {aviso} Escríbenos por WhatsApp y te ayudamos.
+            </p>
+            <a className="s-btn s-btn-line s-btn-sm s-ap-aviso-wa" href={whatsapp} target="_blank" rel="noopener noreferrer">
+              Escribir por WhatsApp
+            </a>
+          </>
         )}
         {confirmando ? (
           <div className="s-ap-confirma" role="group" aria-label="Confirmar la cancelación">
@@ -108,10 +113,10 @@ export default function CitaProxima({ cita, onCancelar }: Props) {
             )}
             {puedeCancelar && <small>Puedes cancelar hasta 12 h antes.</small>}
             {cita.menosDe12h && (
-              <small>
-                Faltan menos de 12 h: para cambiarla{' '}
-                <a href={whatsapp} target="_blank" rel="noopener noreferrer">escríbenos por WhatsApp</a>.
-              </small>
+              <>
+                <a className="s-btn s-btn-line s-btn-sm" href={whatsapp} target="_blank" rel="noopener noreferrer">Escribir por WhatsApp</a>
+                <small>Faltan menos de 12 h: para cambiarla escríbenos por WhatsApp.</small>
+              </>
             )}
           </div>
         )}

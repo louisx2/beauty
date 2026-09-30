@@ -33,12 +33,11 @@ export function estadoCita(status: string): { texto: string; tono: Tono } {
   return ESTADOS[status] ?? { texto: status, tono: 'mute' };
 }
 
-/** Horas que faltan para la cita (negativo si ya pasó), con la hora del teléfono. */
+/** Horas que faltan para la cita (negativo si ya pasó). La hora de la cita es la de Santo Domingo. */
 export function horasHasta(fecha: string, hora: string, ahora: Date): number {
-  const [h, m] = hora.split(':').map(Number);
-  const d = deIso(fecha);
-  d.setHours(h, m, 0, 0);
-  return (d.getTime() - ahora.getTime()) / 3_600_000;
+  // hora de Santo Domingo: UTC-4 todo el año (no hay horario de verano), sin depender del reloj del teléfono
+  const cita = new Date(`${fecha}T${hora.slice(0, 5)}:00-04:00`);
+  return (cita.getTime() - ahora.getTime()) / 3_600_000;
 }
 
 /** "2026-09-15" → "15 sep" */
@@ -154,13 +153,14 @@ export function primerNombre(nombre: string): string {
 
 const cuenta = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
 
-/** "2 citas próximas · 1 paquete activo · 3 visitas en tu historial" */
-export function textoResumen(proximas: number, paquetesActivos: number, historial: number): string {
+/** "2 citas próximas · 1 paquete activo · 3 visitas en tu historial". Con `null` en los paquetes (no se pudieron cargar)
+ *  no se dice cuántos hay. */
+export function textoResumen(proximas: number, paquetesActivos: number | null, historial: number): string {
   return [
     cuenta(proximas, 'cita próxima', 'citas próximas'),
-    cuenta(paquetesActivos, 'paquete activo', 'paquetes activos'),
+    paquetesActivos === null ? '' : cuenta(paquetesActivos, 'paquete activo', 'paquetes activos'),
     cuenta(historial, 'visita en tu historial', 'visitas en tu historial'),
-  ].join(' · ');
+  ].filter(Boolean).join(' · ');
 }
 
 /** Los 10 dígitos del teléfono, escritos como sea. */
