@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { Copy, CreditCard, Download, Eye, FileText, Loader2, RotateCcw, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
-import { useSuscripcionStore } from '../../store/suscripcionStore';
+import { EVENTO_CAMBIO_SUSCRIPCION, useSuscripcionStore } from '../../store/suscripcionStore';
 import {
   ESTADO_CUENTA, ESTADO_REPORTE, METODO_PAGO, cuotasPendientesTexto, dinero, fechaLarga, hoySantoDomingo,
   montoSugerido, proximoCobroVisible, validarReporte, type ErroresReporte,
@@ -59,6 +59,16 @@ export default function Subscription() {
 
   useEffect(() => {
     void cargar();
+  }, [cargar]);
+
+  // Cuando SellAlleS avisa que cambió un comprobante o un pago (Louis confirmó, rechazó, registró un pago…), se
+  // vuelve a cargar sin que ella tenga que recargar la página. El aviso lo recibe el banner (AvisoSuscripcion).
+  useEffect(() => {
+    const alCambiar = () => {
+      void cargar();
+    };
+    window.addEventListener(EVENTO_CAMBIO_SUSCRIPCION, alCambiar);
+    return () => window.removeEventListener(EVENTO_CAMBIO_SUSCRIPCION, alCambiar);
   }, [cargar]);
 
   // Si se llegó desde el banner (#susc-comprobantes o #susc-reportar), se baja a esa sección una vez, cuando ya

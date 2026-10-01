@@ -5,6 +5,10 @@ import { cargarSuscripcion } from '../lib/suscripcionApi';
 /** El estado de la cuenta se pide una vez y se recuerda un rato: el banner no consulta en cada pantalla. */
 const VIGENCIA = 15 * 60 * 1000;
 
+/** Evento de la ventana cuando SellAlleS avisa que cambió un comprobante o un pago: la página Mi suscripción
+ *  lo escucha para volver a cargar (el banner lo dispara; ver AvisoSuscripcion). */
+export const EVENTO_CAMBIO_SUSCRIPCION = 'anadsll:suscripcion-cambio';
+
 interface SuscripcionState {
   cuenta: CuentaSuscripcion | null;
   cargadaEn: number;
