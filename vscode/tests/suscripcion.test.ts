@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   ESTADO_REPORTE, avisoDeCuota, cuentaDesdeJson, cuotasPendientesTexto, dinero, fechaLarga, hoySantoDomingo,
-  montoProximaCuota, montoSugerido, validarReporte,
+  montoProximaCuota, montoSugerido, proximoCobroVisible, validarReporte,
 } from '../src/lib/suscripcion.ts';
 
 const base = (extra: Record<string, unknown> = {}) => cuentaDesdeJson({
@@ -79,6 +79,12 @@ test('por vencer: ámbar, se puede ocultar por hoy', () => {
 
 test('prueba, prueba vencida y cuenta suspendida', () => {
   assert.equal(avisoDeCuota(base({ estado: 'prueba', dias: 10 })), null);
+  // el aviso de la prueba sale desde 7 días antes y se puede ocultar por hoy
+  const sieteDias = avisoDeCuota(base({ estado: 'prueba', dias: 7 }));
+  assert.equal(sieteDias?.tono, 'ambar');
+  assert.equal(sieteDias?.ocultable, true);
+  assert.equal(avisoDeCuota(base({ estado: 'prueba', dias: 8 })), null);
+  assert.equal(avisoDeCuota(base({ estado: 'prueba', dias: null })), null);
   assert.equal(avisoDeCuota(base({ estado: 'prueba', dias: 2 }))?.titulo, 'Tu prueba termina en 2 días');
   assert.equal(avisoDeCuota(base({ estado: 'prueba', dias: 0 }))?.titulo, 'Tu prueba termina hoy');
   const vencida = avisoDeCuota(base({ estado: 'prueba_vencida', dias: -3 }));
@@ -86,6 +92,27 @@ test('prueba, prueba vencida y cuenta suspendida', () => {
   assert.equal(avisoDeCuota(base({ estado: 'suspendida' }))?.titulo, 'Tu suscripción está suspendida');
   assert.equal(avisoDeCuota(base({ estado: 'prueba_vencida', dias: -3, por_confirmar: 2300, comprobantes_por_confirmar: 1 }))?.tono, 'azul');
   assert.equal(avisoDeCuota(base({ estado: 'suspendida', por_confirmar: 2300, comprobantes_por_confirmar: 1 }))?.tono, 'rojo');
+});
+
+test('próximo cobro visible: mientras debe, la próxima cuota y no la impaga más vieja', () => {
+  const debe = (extra: Record<string, unknown> = {}) => cuentaDesdeJson({
+    estado: 'nunca_pago', saldo: 4600, cuotas_pendientes: 2, debe_desde: '2026-08-27', proximo_cobro: '2026-08-27',
+    cuentas: [{ nombre: 'Toda la empresa', cuota: 2300, proxima_cuota: '2026-10-27' }],
+    ...extra,
+  });
+  assert.equal(proximoCobroVisible(debe()), '2026-10-27');
+  assert.equal(proximoCobroVisible(debe({ estado: 'atrasada' })), '2026-10-27');
+  // con varias cuentas, la más cercana
+  assert.equal(proximoCobroVisible(debe({ cuentas: [
+    { nombre: 'Uno', cuota: 1500, proxima_cuota: '2026-11-02' },
+    { nombre: 'Dos', cuota: 800, proxima_cuota: '2026-10-27' },
+    { nombre: 'Sin fecha', cuota: 100, proxima_cuota: null },
+  ] })), '2026-10-27');
+  // al día: el proximo_cobro tal cual
+  assert.equal(proximoCobroVisible(base()), '2026-10-25');
+  // debe pero sin cuentas con fecha: queda el proximo_cobro
+  assert.equal(proximoCobroVisible(debe({ cuentas: [] })), '2026-08-27');
+  assert.equal(proximoCobroVisible(debe({ cuentas: [{ nombre: 'X', cuota: 1, proxima_cuota: null }] })), '2026-08-27');
 });
 
 test('monto de la próxima cuota y monto sugerido para pagar', () => {

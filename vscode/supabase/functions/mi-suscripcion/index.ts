@@ -9,10 +9,11 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const ACCIONES = new Set(['estado', 'subida', 'reportar', 'retirar', 'comprobante', 'factura']);
 
-// El panel en su dominio y en desarrollo: localhost, o la red de la casa cuando Louis prueba desde el teléfono
-// (el servidor local corre con --host y se abre por la IP de la computadora).
+// El panel en su dominio (app.anadsllbeautyesthetic.com) y la página pública (con o sin www), y en desarrollo:
+// localhost, o la red de la casa cuando Louis prueba desde el teléfono (el servidor local corre con --host y se
+// abre por la IP de la computadora).
 const ORIGENES =
-  /^(https:\/\/(www\.)?anadsllbeautyesthetic\.com|http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?)$/;
+  /^(https:\/\/((www|app)\.)?anadsllbeautyesthetic\.com|http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?)$/;
 
 function corsPara(req: Request): Record<string, string> {
   const origen = req.headers.get('Origin') ?? '';
@@ -21,6 +22,7 @@ function corsPara(req: Request): Record<string, string> {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Expose-Headers': 'content-disposition',
+    'Access-Control-Max-Age': '7200',
     Vary: 'Origin',
   };
 }
@@ -39,6 +41,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data: rol, error: errorRol } = await usuario.rpc('staff_role');
+  if (errorRol) console.error('mi-suscripcion: staff_role falló:', errorRol.message);
   if (errorRol || rol !== 'admin') return json(403, { error: 'no autorizado' });
 
   let cuerpo: Record<string, unknown>;
@@ -52,19 +55,22 @@ Deno.serve(async (req) => {
   const servicio = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: filas } = await servicio.rpc('_conexion_sellalles');
+  const { data: filas, error: errorConexion } = await servicio.rpc('_conexion_sellalles');
+  if (errorConexion) console.error('mi-suscripcion: no se pudo leer la conexión:', errorConexion.message);
   const conexion = (filas ?? [])[0] as { url: string | null; clave: string | null } | undefined;
   if (!conexion?.url || !conexion?.clave) return json(503, { error: 'sin conexion' });
 
   let respuesta: Response;
   try {
-    respuesta = await fetch(`${conexion.url}/functions/v1/cobro-externo`, {
+    respuesta = await fetch(`${conexion.url.replace(/\/+$/, '')}/functions/v1/cobro-externo`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-clave-cobro': conexion.clave },
       body: JSON.stringify(cuerpo),
       signal: AbortSignal.timeout(20_000),
+      redirect: 'error',
     });
-  } catch {
+  } catch (e) {
+    console.error('mi-suscripcion: SellAlleS no respondió:', e instanceof Error ? e.name : 'error');
     return json(503, { error: 'sin conexion' });
   }
   if (respuesta.status === 401 || respuesta.status >= 500) {

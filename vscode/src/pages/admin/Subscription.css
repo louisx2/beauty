@@ -40,6 +40,8 @@
 .susc__campo input, .susc__campo select, .susc__campo textarea { min-height: 44px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.2); color: #fff; font: inherit; font-size: 16px; }
 .susc__campo textarea { resize: vertical; }
 .susc__campo input[type="file"] { padding: 8px; }
+.susc__campo select option { background: #352820; color: #fff; }
+.susc__campo input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.8); }
 .susc__err { color: #fca5a5; font-weight: 500; }
 .susc__err--envio { margin: 0; }
 
@@ -73,6 +75,8 @@
 [data-theme="light"] .susc__fila-datos b { color: var(--espresso); }
 [data-theme="light"] .susc__campo input, [data-theme="light"] .susc__campo select,
 [data-theme="light"] .susc__campo textarea { background: #fff; border-color: #a8998c; color: var(--espresso); }
+[data-theme="light"] .susc__campo select option { background: #fff; color: var(--espresso); }
+[data-theme="light"] .susc__campo input[type="date"]::-webkit-calendar-picker-indicator { filter: none; }
 [data-theme="light"] .susc__icon-btn, [data-theme="light"] .susc__btn { border-color: rgba(74, 52, 42, 0.3); }
 [data-theme="light"] .susc__btn--principal { background: var(--espresso); color: #fff; }
 [data-theme="light"] .susc__badge--ok { color: #047857; }

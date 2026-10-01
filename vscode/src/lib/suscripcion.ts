@@ -72,6 +72,16 @@ export function montoProximaCuota(c: CuentaSuscripcion): number {
   return delDia > 0 ? delDia : (c.cuentas[0]?.cuota ?? c.montoPeriodo);
 }
 
+/** La fecha que se muestra como "Próximo cobro". Mientras debe, el proximo_cobro de SellAlleS es la cuota
+ *  impaga más vieja (una fecha pasada): ahí lo que viene es la próxima cuota de las cuentas (la más cercana). */
+export function proximoCobroVisible(c: CuentaSuscripcion): string | null {
+  if (c.estado === 'atrasada' || c.estado === 'nunca_pago') {
+    const proximas = c.cuentas.map((x) => x.proximaCuota).filter((f): f is string => !!f).sort();
+    if (proximas.length > 0) return proximas[0];
+  }
+  return c.proximoCobro;
+}
+
 /** El monto que se propone al reportar: lo que debe; si no debe, la próxima cuota. */
 export function montoSugerido(c: CuentaSuscripcion): number {
   return c.saldo > 0 ? Math.round(c.saldo * 100) / 100 : montoProximaCuota(c);

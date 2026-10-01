@@ -6,7 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useSuscripcionStore } from '../../store/suscripcionStore';
 import {
   ESTADO_CUENTA, ESTADO_REPORTE, METODO_PAGO, cuotasPendientesTexto, dinero, fechaLarga, hoySantoDomingo,
-  montoSugerido, validarReporte, type ErroresReporte,
+  montoSugerido, proximoCobroVisible, validarReporte, type ErroresReporte,
 } from '../../lib/suscripcion';
 import {
   ErrorSuscripcion, cargarSuscripcion, obtenerFactura, reportarPago, retirarReporte, urlComprobante,
@@ -96,6 +96,7 @@ export default function Subscription() {
 function Estado({ datos }: { datos: DatosSuscripcion }) {
   const c = datos.cuenta;
   const e = ESTADO_CUENTA[c.estado];
+  const proximo = proximoCobroVisible(c);
   return (
     <section className="susc__card" aria-labelledby="susc-estado-t">
       <div className="susc__card-top">
@@ -104,7 +105,7 @@ function Estado({ datos }: { datos: DatosSuscripcion }) {
       </div>
       <dl className="susc__datos">
         <div><dt>Cuota mensual</dt><dd>{dinero(c.mensual)}</dd></div>
-        {c.proximoCobro && <div><dt>Próximo cobro</dt><dd>{fechaLarga(c.proximoCobro)}</dd></div>}
+        {proximo && <div><dt>Próximo cobro</dt><dd>{fechaLarga(proximo)}</dd></div>}
         {c.saldo > 0 && (
           <div>
             <dt>Debes</dt>
@@ -272,7 +273,7 @@ function Comprobantes({ datos, onCambio }: { datos: DatosSuscripcion; onCambio: 
       <h2 id="susc-comprobantes-t" className="susc__card-title">Comprobantes enviados</h2>
       <ul className="susc__lista">
         {datos.reportes.map((r) => {
-          const e = ESTADO_REPORTE[r.estado];
+          const e = ESTADO_REPORTE[r.estado] ?? { texto: String(r.estado), tono: 'neutro' as const };
           return (
             <li key={r.id} className="susc__fila">
               <div className="susc__fila-datos">

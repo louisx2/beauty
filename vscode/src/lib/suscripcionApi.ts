@@ -67,9 +67,17 @@ export async function cargarSuscripcion(): Promise<DatosSuscripcion> {
   };
 }
 
-async function huella(blob: Blob): Promise<string> {
-  const h = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
-  return Array.from(new Uint8Array(h)).map((b) => b.toString(16).padStart(2, '0')).join('');
+/** En una dirección http de la red de la casa (pruebas desde el teléfono) el navegador no ofrece crypto.subtle:
+ *  sin huella no se hace la revisión de comprobante repetido, pero el reporte se envía igual. */
+async function huella(blob: Blob): Promise<string | null> {
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) return null;
+  try {
+    const h = await subtle.digest('SHA-256', await blob.arrayBuffer());
+    return Array.from(new Uint8Array(h)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return null;
+  }
 }
 
 function tipoDe(archivo: File): string {
