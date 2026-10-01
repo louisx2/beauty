@@ -30,6 +30,7 @@ import {
 import { useState, useEffect, useRef, useMemo } from 'react';
 import NextSessionModal from '../components/NextSessionModal';
 import ClientAutocomplete from '../components/ClientAutocomplete';
+import AvisoSuscripcion from '../components/AvisoSuscripcion';
 import { useServiceStore } from '../store/serviceStore';
 import { useStaffStore } from '../store/staffStore';
 import { useClientStore } from '../store/clientStore';
@@ -570,6 +571,7 @@ export default function AdminLayout() {
 
         {/* Page Content */}
         <div className="admin__content">
+          {user?.role === 'admin' && <AvisoSuscripcion />}
           <Outlet />
         </div>
       </div>
