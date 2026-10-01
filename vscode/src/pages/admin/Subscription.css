@@ -58,7 +58,10 @@
 .susc__fila-datos span { display: inline-flex; align-items: center; gap: 4px; overflow-wrap: anywhere; }
 .susc__motivo { color: #fca5a5; }
 .susc__fila-acciones { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
-@media (min-width: 761px) {
+/* Todo en una línea solo si la lista es ancha. Se mide la lista y no la pantalla: en el iPad vertical el menú
+   lateral del panel le quita ancho y la fecha y la cuenta quedaban apretadas en una columna de 80 px. */
+.susc__lista { container-type: inline-size; }
+@container (min-width: 640px) {
   .susc__fila { grid-template-columns: minmax(0, 1fr) auto auto; }
   .susc__fila-acciones { grid-column: auto; }
 }
