@@ -121,17 +121,17 @@ export function avisoDeCuota(c: CuentaSuscripcion | null): Aviso | null {
   if (c.estado === 'suspendida') {
     return { tono: 'rojo', ocultable: false, clave: 'suspendida', titulo: 'Tu suscripción está suspendida', detalle: 'Escríbenos para reactivarla.' };
   }
-  if (c.estado === 'prueba_vencida') {
-    return {
-      tono: 'rojo', ocultable: false, clave: 'prueba-vencida', titulo: 'Tu período de prueba terminó',
-      detalle: 'Transfiere la primera cuota y sube el comprobante en Mi suscripción.',
-    };
-  }
   if (enRevision && (!debe || c.porConfirmar + 0.005 >= c.saldo)) {
     return {
       tono: 'azul', ocultable: true, clave: `revision:${c.comprobantesPorConfirmar}`,
       titulo: `Estamos revisando tu comprobante de ${dinero(c.porConfirmar)}`,
       detalle: 'Cuando confirmemos que llegó a la cuenta te llega la factura por correo.',
+    };
+  }
+  if (c.estado === 'prueba_vencida') {
+    return {
+      tono: 'rojo', ocultable: false, clave: 'prueba-vencida', titulo: 'Tu período de prueba terminó',
+      detalle: 'Transfiere la primera cuota y sube el comprobante en Mi suscripción.',
     };
   }
   if (debe) {

@@ -84,6 +84,8 @@ test('prueba, prueba vencida y cuenta suspendida', () => {
   const vencida = avisoDeCuota(base({ estado: 'prueba_vencida', dias: -3 }));
   assert.deepEqual([vencida?.tono, vencida?.ocultable, vencida?.titulo], ['rojo', false, 'Tu período de prueba terminó']);
   assert.equal(avisoDeCuota(base({ estado: 'suspendida' }))?.titulo, 'Tu suscripción está suspendida');
+  assert.equal(avisoDeCuota(base({ estado: 'prueba_vencida', dias: -3, por_confirmar: 2300, comprobantes_por_confirmar: 1 }))?.tono, 'azul');
+  assert.equal(avisoDeCuota(base({ estado: 'suspendida', por_confirmar: 2300, comprobantes_por_confirmar: 1 }))?.tono, 'rojo');
 });
 
 test('monto de la próxima cuota y monto sugerido para pagar', () => {
