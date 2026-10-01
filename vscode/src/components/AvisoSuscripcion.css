@@ -1,0 +1,26 @@
+/* ── Aviso del pago del sistema, arriba del contenido del panel ── */
+.aviso-susc { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; padding: 12px 14px; border-radius: 12px; border: 1px solid; }
+.aviso-susc__icono { flex-shrink: 0; }
+.aviso-susc__texto { flex: 1 1 220px; min-width: 0; }
+.aviso-susc__titulo { margin: 0; font-weight: 600; font-size: 0.95rem; overflow-wrap: anywhere; }
+.aviso-susc__detalle { margin: 2px 0 0; font-size: 0.85rem; opacity: 0.92; overflow-wrap: anywhere; }
+.aviso-susc__acciones { display: flex; align-items: center; gap: 8px; flex: 1 1 100%; }
+.aviso-susc__btn { display: inline-flex; flex: 1; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border-radius: 10px; font-weight: 600; font-size: 0.88rem; text-decoration: none; color: #fff; }
+.aviso-susc__cerrar { display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: inherit; cursor: pointer; }
+@media (min-width: 761px) {
+  .aviso-susc__acciones { flex: 0 0 auto; }
+  .aviso-susc__btn { flex: 0 0 auto; }
+}
+
+/* tema oscuro (el del panel) */
+.aviso-susc--rojo { background: rgba(127, 29, 29, 0.35); border-color: rgba(248, 113, 113, 0.5); color: #fee2e2; }
+.aviso-susc--rojo .aviso-susc__btn { background: #dc2626; }
+.aviso-susc--ambar { background: rgba(120, 53, 15, 0.35); border-color: rgba(251, 191, 36, 0.5); color: #fef3c7; }
+.aviso-susc--ambar .aviso-susc__btn { background: #b45309; }
+.aviso-susc--azul { background: rgba(12, 74, 110, 0.35); border-color: rgba(56, 189, 248, 0.5); color: #e0f2fe; }
+.aviso-susc--azul .aviso-susc__btn { background: #0369a1; }
+
+/* tema claro */
+[data-theme="light"] .aviso-susc--rojo { background: #fef2f2; border-color: #fca5a5; color: #7f1d1d; }
+[data-theme="light"] .aviso-susc--ambar { background: #fffbeb; border-color: #fcd34d; color: #78350f; }
+[data-theme="light"] .aviso-susc--azul { background: #f0f9ff; border-color: #7dd3fc; color: #0c4a6e; }

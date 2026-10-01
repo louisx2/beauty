@@ -15,13 +15,14 @@ export function medidaReducida(ancho: number, alto: number, maximo = LADO_MAXIMO
 
 /**
  * Reduce la foto a JPEG (calidad 0.82) de a lo más `LADO_MAXIMO_FOTO` px. Devuelve el archivo original tal cual si el
- * navegador no la puede decodificar (p. ej. HEIC en Chrome), si no se pudo exportar o si el resultado pesa más.
+ * navegador no la puede decodificar (p. ej. HEIC en Chrome), si no se pudo exportar o si el resultado pesa más
+ * (los comprobantes de pago usan 2000 px y 0.85 para que el número de referencia se lea).
  */
-export async function reducirFoto(archivo: File): Promise<File> {
+export async function reducirFoto(archivo: File, maximo = LADO_MAXIMO_FOTO, calidad = 0.82): Promise<File> {
   let bitmap: ImageBitmap | null = null;
   try {
     bitmap = await createImageBitmap(archivo);
-    const { ancho, alto } = medidaReducida(bitmap.width, bitmap.height);
+    const { ancho, alto } = medidaReducida(bitmap.width, bitmap.height, maximo);
     const lienzo = document.createElement('canvas');
     lienzo.width = ancho;
     lienzo.height = alto;
@@ -34,7 +35,7 @@ export async function reducirFoto(archivo: File): Promise<File> {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, ancho, alto);
     ctx.drawImage(bitmap, 0, 0, ancho, alto);
-    const blob = await new Promise<Blob | null>((resolver) => lienzo.toBlob(resolver, 'image/jpeg', 0.82));
+    const blob = await new Promise<Blob | null>((resolver) => lienzo.toBlob(resolver, 'image/jpeg', calidad));
     if (!blob || blob.size >= archivo.size) return archivo;
     return new File([blob], archivo.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
   } catch {
