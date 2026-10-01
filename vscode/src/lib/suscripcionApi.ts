@@ -1,8 +1,8 @@
 // Habla con la función mi-suscripcion (que a su vez habla con el cobro de SellAlleS). Nunca ve la clave de
-// conexión. El comprobante se sube directo al almacenamiento de SellAlleS con el permiso de un solo uso que
-// entrega el puente; la huella (sha-256) se saca del archivo ORIGINAL, así el mismo comprobante enviado dos
+// conexión. El comprobante se sube directo al almacenamiento de SellAlleS, con un PUT simple y el permiso de un
+// solo uso que entrega el puente (no con otro cliente de Supabase: así el tipo del archivo es el que decimos
+// nosotros, aunque el navegador no lo sepa, p. ej. un HEIC); la huella (sha-256) se saca del archivo ORIGINAL, así el mismo comprobante enviado dos
 // veces se reconoce aunque se comprima distinto.
-import { createClient } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { reducirFoto } from './fotos';
 import {
@@ -50,7 +50,9 @@ async function llamar(cuerpo: Record<string, unknown>): Promise<Response> {
   let mensaje = '';
   try { mensaje = String((await r.json())?.error ?? ''); } catch { /* sin cuerpo */ }
   if (r.status === 503 || mensaje === 'sin conexion') throw new ErrorSuscripcion('No pudimos cargar tu suscripción ahora.', true);
-  if (r.status === 403 || r.status === 401) throw new ErrorSuscripcion('Solo la administración puede ver la suscripción.');
+  // el 401 lo da la puerta de entrada cuando la sesión falta o venció (la función nunca responde 401)
+  if (r.status === 401) throw new ErrorSuscripcion('Tu sesión terminó. Vuelve a entrar al panel.');
+  if (r.status === 403) throw new ErrorSuscripcion('Solo la administración puede ver la suscripción.');
   throw new ErrorSuscripcion(mensaje || 'Algo salió mal. Intenta de nuevo.');
 }
 
@@ -96,12 +98,17 @@ export async function reportarPago(d: {
   }
 
   const permiso = await (await llamar({ accion: 'subida', nombre: d.archivo.name, mime, tamano: blob.size })).json();
-  const sellalles = createClient(String(permiso.url), String(permiso.apikey), {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  });
-  const { error } = await sellalles.storage.from('comprobantes-de-pago')
-    .uploadToSignedUrl(String(permiso.path), String(permiso.token), blob, { contentType: mime });
-  if (error) throw new ErrorSuscripcion(`No se pudo subir el comprobante: ${error.message}`);
+  // PUT directo con el permiso de un solo uso (el path es <empresa>/<uuid>.<ext>: se deja tal cual, con su barra)
+  let subida: Response;
+  try {
+    subida = await fetch(
+      `${permiso.url}/storage/v1/object/upload/sign/comprobantes-de-pago/${permiso.path}?token=${encodeURIComponent(String(permiso.token))}`,
+      { method: 'PUT', headers: { apikey: String(permiso.apikey), 'Content-Type': mime }, body: blob },
+    );
+  } catch {
+    throw new ErrorSuscripcion('No se pudo subir el comprobante. Revisa tu internet e intenta de nuevo.', true);
+  }
+  if (!subida.ok) throw new ErrorSuscripcion('No se pudo subir el comprobante. Intenta de nuevo.');
 
   await llamar({
     accion: 'reportar', monto: d.monto, fecha: d.fecha, banco_id: d.bancoId, referencia: d.referencia,
