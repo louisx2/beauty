@@ -24,7 +24,8 @@ import {
   Zap,
   Volume2,
   Check,
-  Trash2
+  Trash2,
+  CreditCard
 } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import NextSessionModal from '../components/NextSessionModal';
@@ -77,6 +78,7 @@ const navSections = [
     label: 'Configuración',
     items: [
       { to: '/admin/ajustes', icon: <SettingsIcon size={20} />,  label: 'Ajustes' },
+      { to: '/admin/suscripcion', icon: <CreditCard size={20} />, label: 'Mi suscripción' },
     ],
   },
 ];
@@ -134,11 +136,11 @@ export default function AdminLayout() {
   // Redirect non-admin roles to their home pages
   useEffect(() => {
     if (user?.role === 'specialist') {
-      const adminOnly = ['/admin', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/equipo', '/admin/ajustes'];
+      const adminOnly = ['/admin', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/equipo', '/admin/ajustes', '/admin/suscripcion'];
       if (adminOnly.includes(location.pathname)) navigate('/admin/mi-turno', { replace: true });
     }
     if (user?.role === 'receptionist') {
-      const receptionistForbidden = ['/admin', '/admin/dashboard', '/admin/reportes', '/admin/ajustes', '/admin/equipo'];
+      const receptionistForbidden = ['/admin', '/admin/dashboard', '/admin/reportes', '/admin/ajustes', '/admin/equipo', '/admin/suscripcion'];
       if (receptionistForbidden.includes(location.pathname)) navigate('/admin/recepcion', { replace: true });
     }
   }, [user?.role, location.pathname, navigate]);
