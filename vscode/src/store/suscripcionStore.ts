@@ -31,7 +31,10 @@ export const useSuscripcionStore = create<SuscripcionState>()((set, get) => ({
       const d = await cargarSuscripcion();
       set({ cuenta: d.cuenta, cargadaEn: Date.now() });
     } catch {
-      // sin conexión o sin permiso: no hay banner, y se vuelve a intentar pasada la vigencia
+      // una recarga forzada (aviso de SellAlleS o volver a la pestaña) que falla deja el aviso que había: un tropiezo
+      // de la red no debe esconder un "estás atrasada". Sin nada antes (o sin conexión de verdad), no hay banner y se
+      // vuelve a intentar pasada la vigencia.
+      if (forzar && get().cuenta) return;
       set({ cuenta: null, cargadaEn: Date.now() });
     } finally {
       set({ cargando: false });
