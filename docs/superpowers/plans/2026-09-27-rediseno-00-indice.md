@@ -51,15 +51,23 @@ los precios de los servicios: se confirman con Louis antes de tocar nada. Lista 
 - **Revisar** que ninguna clienta tenga un número de relleno (809-000-0000): quien lo escriba en Mis citas vería sus
   paquetes.
 - **Supabase:** revisar los avisos de seguridad (advisors); las funciones públicas por teléfono son intencionales (spec §7).
+- **Cobro del sistema (SellAlleS):**
+  1. En SellAlleS, crear la empresa real "Anadsll Beauty Esthetic" con una sucursal, la suscripción a medida de
+     RD$ 2,300 al mes (`custom_monthly_price = 2300`, mensual) y la dueña como administradora, con su correo. La
+     primera cuota nace ese día.
+  2. En Empresas → "Clave de conexión", generar su clave y guardarla en el Vault de Anadsll
+     (`select vault.update_secret(<id de sellalles_clave_cobro>, '<clave>')`).
+  3. Revocar la clave de prueba y borrar la empresa "Prueba Anadsll (Claude)" si aún existe.
 - **Cierre:** etiqueta git de la versión entregada y prueba final con la dueña en su teléfono.
 
-**Después del rediseño (proyecto aparte, con su propia spec):** cobro mensual del sistema.
-- El salón se registra como una empresa más en SellAlleS (`louisx2/SellAlleS-WEB`), y Louis lo cobra desde su pantalla
-  de Cobros, con sus correos y su resumen nocturno.
+**Cobro mensual del sistema (proyecto aparte):** hecho antes de la Entrega.
+- Spec: `docs/superpowers/specs/2026-09-30-cobro-suscripcion-sellalles-design.md`.
+- Plan: `docs/superpowers/plans/2026-09-30-cobro-suscripcion-sellalles.md`.
+- El salón es una empresa más en SellAlleS (`louisx2/SellAlleS-WEB`), y Louis lo cobra desde su pantalla de Cobros.
 - En el panel de Anadsll, la dueña tiene "Mi suscripción": lo que debe, las cuentas, subir el comprobante, sus pagos y
-  sus facturas.
-- También ve un banner cuando el pago está por vencer, está atrasado o el comprobante está en revisión.
-- Todo viaja a SellAlleS por funciones del servidor, con una clave secreta.
+  sus facturas. También ve un banner cuando el pago está por vencer, está atrasado o el comprobante está en revisión.
+- Todo viaja a SellAlleS por funciones del servidor (`mi-suscripcion` → `cobro-externo`), con una clave que vive en Vault.
+- Hasta la Entrega, `sellalles_clave_cobro` queda vacío: la función responde "sin conexión" y el banner no sale.
 
 **El diseño viejo NO se borra** (pedido de Louis): antes de fusionar la Fase 2, que es la primera
 que cambia lo que ve la clienta, se crea y se sube la etiqueta git `diseno-anterior` en `main`. Los
