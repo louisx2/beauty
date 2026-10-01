@@ -30,7 +30,7 @@ function abrirEnPestana(direccion: () => Promise<string>) {
     })
     .catch((e) => {
       pestana?.close();
-      toast.error(mensajeDe(e, 'No se pudo abrir.'));
+      toast.error(mensajeDe(e, 'No se pudo abrir.'), { duration: 8000 });
     });
 }
 
@@ -124,7 +124,7 @@ function CuentasBancarias({ datos }: { datos: DatosSuscripcion }) {
       await navigator.clipboard.writeText(numero);
       toast.success('Número copiado');
     } catch {
-      toast.error('No se pudo copiar; cópialo a mano');
+      toast.error('No se pudo copiar; cópialo a mano', { duration: 8000 });
     }
   };
   return (
@@ -145,7 +145,7 @@ function CuentasBancarias({ datos }: { datos: DatosSuscripcion }) {
                 <span>{b.numero}</span>
                 <button type="button" className="susc__icon-btn" onClick={() => void copiar(b.numero)}
                   aria-label={`Copiar el número de cuenta ${b.numero}`}>
-                  <Copy size={16} aria-hidden="true" />
+                  <Copy size={16} aria-hidden="true" /> Copiar
                 </button>
               </div>
               <div className="susc__titular">{b.titular}{b.documento ? ` · ${b.documento}` : ''}</div>
@@ -167,6 +167,7 @@ function FormularioReporte({ datos, onListo }: { datos: DatosSuscripcion; onList
   const [archivo, setArchivo] = useState<File | null>(null);
   const [errores, setErrores] = useState<ErroresReporte>({});
   const [enviando, setEnviando] = useState(false);
+  const [errorEnvio, setErrorEnvio] = useState('');
   const inputArchivo = useRef<HTMLInputElement>(null);
 
   const enviar = async (e: FormEvent) => {
@@ -179,6 +180,7 @@ function FormularioReporte({ datos, onListo }: { datos: DatosSuscripcion; onList
     setErrores(errs);
     if (Object.keys(errs).length || !archivo) return;
     setEnviando(true);
+    setErrorEnvio('');
     try {
       await reportarPago({ monto: Number(monto), fecha, bancoId: bancoId || null, referencia, nota, archivo });
       toast.success('Recibimos tu comprobante. Te avisamos cuando lo confirmemos.');
@@ -188,7 +190,7 @@ function FormularioReporte({ datos, onListo }: { datos: DatosSuscripcion; onList
       if (inputArchivo.current) inputArchivo.current.value = '';
       await onListo();
     } catch (err) {
-      toast.error(mensajeDe(err, 'No se pudo enviar el comprobante.'));
+      setErrorEnvio(mensajeDe(err, 'No se pudo enviar el comprobante.'));
     } finally {
       setEnviando(false);
     }
@@ -237,6 +239,7 @@ function FormularioReporte({ datos, onListo }: { datos: DatosSuscripcion; onList
             aria-invalid={errores.archivo ? true : undefined} aria-describedby={errores.archivo ? 'susc-err-archivo' : undefined} />
           {errores.archivo && <small id="susc-err-archivo" className="susc__err" role="alert">{errores.archivo}</small>}
         </label>
+        {errorEnvio && <p className="susc__err susc__err--envio" role="alert">{errorEnvio}</p>}
         <button type="submit" className="susc__btn susc__btn--principal" disabled={enviando}>
           {enviando ? <Loader2 className="susc__spin" size={16} aria-hidden="true" /> : <Upload size={16} aria-hidden="true" />}
           {enviando ? 'Enviando…' : 'Enviar comprobante'}
@@ -258,7 +261,7 @@ function Comprobantes({ datos, onCambio }: { datos: DatosSuscripcion; onCambio: 
       toast.success('Comprobante retirado');
       await onCambio();
     } catch (e) {
-      toast.error(mensajeDe(e, 'No se pudo retirar el comprobante.'));
+      toast.error(mensajeDe(e, 'No se pudo retirar el comprobante.'), { duration: 8000 });
     } finally {
       setRetirando(null);
     }
@@ -307,7 +310,7 @@ function Pagos({ datos }: { datos: DatosSuscripcion }) {
       a.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch (e) {
-      toast.error(mensajeDe(e, 'No se pudo descargar la factura.'));
+      toast.error(mensajeDe(e, 'No se pudo descargar la factura.'), { duration: 8000 });
     }
   };
   const ver = (id: string) =>

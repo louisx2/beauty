@@ -32,8 +32,8 @@
 .susc__banco { padding: 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); }
 .susc__banco-nombre { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
 .susc__banco-nombre span, .susc__titular { font-size: 0.85rem; color: rgba(255, 255, 255, 0.65); overflow-wrap: anywhere; }
-.susc__numero { display: flex; align-items: center; gap: 8px; margin: 6px 0 2px; font-family: ui-monospace, monospace; font-size: 1rem; overflow-wrap: anywhere; }
-.susc__icon-btn { display: grid; place-items: center; min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: inherit; cursor: pointer; }
+.susc__numero { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 2px; font-family: ui-monospace, monospace; font-size: 1rem; overflow-wrap: anywhere; }
+.susc__icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 14px; white-space: nowrap; font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 600; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: inherit; cursor: pointer; }
 
 .susc__form { display: flex; flex-direction: column; gap: 14px; }
 .susc__campo { display: flex; flex-direction: column; gap: 6px; font-size: 0.88rem; color: rgba(255, 255, 255, 0.75); }
@@ -41,6 +41,7 @@
 .susc__campo textarea { resize: vertical; }
 .susc__campo input[type="file"] { padding: 8px; }
 .susc__err { color: #fca5a5; font-weight: 500; }
+.susc__err--envio { margin: 0; }
 
 .susc__btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); background: transparent; color: inherit; font-family: 'Outfit', sans-serif; font-weight: 600; cursor: pointer; }
 .susc__btn:disabled { opacity: 0.6; cursor: default; }
