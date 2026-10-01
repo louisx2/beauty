@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type MouseEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AlertTriangle, CalendarClock, Hourglass, X } from 'lucide-react';
 import { useSuscripcionStore } from '../store/suscripcionStore';
 import { avisoDeCuota, hoySantoDomingo } from '../lib/suscripcion';
+import { bajarASeccion } from '../lib/bajarASeccion';
 import './AvisoSuscripcion.css';
 
 const ICONO = { rojo: AlertTriangle, ambar: CalendarClock, azul: Hourglass } as const;
@@ -43,6 +44,15 @@ export default function AvisoSuscripcion() {
     setCerrado(aviso.clave);
   };
 
+  // El botón lleva a lo que hay que ver: el comprobante en revisión (azul) o el formulario para pagar.
+  const seccion = aviso.tono === 'azul' ? 'susc-comprobantes' : 'susc-reportar';
+  const irASeccion = (e: MouseEvent<HTMLAnchorElement>) => {
+    // ya en Mi suscripción, el enlace no cambiaría nada: se baja a la sección
+    if (pathname !== '/admin/suscripcion') return;
+    e.preventDefault();
+    bajarASeccion(seccion);
+  };
+
   const Icono = ICONO[aviso.tono];
   return (
     <div className={`aviso-susc aviso-susc--${aviso.tono}`} role="status">
@@ -52,7 +62,7 @@ export default function AvisoSuscripcion() {
         <p className="aviso-susc__detalle">{aviso.detalle}</p>
       </div>
       <div className="aviso-susc__acciones">
-        <Link className="aviso-susc__btn" to="/admin/suscripcion">
+        <Link className="aviso-susc__btn" to={`/admin/suscripcion#${seccion}`} onClick={irASeccion}>
           {aviso.tono === 'azul' ? 'Ver estado' : 'Pagar / subir comprobante'}
         </Link>
         {aviso.ocultable && (
