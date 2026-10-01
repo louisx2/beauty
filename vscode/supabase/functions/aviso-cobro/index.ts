@@ -45,7 +45,8 @@ Deno.serve(async (req) => {
   });
   const { data: filas, error: errorConexion } = await db.rpc('_conexion_sellalles');
   if (errorConexion) console.error('aviso-cobro: no se pudo leer la conexión:', errorConexion.message);
-  const clave = ((filas ?? [])[0] as { clave: string | null } | undefined)?.clave;
+  // sin espacios: fetch los quita del encabezado al llamar al puente, así que el hash tiene que ser el de la clave limpia
+  const clave = ((filas ?? [])[0] as { clave: string | null } | undefined)?.clave?.trim();
   if (!clave) return new Response(null, { status: 503 });
 
   const esperada = await hmacHex(await sha256Hex(clave), en);

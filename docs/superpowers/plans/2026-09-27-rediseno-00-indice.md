@@ -57,7 +57,12 @@ los precios de los servicios: se confirman con Louis antes de tocar nada. Lista 
      primera cuota nace ese día.
   2. En Empresas → "Clave de conexión", generar su clave y guardarla en el Vault de Anadsll
      (`select vault.update_secret(<id de sellalles_clave_cobro>, '<clave>')`).
-  3. Revocar la clave de prueba y borrar la empresa "Prueba Anadsll (Claude)" si aún existe.
+  3. Ponerle a esa conexión la dirección del aviso en tiempo real (en SellAlleS, desde el editor SQL):
+     `update claves_cobro_externo set aviso_url = 'https://lrcbucfaipazjoxtussc.supabase.co/functions/v1/aviso-cobro'
+     where company_id = '<id de la empresa real>' and revocada_en is null;`. Sin esto todo funciona, pero el panel de
+     Anadsll no se entera al instante de lo que se confirma en Cobros. Si después se genera otra clave, la dirección
+     se conserva sola.
+  4. Revocar la clave de prueba y borrar la empresa "Prueba Anadsll (Claude)" si aún existe.
 - **Cierre:** etiqueta git de la versión entregada y prueba final con la dueña en su teléfono.
 
 **Cobro mensual del sistema (proyecto aparte):** hecho antes de la Entrega.

@@ -37,16 +37,22 @@ export default function AvisoSuscripcion() {
     const refrescar = () => {
       if (espera) clearTimeout(espera);
       espera = setTimeout(() => {
-        if (rutaRef.current === '/admin/suscripcion') window.dispatchEvent(new Event(EVENTO_CAMBIO_SUSCRIPCION));
-        else void cargarCuenta(true);
+        if (rutaRef.current.replace(/\/+$/, '') === '/admin/suscripcion') {
+          window.dispatchEvent(new Event(EVENTO_CAMBIO_SUSCRIPCION));
+        } else {
+          void cargarCuenta(true);
+        }
       }, 800);
     };
     const canal = supabase
       .channel(`avisos-cobro:${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'avisos_cobro' }, refrescar)
       .subscribe();
+    // al volver a la pestaña solo si lo último que se cargó tiene más de un minuto: cada consulta pasa por dos
+    // funciones y por SellAlleS, y en el teléfono se entra y se sale de la pestaña muchas veces
     const alVolver = () => {
-      if (document.visibilityState === 'visible') refrescar();
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - useSuscripcionStore.getState().cargadaEn > 60_000) refrescar();
     };
     document.addEventListener('visibilitychange', alVolver);
     return () => {
