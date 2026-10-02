@@ -308,6 +308,16 @@
   color: #fff;
 }
 
+/* Preferencias del dashboard: casillas con su texto legible en los dos temas (antes el color iba fijo en blanco) */
+.settings-checks { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.settings-checkbox-wrap {
+  display: flex; align-items: center; gap: 12px; min-height: 44px;
+  font-size: 0.95rem; cursor: pointer; color: rgba(255, 255, 255, 0.85);
+}
+.settings-checkbox-wrap input { width: 20px; height: 20px; flex-shrink: 0; cursor: pointer; accent-color: var(--camel); }
+:root[data-theme="light"] .settings-checkbox-wrap { color: var(--espresso); }
+:root[data-theme="light"] .settings-checkbox-wrap input { accent-color: var(--espresso); }
+
 :root[data-theme="light"] .settings-bank-card__add-btn {
   background: #f1f5f9;
   border-color: #cbd5e1;

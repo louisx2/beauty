@@ -343,24 +343,22 @@ export default function Settings() {
             <h3 className="settings-card__title"><Star size={20} /> Preferencias del Dashboard</h3>
             <p className="settings-card__desc">Elige qué secciones deseas visualizar en tu panel de control principal.</p>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '8px' }}>
-            <label className="settings-checkbox-wrap" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', cursor: 'pointer', color: 'rgba(255,255,255,0.8)' }}>
+          <div className="settings-checks">
+            <label className="settings-checkbox-wrap">
               <input
                 type="checkbox"
                 checked={form.show_welcome_card}
                 onChange={(e) => setForm({ ...form, show_welcome_card: e.target.checked })}
-                style={{ width: '18px', height: '18px', borderRadius: '4px', cursor: 'pointer' }}
               />
-              Mostrar Tarjeta de Bienvenida
+              Mostrar la tarjeta de bienvenida
             </label>
-            <label className="settings-checkbox-wrap" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', cursor: 'pointer', color: 'rgba(255,255,255,0.8)' }}>
+            <label className="settings-checkbox-wrap">
               <input
                 type="checkbox"
                 checked={form.show_stats_cards}
                 onChange={(e) => setForm({ ...form, show_stats_cards: e.target.checked })}
-                style={{ width: '18px', height: '18px', borderRadius: '4px', cursor: 'pointer' }}
               />
-              Mostrar Tarjetas de Estadísticas (Bento)
+              Mostrar las tarjetas de estadísticas
             </label>
           </div>
         </div>

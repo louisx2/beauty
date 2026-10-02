@@ -13,6 +13,8 @@
 }
 
 :root {
+  /* Títulos del panel con la misma letra que la página pública (Playfair Display); el resto va en Outfit */
+  --panel-titulo: 'Playfair Display', Georgia, serif;
   /* ── New Warm Palette ── */
   --camel: #B2967D;
   --camel-dark: #96785f;
@@ -439,8 +441,15 @@ body {
   overflow-x: hidden;
 }
 
+/* Cormorant queda solo para el diseño anterior de la página (src/legacy), que se conserva tal cual */
 h1, h2, h3 {
   font-family: 'Cormorant Garamond', serif;
+}
+/* En el panel los encabezados sin letra propia van en Outfit (antes caían en Cormorant y se mezclaban tres letras);
+   los títulos de cada pantalla y de los diálogos usan --panel-titulo. Misma especificidad que una clase: la regla
+   de cada página, que carga después, sigue mandando. */
+.admin :where(h1, h2, h3) {
+  font-family: 'Outfit', sans-serif;
 }
 
 /* ── Scrollbar ── */
@@ -598,6 +607,16 @@ h1, h2, h3 {
   animation: fadeInUp 0.3s ease;
 }
 
+/* Con un diálogo abierto (o el menú lateral en pantallas chicas) el fondo no se mueve: en el iPad y el teléfono el
+   dedo arrastraba la página de atrás. El panel no hace scroll en el body sino en .admin__main, así que se bloquea
+   ese contenedor mientras haya un diálogo, y el diálogo no le pasa el desplazamiento al fondo al llegar a su borde. */
+.admin__main:has(.modal-overlay, .rec__modal-overlay),
+.admin:has(.admin__sidebar--open) .admin__main,
+body:has(.modal-overlay, .rec__modal-overlay) {
+  overflow: hidden;
+}
+.modal, .rec__modal, .modal-overlay, .rec__modal-overlay { overscroll-behavior: contain; }
+
 .modal--wide {
   max-width: 720px;
 }
@@ -614,8 +633,9 @@ h1, h2, h3 {
 }
 
 .modal__header h2 {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--panel-titulo);
   font-size: 1.4rem;
+  font-weight: 500;
   color: white;
 }
 
@@ -766,15 +786,15 @@ h1, h2, h3 {
   outline-offset: 2px;
 }
 
-/* Coherent Page Headers in Admin Dashboard */
+/* Coherent Page Headers in Admin Dashboard: el título de cada pantalla con la letra de títulos de la página */
 .appts__title,
 .clients-page__title,
 .settings-page__title,
 .staff-page__title,
 .clients__title {
-  font-family: 'Outfit', sans-serif !important;
-  font-size: 1.8rem !important;
-  font-weight: 700 !important;
+  font-family: var(--panel-titulo) !important;
+  font-size: 1.9rem !important;
+  font-weight: 500 !important;
   color: white !important;
   margin: 0 !important;
 }
@@ -789,7 +809,7 @@ h1, h2, h3 {
 :root[data-theme="light"] .settings-page__title,
 :root[data-theme="light"] .staff-page__title,
 :root[data-theme="light"] .clients__title {
-  color: #1f2937 !important;
+  color: var(--espresso) !important;
 }
 
 /* quien pide menos movimiento no recibe desplazamientos suaves */

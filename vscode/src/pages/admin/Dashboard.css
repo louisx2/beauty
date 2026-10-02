@@ -45,9 +45,9 @@
 }
 
 .dash-hero__title {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.4rem;
-  font-weight: 700;
+  font-family: var(--panel-titulo);
+  font-size: 1.5rem;
+  font-weight: 500;
   color: white;
   margin-bottom: 4px;
   z-index: 1;
