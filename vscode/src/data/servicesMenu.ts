@@ -11,33 +11,28 @@ export interface Specialist {
   miniatura?: string;
 }
 
+// Las tres que atienden. La recepción y las cuentas de soporte no van aquí: no hacen servicios.
 const specialists = {
   anabel: {
     name: 'Anabel De los Santos',
-    role: 'Fundadora & Cosmetóloga Superior',
+    role: 'Fundadora y cosmetóloga',
     image: '/equipo/anabel-retrato.jpg',
-    bio: 'Fundadora de Anadsll Beauty Esthetic. Especialista certificada en cosmetología avanzada, cejas, pestañas y técnicas de maquillaje profesional. Más de 10 años de experiencia realzando la belleza natural.',
+    bio: 'Fundadora de Anadsll Beauty Esthetic. Cosmetóloga: limpiezas faciales, láser, cejas, aparatología y tratamientos corporales.',
     miniatura: '/fotos/esp-anabel.jpg',
   },
-  nadieska: {
-    name: 'Dra. Nadieska Soto',
-    role: 'Médico Estético & Cosmiatra',
-    image: '/equipo/colaboradora1.png',
-    bio: 'Médico Estético y Cosmiatra. Especialista en tratamientos inyectables de rejuvenecimiento, toxina botulínica, rellenos de ácido hialurónico, bioestimuladores de colágeno y terapias de renovación de la piel.',
-    miniatura: '/fotos/esp-nadieska.jpg',
+  melissa: {
+    name: 'Dra. Melissa Lara',
+    role: 'Médico estético',
+    image: '/equipo/equipo-melissa.jpg',
+    bio: 'Médico general y estético: toxina botulínica, rellenos de ácido hialurónico, bioestimuladores de colágeno, mesoterapias y PRP.',
+    miniatura: '/fotos/esp-melissa.jpg',
   },
-  carmen: {
-    name: 'Carmen Rodríguez',
-    role: 'Esp. en Aparatología & Corporal',
-    image: '/equipo/colaboradora2.png',
-    bio: 'Especialista en Aparatología y Tratamientos Corporales. Experta en tecnologías avanzadas de moldeamiento, tonificación corporal, depilación láser de diodo y blanqueamiento cosmético.',
-    miniatura: '/fotos/esp-carmen.jpg',
-  },
-  paola: {
-    name: 'Paola Jiménez',
-    role: 'Cosmetóloga & Masajista',
-    image: '/equipo/specialist2.jpeg',
-    bio: 'Cosmetóloga y Masajista Terapeuta. Especialista en técnicas de depilación con cera, masajes de relajación profunda, drenaje linfático y tratamientos de bienestar integral.',
+  anaHerrera: {
+    name: 'Ana Herrera',
+    role: 'Maquilladora y lashista',
+    image: '/equipo/equipo-ana-herrera.jpg',
+    bio: 'Maquilladora y lashista: maquillaje social, de novia y de quinceañera, y extensiones de pestañas.',
+    miniatura: '/fotos/esp-ana-herrera.jpg',
   },
 };
 
@@ -72,7 +67,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'limpieza-facial',
     title: 'Limpieza Facial',
-    specialist: specialists.nadieska,
+    specialist: specialists.anabel,
     familia: 'facial',
     imagen: '/fotos/servicio-limpieza.jpg',
     descripcion: 'Protocolos de limpieza y renovación según tu tipo de piel.',
@@ -132,7 +127,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'depilacion-cera',
     title: 'Depilación con Cera',
-    specialist: specialists.paola,
+    specialist: specialists.anabel,
     familia: 'corporal',
     imagen: '/fotos/servicio-cera.jpg',
     items: [
@@ -143,16 +138,28 @@ export const servicesMenu: ServiceCategory[] = [
     ],
   },
   {
-    id: 'cejas-pestanas',
-    title: 'Cejas y Pestañas',
+    id: 'cejas',
+    title: 'Cejas',
     specialist: specialists.anabel,
     familia: 'cejas-maquillaje',
-    imagen: '/fotos/servicio-pest.jpg',
+    imagen: '/fotos/servicio-cejas.jpg',
+    descripcion: 'Diseño, laminado, depilación con hilo y tintado de cejas.',
     items: [
-      { name: 'Lifting de pestañas' },
+      { name: 'Diseño de cejas' },
       { name: 'Laminado de cejas' },
       { name: 'Depilación con hilo' },
       { name: 'Tintado de cejas' },
+    ],
+  },
+  {
+    id: 'pestanas',
+    title: 'Pestañas',
+    specialist: specialists.anaHerrera,
+    familia: 'cejas-maquillaje',
+    imagen: '/fotos/servicio-pest.jpg',
+    descripcion: 'Lifting y extensiones de pestañas: clásicas, de volumen, wispy y más.',
+    items: [
+      { name: 'Lifting de pestañas' },
       {
         name: 'Extensiones de pestañas',
         options: [
@@ -170,7 +177,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'hidra-lips',
     title: 'Hidra Lips',
-    specialist: specialists.nadieska,
+    specialist: specialists.anabel,
     familia: 'facial',
     imagen: '/fotos/servicio-lips.jpg',
     descripcion: 'Exfolia, hidrata en profundidad y da volumen temporal a los labios con ácido hialurónico y succión suave. Sin agujas.',
@@ -185,7 +192,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'blanqueamiento-corporal',
     title: 'Blanqueamiento Corporal',
-    specialist: specialists.carmen,
+    specialist: specialists.anabel,
     familia: 'corporal',
     imagen: '/fotos/servicio-blanq.jpg',
     items: [
@@ -212,7 +219,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'maquillaje',
     title: 'Maquillaje',
-    specialist: specialists.anabel,
+    specialist: specialists.anaHerrera,
     familia: 'cejas-maquillaje',
     imagen: '/fotos/servicio-maq.jpg',
     items: [
@@ -225,7 +232,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'toxina-botulinica',
     title: 'Toxina Botulínica',
-    specialist: specialists.nadieska,
+    specialist: specialists.melissa,
     familia: 'medicina',
     imagen: '/fotos/servicio-toxina.jpg',
     items: [
@@ -243,7 +250,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'rellenos',
     title: 'Rellenos con Ácido Hialurónico',
-    specialist: specialists.nadieska,
+    specialist: specialists.melissa,
     familia: 'medicina',
     imagen: '/fotos/servicio-rellenos.jpg',
     items: [
@@ -263,7 +270,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'bioestimuladores',
     title: 'Bioestimuladores de Colágeno',
-    specialist: specialists.nadieska,
+    specialist: specialists.melissa,
     familia: 'medicina',
     imagen: '/fotos/servicio-bioestim.jpg',
     items: [
@@ -282,7 +289,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'mesoterapia',
     title: 'Mesoterapias',
-    specialist: specialists.nadieska,
+    specialist: specialists.melissa,
     familia: 'medicina',
     imagen: '/fotos/servicio-meso.jpg',
     items: [
@@ -298,7 +305,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'plasma-rico-plaquetas',
     title: 'Plasma Rico en Plaquetas',
-    specialist: specialists.nadieska,
+    specialist: specialists.melissa,
     familia: 'medicina',
     imagen: '/fotos/servicio-prp.jpg',
     descripcion: 'PRP: tu propio plasma, rico en factores de crecimiento, para regenerar la piel y fortalecer el cabello.',
@@ -317,7 +324,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'escleroterapia',
     title: 'Escleroterapia',
-    specialist: specialists.nadieska,
+    specialist: specialists.melissa,
     familia: 'medicina',
     imagen: '/fotos/servicio-esclero.jpg',
     descripcion: 'Tratamiento para várices.',
@@ -333,7 +340,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'verrugas',
     title: 'Eliminación de Verrugas',
-    specialist: specialists.nadieska,
+    specialist: specialists.melissa,
     familia: 'medicina',
     imagen: '/fotos/servicio-verrugas.jpg',
     descripcion: 'El precio varía según la cantidad y el tamaño.',
@@ -349,7 +356,7 @@ export const servicesMenu: ServiceCategory[] = [
   {
     id: 'aparatologia',
     title: 'Aparatologías',
-    specialist: specialists.carmen,
+    specialist: specialists.anabel,
     familia: 'corporal',
     imagen: '/fotos/servicio-aparatologia.jpg',
     posicion: '50% 62%',

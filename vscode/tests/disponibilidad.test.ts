@@ -6,15 +6,17 @@ import {
 } from '../src/site/reservar/disponibilidad.ts';
 
 const L_S = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-const persona = (id: string, service_ids: string[]): Especialista => ({
-  id, name: id.toUpperCase(), working_days: L_S, working_start: '09:00:00', working_end: '18:00:00', service_ids,
+const persona = (id: string, service_ids: string[], role = 'specialist'): Especialista => ({
+  id, name: id.toUpperCase(), role, working_days: L_S, working_start: '09:00:00', working_end: '18:00:00', service_ids,
 });
 const ana = persona('ana', ['s1']);
 const bea = persona('bea', ['s2']);
-const duena = persona('duena', []);
-const STAFF = [ana, bea, duena];
+// especialista sin catálogo: puede hacer todo
+const sinlista = persona('sinlista', []);
+const STAFF = [ana, bea, sinlista];
 const agenda = (extra: Partial<Agenda> = {}): Agenda => ({ staff: STAFF, ocupados: {}, bloqueos: [], ...extra });
 const JUEVES = '2026-10-01';
+const SABADO = '2026-10-03';
 const DOMINGO = '2026-10-04';
 const limpieza: Elegido = { serviceId: 's1', staffId: '', nombre: 'Limpieza', duracion: 60 };
 const cejas: Elegido = { serviceId: 's2', staffId: '', nombre: 'Cejas', duracion: 30 };
@@ -27,9 +29,18 @@ test('horas: "09:30" ↔ 570 minutos', () => {
   assert.equal(timeToMinutes(''), 0);
 });
 
-test('quién puede: primero su catálogo y después quien no tiene catálogo (la dueña)', () => {
-  assert.deepEqual(quienPuede(STAFF, 's1').map((m) => m.id), ['ana', 'duena']);
-  assert.deepEqual(quienPuede(STAFF, 's9').map((m) => m.id), ['duena']);
+test('quién puede: primero su catálogo y después la especialista sin catálogo', () => {
+  assert.deepEqual(quienPuede(STAFF, 's1').map((m) => m.id), ['ana', 'sinlista']);
+  assert.deepEqual(quienPuede(STAFF, 's9').map((m) => m.id), ['sinlista']);
+});
+
+test('quién puede: la administración solo hace lo suyo; sin servicios (soporte) no atiende', () => {
+  const anabel = persona('anabel', ['s1', 's3'], 'admin');
+  const soporte = persona('soporte', [], 'admin');
+  const staff = [ana, anabel, soporte];
+  assert.deepEqual(quienPuede(staff, 's1').map((m) => m.id), ['ana', 'anabel']);
+  assert.deepEqual(quienPuede(staff, 's3').map((m) => m.id), ['anabel']);
+  assert.deepEqual(quienPuede(staff, 's9').map((m) => m.id), []);
 });
 
 test('libre: solo en sus días y dentro de su horario', () => {
@@ -68,9 +79,9 @@ test('reparto: dos servicios seguidos con dos especialistas', () => {
   assert.deepEqual(quienes(repartirDesde([limpieza, cejas], 600, JUEVES, agenda())), ['Limpieza@ana', 'Cejas@bea']);
 });
 
-test('reparto: si la de su catálogo está ocupada, lo hace la dueña', () => {
+test('reparto: si la de su catálogo está ocupada, lo hace la que no tiene catálogo', () => {
   const a = agenda({ ocupados: { ana: [{ time: '10:00:00', duration: 60 }] } });
-  assert.deepEqual(quienes(repartirDesde([limpieza, cejas], 600, JUEVES, a)), ['Limpieza@duena', 'Cejas@bea']);
+  assert.deepEqual(quienes(repartirDesde([limpieza, cejas], 600, JUEVES, a)), ['Limpieza@sinlista', 'Cejas@bea']);
 });
 
 test('reparto: con una especialista elegida es ella o nada', () => {
@@ -80,7 +91,7 @@ test('reparto: con una especialista elegida es ella o nada', () => {
 });
 
 test('horarios: cada media hora de 9:00 a la última que cabe; las ocupadas quedan sin reparto', () => {
-  const a = agenda({ ocupados: { ana: [{ time: '10:00:00', duration: 60 }], duena: [{ time: '10:00:00', duration: 60 }] } });
+  const a = agenda({ ocupados: { ana: [{ time: '10:00:00', duration: 60 }], sinlista: [{ time: '10:00:00', duration: 60 }] } });
   const h = horariosDelDia([limpieza], JUEVES, a, OTRO_DIA);
   assert.equal(h[0].hora, '09:00');
   assert.equal(h.at(-1)?.hora, '17:00');
@@ -90,6 +101,26 @@ test('horarios: cada media hora de 9:00 a la última que cabe; las ocupadas qued
   assert.equal(libre('09:30'), false);
   assert.equal(libre('10:30'), false);
   assert.equal(libre('11:00'), true);
+});
+
+test('horarios: el sábado el salón cierra a las 2:00, aunque ella trabaje hasta las 6:00', () => {
+  const h = horariosDelDia([limpieza], SABADO, agenda(), OTRO_DIA);
+  assert.equal(h[0].hora, '09:00');
+  assert.equal(h.at(-1)?.hora, '13:00');
+  assert.ok(h.every((x) => x.plan !== null));
+  assert.equal(horariosDelDia([cejas], SABADO, agenda(), OTRO_DIA).at(-1)?.hora, '13:30');
+});
+
+test('horarios: el domingo el salón no abre, aunque alguien tenga marcado el domingo', () => {
+  const a = agenda({ staff: [{ ...sinlista, working_days: [...L_S, 'domingo'] }] });
+  assert.deepEqual(horariosDelDia([limpieza], DOMINGO, a, OTRO_DIA), []);
+});
+
+test('horarios: si ella entra a las 8:00, se ofrece desde las 8:00', () => {
+  const temprano = { ...ana, working_start: '08:00:00' };
+  const h = horariosDelDia([limpieza], JUEVES, agenda({ staff: [temprano] }), OTRO_DIA);
+  assert.equal(h[0].hora, '08:00');
+  assert.equal(h.at(-1)?.hora, '17:00');
 });
 
 test('horarios: hoy no ofrece horas que ya pasaron (con 15 minutos de margen)', () => {

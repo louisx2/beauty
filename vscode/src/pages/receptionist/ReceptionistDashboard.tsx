@@ -16,6 +16,8 @@ import { notifyStatusChange } from '../../lib/whatsapp';
 import toast from 'react-hot-toast';
 import './ReceptionistDashboard.css';
 import { fechaLocal } from '../../lib/fechas';
+import { horasParaAgendar, textoSinHora } from '../../lib/horarioSalon';
+import { atiendeClientas, puedeHacer } from '../../lib/quienAtiende';
 
 /* ── helpers ── */
 const STATUS_LABELS: Record<string, string> = ETIQUETA_ESTADO;
@@ -60,22 +62,6 @@ interface BookForm {
   clientName: string; clientPhone: string; clientId: string;
   service: string; employee: string; date: string; time: string;
   duration: number; notes: string;
-}
-
-const HOURS = Array.from({ length: 11 }, (_, i) => {
-  const h = i + 8;
-  return [`${String(h).padStart(2,'0')}:00`, `${String(h).padStart(2,'0')}:30`];
-}).flat();
-
-function getAvailableHours(dateStr: string): string[] {
-  const today = fechaLocal();
-  if (dateStr !== today) return HOURS;
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  return HOURS.filter(h => {
-    const [hh, mm] = h.split(':').map(Number);
-    return hh * 60 + mm > nowMin;
-  });
 }
 
 /* ══════════════════════════════════════════════
@@ -203,7 +189,7 @@ export default function ReceptionistDashboard() {
 
   /* ── Specialists for display ── */
   const specialists = useMemo(() =>
-    staff.filter(s => (s.role === 'specialist' || s.role === 'admin') && s.active),
+    staff.filter(s => s.active && atiendeClientas(s)),
     [staff]
   );
 
@@ -229,13 +215,13 @@ export default function ReceptionistDashboard() {
     if (!svc) return specialists;
     return specialists.filter(sp => {
       const stf = staff.find(x => x.name === sp.name);
-      return !stf?.serviceIds?.length || stf.serviceIds.includes(svc.id);
+      return !!stf && puedeHacer(stf, svc.id);
     });
   }, [form.service, services, specialists, staff]);
 
   const availableHours = useMemo(() =>
-    getAvailableHours(form.date),
-    [form.date]
+    horasParaAgendar(form.date, form.time),
+    [form.date, form.time]
   );
 
   const clientMatches = useMemo(() => {
@@ -763,7 +749,7 @@ export default function ReceptionistDashboard() {
                     value={form.time}
                     onChange={e => setForm(f => ({ ...f, time: e.target.value }))}
                   >
-                    <option value="">Seleccionar...</option>
+                    <option value="">{textoSinHora(form.date)}</option>
                     {availableHours.map(h => (
                       <option key={h} value={h}>{format12h(h)}</option>
                     ))}

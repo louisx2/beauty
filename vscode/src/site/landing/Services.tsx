@@ -11,7 +11,7 @@ import './Services.css';
 const DESTACADOS = [
   { id: 'limpieza-facial', titulo: 'Limpieza facial', texto: 'Profunda, hidrafacial, peeling y más: el protocolo justo para tu tipo de piel.' },
   { id: 'depilacion-laser', titulo: 'Depilación láser', texto: 'Resultados progresivos y seguros, en áreas pequeñas o grandes.' },
-  { id: 'cejas-pestanas', titulo: 'Cejas y pestañas', texto: 'Laminado, lifting, extensiones pelo a pelo y diseño con hilo.' },
+  { id: 'pestanas', titulo: 'Pestañas', texto: 'Lifting y extensiones pelo a pelo: clásicas, de volumen, wispy y más.' },
   { id: 'maquillaje', titulo: 'Maquillaje', texto: 'Express, social, quinceañera y novia, con acabado profesional.' },
 ];
 

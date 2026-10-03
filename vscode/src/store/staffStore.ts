@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { fechaLocal } from '../lib/fechas';
+import { puedeHacer } from '../lib/quienAtiende';
 
 export type StaffRole = 'admin' | 'specialist' | 'receptionist';
 
@@ -176,7 +177,7 @@ export const useStaffStore = create<StaffState>()((set, get) => ({
     return get().staff.filter(
       (m) =>
         m.active &&
-        (m.serviceIds.length === 0 || m.serviceIds.includes(serviceId)) &&
+        puedeHacer(m, serviceId) &&
         (weekday === undefined || m.workingDays.includes(weekday))
     );
   },

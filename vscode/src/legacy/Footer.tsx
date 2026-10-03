@@ -52,7 +52,7 @@ export default function Footer() {
               <MapPin size={16} /> {site.address}
             </span>
             <span className="footer__contact-item">
-              <Clock size={16} /> {site.hours}
+              <Clock size={16} /> {site.hours.join(' · ')}
             </span>
           </div>
 

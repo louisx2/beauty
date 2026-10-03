@@ -194,7 +194,7 @@ export default function Reservar() {
             <div className="s-r-paso-t">
               <span className="s-r-n" aria-hidden="true">02</span>
               <h2 id="r-paso-2-t" className="s-display">¿Cuándo?</h2>
-              <small>{site.hours}</small>
+              <small>{site.hours.join(' · ')}</small>
             </div>
             {errorEn === 'paso2' && b.bookingError && <p className="s-r-alerta" role="alert">{b.bookingError}</p>}
             <PasoCuando

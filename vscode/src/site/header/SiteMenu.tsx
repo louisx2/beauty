@@ -122,7 +122,7 @@ export default function SiteMenu({ abierto, origen, activa, secciones, tema, onT
           <Link className="s-btn s-btn-line" to="/mis-citas" onClick={onCerrar}>Mis citas</Link>
         </div>
         <div className="s-menu-info">
-          <span>{site.hours}</span>
+          {site.hours.map((h) => <span key={h}>{h}</span>)}
           <a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener noreferrer">WhatsApp {site.phone}</a>
           <a href={`https://www.instagram.com/${site.instagram}`} target="_blank" rel="noopener noreferrer">@{site.instagram}</a>
         </div>

@@ -13,7 +13,8 @@ const icons: Record<string, ReactNode> = {
   'limpieza-facial': <Sparkles />,
   'depilacion-laser': <Zap />,
   'depilacion-cera': <Flame />,
-  'cejas-pestanas': <Eye />,
+  cejas: <Eye />,
+  pestanas: <Eye />,
   'hidra-lips': <Smile />,
   'blanqueamiento-corporal': <Sun />,
   'remocion-tatuaje': <Eraser />,
@@ -98,7 +99,7 @@ export default function Services() {
       searchName = `Depilación Cera - ${cleanIt}`;
     } else if (catId === 'blanqueamiento-corporal') {
       searchName = `Blanqueamiento - ${cleanIt}`;
-    } else if (catId === 'cejas-pestanas') {
+    } else if (catId === 'pestanas') {
       if (blockLabel === 'Extensiones de pestañas') {
         if (cleanIt.startsWith('Volumen 2D')) {
           searchName = 'Extensiones de Pestañas - Volumen 2D-5D';

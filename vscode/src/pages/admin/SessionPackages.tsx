@@ -14,24 +14,11 @@ import ClientAutocomplete from '../../components/ClientAutocomplete';
 import { format12h } from '../../lib/timeFormat';
 import './SessionPackages.css';
 import { fechaLocal } from '../../lib/fechas';
+import { horasParaAgendar, textoSinHora } from '../../lib/horarioSalon';
+import { atiendeClientas } from '../../lib/quienAtiende';
 
 function fmtPrice(p: number) { return `RD$ ${p.toLocaleString('es-DO')}`; }
 function todayStr() { return fechaLocal(); }
-
-function getAvailableHours(dateStr: string): string[] {
-  const allHours = Array.from({ length: 11 }, (_, i) => {
-    const h = i + 8;
-    return `${String(h).padStart(2, '0')}:00`;
-  }).flatMap((h) => [h, h.replace(':00', ':30')]);
-  const today = fechaLocal();
-  if (dateStr !== today) return allHours;
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  return allHours.filter((h) => {
-    const [hh, mm] = h.split(':').map(Number);
-    return hh * 60 + mm > nowMin;
-  });
-}
 
 export default function SessionPackages() {
   const {
@@ -81,7 +68,7 @@ export default function SessionPackages() {
 
   // Schedule session form
   const [scheduleCp, setScheduleCp] = useState<ClientPackage | null>(null);
-  const [schedForm, setSchedForm] = useState({ staffId: '', date: todayStr(), time: '09:00', notes: '' });
+  const [schedForm, setSchedForm] = useState({ staffId: '', date: todayStr(), time: '', notes: '' });
   const [schedSubmitting, setSchedSubmitting] = useState(false);
 
   // Payments form
@@ -89,7 +76,7 @@ export default function SessionPackages() {
   const [paymentForm, setPaymentForm] = useState({ amount: 0, paymentMethod: 'cash' as 'cash'|'card'|'transfer', notes: '' });
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
 
-  const activeStaff = useMemo(() => staff.filter((s) => s.active), [staff]);
+  const activeStaff = useMemo(() => staff.filter((s) => s.active && atiendeClientas(s)), [staff]);
 
   const filteredClientPkgs = useMemo(() => {
     if (!search) return clientPackages;
@@ -203,7 +190,7 @@ export default function SessionPackages() {
   // ── Schedule next session ──────────────────────────────────────
   const openSchedule = (cp: ClientPackage) => {
     setScheduleCp(cp);
-    setSchedForm({ staffId: '', date: todayStr(), time: '09:00', notes: '' });
+    setSchedForm({ staffId: '', date: todayStr(), time: '', notes: '' });
     setShowModalSchedule(true);
   };
 
@@ -741,7 +728,8 @@ export default function SessionPackages() {
                     value={schedForm.time}
                     onChange={(e) => setSchedForm({ ...schedForm, time: e.target.value })}
                   >
-                    {getAvailableHours(schedForm.date).map((h) => (
+                    <option value="">{textoSinHora(schedForm.date)}</option>
+                    {horasParaAgendar(schedForm.date, schedForm.time).map((h) => (
                       <option key={h} value={h}>{format12h(h)}</option>
                     ))}
                   </select>
