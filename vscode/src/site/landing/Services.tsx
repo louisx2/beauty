@@ -44,7 +44,7 @@ export default function Services({ servicios }: { servicios: ServicioPublico[] }
         </div>
 
         <div className="s-cards s-rv" ref={tarjetas}>
-          {DESTACADOS.map((d, i) => {
+          {DESTACADOS.map((d) => {
             const c = catalogo.find((x) => x.id === d.id);
             return (
               <a key={d.id} className="s-card" href="#s-catalogo"
@@ -53,7 +53,6 @@ export default function Services({ servicios }: { servicios: ServicioPublico[] }
                   <img src={c?.imagen} alt="" loading="lazy" style={{ objectPosition: c?.posicion ?? '50% 50%' }} />
                 </div>
                 <div className="s-card-bd">
-                  <span className="s-card-num">{String(i + 1).padStart(2, '0')}</span>
                   <h3 className="s-display s-h3">{d.titulo}</h3>
                   <p>{d.texto}</p>
                   <span className="s-card-link">Ver servicios <span className="s-ar" aria-hidden="true">→</span></span>
