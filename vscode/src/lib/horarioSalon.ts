@@ -3,8 +3,8 @@
 import { horarioSalon } from '../config/site.ts';
 import { fechaLocal } from './fechas.ts';
 
-/** Minutos desde la medianoche: 8:00 = 480. */
-export interface Tramo { abre: number; cierra: number }
+/** Minutos desde la medianoche: 8:00 = 480. `ultimoTurno`: la última hora a la que puede empezar una cita. */
+export interface Tramo { abre: number; ultimoTurno: number }
 export interface Ahora { hoy: string; minutos: number }
 
 const aMinutos = (hhmm: string) => {
@@ -16,16 +16,16 @@ const aHora = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}
 /** Horario del salón ese día ("AAAA-MM-DD"); null si no abre o si la fecha no sirve. */
 export function tramoDelSalon(fecha: string): Tramo | null {
   const t = horarioSalon[new Date(`${fecha}T12:00:00`).getDay()];
-  return t ? { abre: aMinutos(t.abre), cierra: aMinutos(t.cierra) } : null;
+  return t ? { abre: aMinutos(t.abre), ultimoTurno: aMinutos(t.ultimoTurno) } : null;
 }
 
-/** Horas para agendar en el panel, cada media hora, desde que abre hasta media hora antes de cerrar.
- *  Si es hoy, solo las que no han pasado. */
+/** Horas para agendar en el panel, cada media hora, desde que abre hasta el último turno (esa cita puede
+ *  terminar después). Si es hoy, solo las que no han pasado. */
 export function horasDelSalon(fecha: string, ahora: Ahora): string[] {
   const t = tramoDelSalon(fecha);
   if (!t) return [];
   const horas: string[] = [];
-  for (let m = t.abre; m + 30 <= t.cierra; m += 30) {
+  for (let m = t.abre; m <= t.ultimoTurno; m += 30) {
     if (fecha === ahora.hoy && m <= ahora.minutos) continue;
     horas.push(aHora(m));
   }

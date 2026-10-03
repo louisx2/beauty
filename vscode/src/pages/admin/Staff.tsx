@@ -73,7 +73,7 @@ function validateStaffForm(form: Omit<StaffMember, 'id' | 'createdAt'>): StaffEr
     errors.workingDays = 'Selecciona al menos un día de trabajo';
   }
   if (form.workingStart >= form.workingEnd) {
-    errors.schedule = 'La hora de salida debe ser después de la entrada';
+    errors.schedule = 'Debe ser después de la hora de entrada';
   }
   if (form.commissionPct < 0 || form.commissionPct > 100) {
     errors.commission = 'La comisión debe estar entre 0% y 100%';
@@ -840,7 +840,8 @@ export default function Staff() {
                   </select>
                 </div>
                 <div className="modal__field">
-                  <label>Hora de salida</label>
+                  {/* la última cita puede empezar a esta hora aunque termine después (así lo pide la reserva) */}
+                  <label>Toma citas hasta</label>
                   <select
                     value={form.workingEnd}
                     onChange={(e) => {
