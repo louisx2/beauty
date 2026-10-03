@@ -10,6 +10,7 @@ import { FileText, Download, Receipt, CalendarDays, UserCog, TrendingUp } from '
 import { format12h } from '../../lib/timeFormat';
 import { serviciosConPrecio } from '../../lib/ingresos';
 import { FACTURACION_NCF } from '../../lib/modulos';
+import { atiendeClientas } from '../../lib/quienAtiende';
 import './Reports.css';
 
 function fmtPrice(p: number) { return `RD$ ${Math.round(p).toLocaleString('es-DO')}`; }
@@ -154,7 +155,7 @@ export default function Reports() {
       ? staff.filter(emp => emp.name.toLowerCase() === user.name.toLowerCase())
       : staff;
 
-    return targetStaff.map(emp => {
+    return targetStaff.flatMap(emp => {
       // Con varios servicios por cita, a cada una le toca lo que hizo ella.
       let generatedRevenue = 0;
       let citas = 0;
@@ -167,14 +168,16 @@ export default function Reports() {
         citas++;
         generatedRevenue += suyos.reduce((t, l) => t + l.precio, 0);
       });
+      // quien no atiende (recepción, la cuenta de soporte) solo sale si hizo algún servicio en el periodo
+      if (citas === 0 && !atiendeClientas(emp)) return [];
       const commission = generatedRevenue * (emp.commissionPct / 100);
-      return {
+      return [{
         name: emp.name,
         completedAppts: citas,
         revenue: generatedRevenue,
         commission: commission,
         commissionPct: emp.commissionPct
-      };
+      }];
     }).sort((a, b) => b.revenue - a.revenue);
   }, [staff, filteredAppointments, serviciosDe, user]);
 

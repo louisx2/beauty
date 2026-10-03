@@ -5,26 +5,11 @@ import { X, CalendarPlus, AlertCircle } from 'lucide-react';
 import { format12h } from '../lib/timeFormat';
 import toast from 'react-hot-toast';
 import { fechaLocal } from '../lib/fechas';
+import { horasParaAgendar, textoSinHora } from '../lib/horarioSalon';
+import { atiendeClientas } from '../lib/quienAtiende';
 
 function getTodayStr(): string {
   return fechaLocal();
-}
-
-function getAvailableHours(dateStr: string): string[] {
-  const ALL_HOURS = Array.from({ length: 11 }, (_, i) => {
-    const h = i + 8;
-    return `${String(h).padStart(2, '0')}:00`;
-  }).flatMap((h) => [h, h.replace(':00', ':30')]);
-  
-  const today = getTodayStr();
-  if (dateStr !== today) return ALL_HOURS;
-  
-  const now = new Date();
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  return ALL_HOURS.filter((h) => {
-    const [hh, mm] = h.split(':').map(Number);
-    return hh * 60 + mm > nowMinutes;
-  });
 }
 
 export default function NextSessionModal() {
@@ -32,7 +17,7 @@ export default function NextSessionModal() {
   const { staff } = useStaffStore();
   
   const [date, setDate] = useState(getTodayStr());
-  const [time, setTime] = useState('09:00');
+  const [time, setTime] = useState('');
   const [employee, setEmployee] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,7 +25,7 @@ export default function NextSessionModal() {
     if (appt) {
       setEmployee(appt.employee);
       setDate(getTodayStr());
-      setTime('09:00');
+      setTime('');
     }
   }, [appt]);
 
@@ -81,7 +66,7 @@ export default function NextSessionModal() {
     }
   };
 
-  const activeSpecialists = staff.filter(s => s.active && (s.role === 'specialist' || s.role === 'admin'));
+  const activeSpecialists = staff.filter(s => s.active && atiendeClientas(s));
 
   return (
     <div className="modal-overlay" onClick={clearNextSessionPrompt}>
@@ -108,6 +93,7 @@ export default function NextSessionModal() {
             <select required value={employee} onChange={(e) => setEmployee(e.target.value)}>
               <option value="">Seleccionar especialista</option>
               {activeSpecialists.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
+              {employee && !activeSpecialists.some((s) => s.name === employee) && <option value={employee}>{employee}</option>}
             </select>
           </div>
           
@@ -129,7 +115,8 @@ export default function NextSessionModal() {
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
               >
-                {getAvailableHours(date).map((h) => (
+                <option value="">{textoSinHora(date)}</option>
+                {horasParaAgendar(date, time).map((h) => (
                   <option key={h} value={h}>{format12h(h)}</option>
                 ))}
               </select>

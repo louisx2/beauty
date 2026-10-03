@@ -44,7 +44,7 @@ export function nombreEnTabla(catId: string, bloque: string, opcion: string): st
     case 'depilacion-laser': return `Depilación Láser - ${it}`;
     case 'depilacion-cera': return `Depilación Cera - ${it}`;
     case 'blanqueamiento-corporal': return `Blanqueamiento - ${it}`;
-    case 'cejas-pestanas':
+    case 'pestanas':
       if (bloque !== 'Extensiones de pestañas') return it;
       return it.startsWith('Volumen 2D') ? 'Extensiones de Pestañas - Volumen 2D-5D' : `Extensiones de Pestañas - ${it}`;
     case 'maquillaje': return `Maquillaje - ${it}`;

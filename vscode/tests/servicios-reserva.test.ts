@@ -10,7 +10,7 @@ const FILAS: FilaServicio[] = [
   { id: '1', name: 'Depilación Láser - Axilas', duration: 15, price: 0 },
   { id: '2', name: 'Limpieza Facial Profunda', duration: 60, price: 0 },
   { id: '3', name: 'Toxina Botulínica - Líneas de expresión', duration: 30, price: 12000 },
-  { id: '4', name: 'Diseño de Cejas', duration: 30, price: 600 },
+  { id: '4', name: 'Retoque de Cejas', duration: 30, price: 600 },
   { id: '5', name: 'Laminado de Cejas', duration: 45, price: 0 },
 ];
 const lista = serviciosParaReservar(servicesMenu, FILAS);

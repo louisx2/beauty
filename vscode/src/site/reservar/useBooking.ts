@@ -7,6 +7,7 @@ import {
   type LineaPlan, type Ocupado,
 } from './disponibilidad';
 import { mensajeWhatsApp } from './resumen';
+import { atiendeClientas } from '../../lib/quienAtiende';
 
 /** Lo que la reserva lee de `services` (anon solo ve los activos). */
 export interface ServicioBase { id: string; name: string; duration: number; price: number }
@@ -65,7 +66,7 @@ export function useBooking() {
       supabase.from('services').select('id, name, duration, price').eq('active', true).order('name'),
       supabase
         .from('staff')
-        .select('id, name, working_days, working_start, working_end, service_ids, avatar_url')
+        .select('id, name, role, working_days, working_start, working_end, service_ids, avatar_url')
         .eq('active', true)
         .in('role', ['specialist', 'admin'])
         .order('name'),
@@ -79,7 +80,11 @@ export function useBooking() {
       if (svcRes.data) {
         setServices((svcRes.data as unknown as ServicioBase[]).map((s) => ({ ...s, price: Number(s.price) || 0 })));
       }
-      if (staffRes.data) setStaffList(staffRes.data as unknown as Especialista[]);
+      // solo quienes atienden: la cuenta de soporte (administración sin servicios) no se ofrece ni se consulta
+      if (staffRes.data) {
+        setStaffList((staffRes.data as unknown as Especialista[])
+          .filter((m) => atiendeClientas({ role: m.role ?? 'specialist', serviceIds: m.service_ids })));
+      }
       if (pkgRes.data) setPackages(pkgRes.data as unknown as PaqueteBase[]);
       setCargando(false);
     });

@@ -13,7 +13,7 @@ export default function Contact() {
           <h2 className="s-display s-h2">Te esperamos en <em>San José de Ocoa</em></h2>
           <ul className="s-ct-list">
             <li><span>Dirección</span>{site.address}</li>
-            <li><span>Horario</span>{site.hours}</li>
+            <li><span>Horario</span><div>{site.hours.map((h) => <div key={h}>{h}</div>)}</div></li>
             <li><span>Teléfono</span><a href={`tel:+1${site.phone.replace(/\D/g, '')}`}>{site.phone}</a></li>
             <li>
               <span>Instagram</span>

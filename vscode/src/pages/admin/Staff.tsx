@@ -13,6 +13,7 @@ import { format12h } from '../../lib/timeFormat';
 import { textoONull } from '../../site/landing/equipo';
 import { capitalizarNombre } from '../../lib/nombres';
 import { reducirFoto } from '../../lib/fotos';
+import { atiendeClientas } from '../../lib/quienAtiende';
 import './Staff.css';
 
 const ROLES: { key: StaffRole; label: string }[] = [
@@ -67,7 +68,8 @@ function validateStaffForm(form: Omit<StaffMember, 'id' | 'createdAt'>): StaffEr
   if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
     errors.email = 'Correo electrónico inválido';
   }
-  if (form.workingDays.length === 0) {
+  // los días solo hacen falta a quien atiende: recepción y la cuenta de soporte pueden quedar sin días
+  if (form.workingDays.length === 0 && atiendeClientas(form)) {
     errors.workingDays = 'Selecciona al menos un día de trabajo';
   }
   if (form.workingStart >= form.workingEnd) {
@@ -540,9 +542,13 @@ export default function Staff() {
                     <h4 className="staff-card__section-title">Servicios que realiza</h4>
                     <div className="staff-card__services-tags">
                       {m.serviceIds.length === 0 ? (
-                        <span className="staff-card__service-tag staff-card__service-tag--all">
-                          Todos los servicios
-                        </span>
+                        atiendeClientas(m) ? (
+                          <span className="staff-card__service-tag staff-card__service-tag--all">
+                            Todos los servicios
+                          </span>
+                        ) : (
+                          <span className="staff-card__service-tag">No atiende clientas</span>
+                        )
                       ) : (
                         staffServices(m).slice(0, 3).map((s) => (
                           <span key={s.id} className="staff-card__service-tag">
@@ -856,7 +862,9 @@ export default function Staff() {
                     <Sparkles size={14} /> Servicios que Realiza
                     <span className="staff-modal__hint">
                       {form.serviceIds.length === 0
-                        ? ' — sin selección = puede hacer todos'
+                        ? form.role === 'admin'
+                          ? ' — sin selección = no atiende clientas'
+                          : ' — sin selección = puede hacer todos'
                         : ` (${form.serviceIds.length} seleccionados)`}
                     </span>
                   </label>

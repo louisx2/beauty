@@ -34,6 +34,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
+import { horasParaAgendar, textoSinHora, tramoDelSalon } from '../../lib/horarioSalon';
+import { atiendeClientas, puedeHacer } from '../../lib/quienAtiende';
 import { capitalizarNombre } from '../../lib/nombres';
 import SaveClientModal from '../../components/SaveClientModal';
 import ScheduleBlocksModal from '../../components/ScheduleBlocksModal';
@@ -60,6 +62,7 @@ interface ApptErrors {
   service?: string;
   employee?: string;
   date?: string;
+  time?: string;
 }
 function validateAppt(form: typeof emptyForm, isEditing: boolean): ApptErrors {
   const e: ApptErrors = {};
@@ -76,6 +79,7 @@ function validateAppt(form: typeof emptyForm, isEditing: boolean): ApptErrors {
   } else if (!isEditing && form.date < getToday()) {
     e.date = 'No puedes agendar citas en fechas pasadas';
   }
+  if (!form.time) e.time = form.date && !tramoDelSalon(form.date) ? 'El salón no abre ese día' : 'Elige la hora';
   return e;
 }
 
@@ -87,21 +91,6 @@ const STATUS_CONFIG: Record<AppointmentStatus, { label: string; class: string; i
   cancelled: { label: ETIQUETA_ESTADO.cancelled, class: 'badge--red', icon: <XCircle size={14} /> },
   no_show: { label: ETIQUETA_ESTADO.no_show, class: 'badge--gray', icon: <Ban size={14} /> },
 };
-
-const ALL_HOURS = Array.from({ length: 11 }, (_, i) => {
-  const h = i + 8;
-  return `${String(h).padStart(2, '0')}:00`;
-}).flatMap((h) => [h, h.replace(':00', ':30')]);
-
-function getAvailableHours(dateStr: string): string[] {
-  if (dateStr !== getToday()) return ALL_HOURS;
-  const now = new Date();
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  return ALL_HOURS.filter((h) => {
-    const [hh, mm] = h.split(':').map(Number);
-    return hh * 60 + mm > nowMinutes;
-  });
-}
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00');
@@ -162,6 +151,8 @@ const emptyForm: Omit<Appointment, 'id' | 'createdAt'> = {
 /** Reparte las horas de inicio en cadena: cada servicio empieza cuando
  *  termina el anterior. */
 function conHorarios(services: AppointmentLine[], inicio: string): AppointmentLine[] {
+  // sin hora elegida todavía, los servicios tampoco tienen la suya
+  if (!inicio) return services.map((l) => ({ ...l, startTime: '' }));
   let cursor = timeToMinutes(inicio);
   return services.map((l) => {
     const h = Math.floor(cursor / 60), m = cursor % 60;
@@ -194,7 +185,7 @@ export default function Appointments() {
     fetchClients();
   }, [fetchAppointments, autoMarkNoShow, fetchStaff, fetchServices, fetchClients]);
 
-  const activeEmployees = useMemo(() => staff.filter((m) => m.active && (m.role === 'specialist' || m.role === 'admin')).map((m) => m.name), [staff]);
+  const activeEmployees = useMemo(() => staff.filter((m) => m.active && atiendeClientas(m)).map((m) => m.name), [staff]);
   const activeServices = useMemo(() => services.filter((s) => s.active).map((s) => s.name), [services]);
 
   const [selectedDate, setSelectedDate] = useState(getToday());
@@ -231,7 +222,7 @@ export default function Appointments() {
     [form.services],
   );
   const horaFin = useMemo(
-    () => minutesToTime(timeToMinutes(form.time) + duracionTotal),
+    () => (form.time ? minutesToTime(timeToMinutes(form.time) + duracionTotal) : ''),
     [form.time, duracionTotal],
   );
 
@@ -249,7 +240,7 @@ export default function Appointments() {
     const cat = services.find((sv) => sv.name === nombreServicio);
     const yaTiene = form.services[i]?.employee;
     const quienPuede = cat
-      ? staff.filter((m) => m.active && (m.serviceIds.length === 0 || m.serviceIds.includes(cat.id)))
+      ? staff.filter((m) => m.active && puedeHacer(m, cat.id))
       : [];
     actualizarLinea(i, {
       serviceName: nombreServicio,
@@ -374,7 +365,9 @@ export default function Appointments() {
   const openCreate = () => {
     setEditingId(null);
     setReprogramando(false);
-    setForm({ ...emptyForm, date: selectedDate });
+    // las 9:00 si ese día se puede; si no, la primera hora libre del salón
+    const horas = horasParaAgendar(selectedDate);
+    setForm({ ...emptyForm, date: selectedDate, time: horas.includes('09:00') ? '09:00' : horas[0] ?? '' });
     setApptErrors({});
     setShowModal(true);
   };
@@ -788,6 +781,9 @@ export default function Appointments() {
                       >
                         <option value="">¿Quién lo hace?</option>
                         {activeEmployees.map((e) => <option key={e} value={e}>{e}</option>)}
+                        {linea.employee && !activeEmployees.includes(linea.employee) && (
+                          <option value={linea.employee}>{linea.employee}</option>
+                        )}
                       </select>
 
                       <select
@@ -820,7 +816,7 @@ export default function Appointments() {
                     <Plus size={14} /> Agregar servicio
                   </button>
                   <span className="appt-lines__total">
-                    {duracionTotal} min · termina {format12h(horaFin)}
+                    {duracionTotal} min{horaFin && ` · termina ${format12h(horaFin)}`}
                     {precioTotal > 0 && ` · RD$ ${precioTotal.toLocaleString('es-DO')}`}
                   </span>
                 </div>
@@ -838,15 +834,27 @@ export default function Appointments() {
                     value={form.date}
                     min={editingId ? undefined : getToday()}
                     className={apptErrors.date ? 'input--error' : ''}
-                    onChange={(e) => { setForm({ ...form, date: e.target.value }); setApptErrors({ ...apptErrors, date: undefined }); }}
+                    onChange={(e) => {
+                      // si la hora elegida no está en el horario de ese día, se vuelve a elegir
+                      const date = e.target.value;
+                      const time = horasParaAgendar(date).includes(form.time) ? form.time : '';
+                      setForm({ ...form, date, time });
+                      setApptErrors({ ...apptErrors, date: undefined, time: undefined });
+                    }}
                   />
                   {apptErrors.date && <span className="field-error"><AlertCircle size={12} /> {apptErrors.date}</span>}
                 </div>
                 <div className="modal__field">
                   <label><Clock size={14} /> Hora</label>
-                  <select value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })}>
-                    {getAvailableHours(form.date).map((h) => <option key={h} value={h}>{format12h(h)}</option>)}
+                  <select
+                    value={form.time}
+                    className={apptErrors.time ? 'input--error' : ''}
+                    onChange={(e) => { setForm({ ...form, time: e.target.value }); setApptErrors({ ...apptErrors, time: undefined }); }}
+                  >
+                    <option value="">{textoSinHora(form.date)}</option>
+                    {horasParaAgendar(form.date, form.time).map((h) => <option key={h} value={h}>{format12h(h)}</option>)}
                   </select>
+                  {apptErrors.time && <span className="field-error"><AlertCircle size={12} /> {apptErrors.time}</span>}
                 </div>
               </div>
 

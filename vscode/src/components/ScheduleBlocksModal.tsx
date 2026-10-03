@@ -6,6 +6,7 @@ import { useStaffStore } from '../store/staffStore';
 import { format12h } from '../lib/timeFormat';
 import './ScheduleBlocksModal.css';
 import { fechaLocal } from '../lib/fechas';
+import { atiendeClientas } from '../lib/quienAtiende';
 
 interface Props {
   onClose: () => void;
@@ -118,7 +119,7 @@ export default function ScheduleBlocksModal({ onClose, defaultDate }: Props) {
               onChange={(e) => setForm({ ...form, staffId: e.target.value })}
             >
               <option value="">Todo el salón (feriado o cierre)</option>
-              {staff.filter((s) => s.active).map((s) => (
+              {staff.filter((s) => s.active && atiendeClientas(s)).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>

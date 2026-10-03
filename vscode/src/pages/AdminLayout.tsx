@@ -39,6 +39,7 @@ import { useNotificationStore } from '../store/notificationStore';
 import { playNotificationSound } from '../lib/sound';
 import './AdminLayout.css';
 import { fechaLocal } from '../lib/fechas';
+import { atiendeClientas } from '../lib/quienAtiende';
 
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 10);
@@ -610,7 +611,7 @@ export default function AdminLayout() {
                 <label>Especialista</label>
                 <select value={walkinForm.employee} onChange={e => setWalkinForm({...walkinForm, employee: e.target.value})}>
                   <option value="">Selecciona la especialista...</option>
-                  {staff.filter(s => s.active && s.role === 'specialist').map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                  {staff.filter(s => s.active && atiendeClientas(s)).map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                 </select>
               </div>
 

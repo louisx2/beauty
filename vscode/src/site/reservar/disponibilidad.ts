@@ -1,6 +1,8 @@
 // Disponibilidad de la reserva: quién puede, quién está libre y a qué horas cabe la visita completa.
 // Es la lógica de siempre de Booking.tsx, sacada tal cual a funciones puras (spec §6.1: cambia la forma, no el
-// cálculo). Sin imports: se prueba con Node.
+// cálculo), más el horario del salón. Sin React ni base de datos: se prueba con Node.
+import { tramoDelSalon } from '../../lib/horarioSalon.ts';
+import { puedeHacer } from '../../lib/quienAtiende.ts';
 
 /** Días como se guardan en staff.working_days (sin tildes). */
 export const WEEKDAYS = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
@@ -8,6 +10,8 @@ export const WEEKDAYS = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'v
 export interface Especialista {
   id: string;
   name: string;
+  /** specialist o admin (la reserva no trae recepción); sin rol cuenta como especialista */
+  role?: string;
   working_days: string[];
   working_start: string;
   working_end: string;
@@ -48,11 +52,12 @@ export function minutesToTime(m: number): string {
   return `${String(h).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 }
 
-/** Quién puede hacer un servicio. Primero quienes lo tienen en su catálogo; después quienes no tienen catálogo
- *  (la dueña, que puede todo), para no cargarle a ella el trabajo que cubre el equipo. */
+/** Quién puede hacer un servicio. Primero quienes lo tienen en su catálogo; después las especialistas sin catálogo
+ *  (pueden todo). La administración sin servicios (la cuenta de soporte) no atiende: ver lib/quienAtiende. */
 export function quienPuede(staff: Especialista[], serviceId: string): Especialista[] {
-  const propias = staff.filter((m) => (m.service_ids ?? []).includes(serviceId));
-  const comodin = staff.filter((m) => (m.service_ids ?? []).length === 0);
+  const puede = (m: Especialista) => puedeHacer({ role: m.role ?? 'specialist', serviceIds: m.service_ids }, serviceId);
+  const propias = staff.filter((m) => (m.service_ids ?? []).includes(serviceId) && puede(m));
+  const comodin = staff.filter((m) => (m.service_ids ?? []).length === 0 && puede(m));
   return [...propias, ...comodin];
 }
 
@@ -104,16 +109,19 @@ export function repartirDesde(elegidos: Elegido[], inicio: number, dia: string, 
   return plan;
 }
 
-/** Cada media hora del día: si cabe la visita completa, con su reparto; si no, ocupada (plan null).
- *  Hoy nunca se ofrecen horas que ya pasaron (con 15 minutos de margen). */
+/** Cada media hora del día, dentro del horario del salón: si cabe la visita completa, con su reparto; si no,
+ *  ocupada (plan null). El día que el salón no abre, nada. Hoy nunca se ofrecen horas que ya pasaron (con 15
+ *  minutos de margen). */
 export function horariosDelDia(
   elegidos: Elegido[], dia: string, agenda: Agenda, ahora: { hoy: string; minutos: number },
 ): Horario[] {
   const duracionTotal = elegidos.reduce((t, e) => t + e.duracion, 0);
   if (elegidos.length === 0 || !dia || duracionTotal === 0) return [];
 
-  const apertura = Math.min(...agenda.staff.map((m) => timeToMinutes(m.working_start)), 9 * 60);
-  const cierre = Math.max(...agenda.staff.map((m) => timeToMinutes(m.working_end)), 18 * 60);
+  const salon = tramoDelSalon(dia);
+  if (!salon) return [];
+  const apertura = Math.max(salon.abre, Math.min(...agenda.staff.map((m) => timeToMinutes(m.working_start)), 9 * 60));
+  const cierre = Math.min(salon.cierra, Math.max(...agenda.staff.map((m) => timeToMinutes(m.working_end)), 18 * 60));
   const desdeAhora = dia === ahora.hoy ? ahora.minutos + 15 : 0;
 
   const salida: Horario[] = [];
