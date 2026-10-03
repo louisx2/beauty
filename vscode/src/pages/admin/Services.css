@@ -45,7 +45,7 @@
 }
 
 .services-page__cat-btn--active {
-  background: linear-gradient(135deg, rgba(201,125,151,0.18), rgba(154,130,204,0.12));
+  background: linear-gradient(135deg, rgba(178, 150, 125, 0.18), rgba(160, 122, 98, 0.12));
   border-color: rgba(232,165,184,0.3);
   color: white;
 }
@@ -122,7 +122,7 @@
   gap: 4px;
   font-size: 0.65rem;
   font-weight: 700;
-  background: rgba(154,130,204,0.12);
+  background: rgba(160, 122, 98, 0.12);
   color: var(--lavender);
   padding: 3px 8px;
   border-radius: 8px;
@@ -134,8 +134,8 @@
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  background: rgba(154,130,204,0.06);
-  border: 1px solid rgba(154,130,204,0.1);
+  background: rgba(160, 122, 98, 0.06);
+  border: 1px solid rgba(160, 122, 98, 0.1);
   border-radius: 10px;
   font-size: 0.75rem;
   color: rgba(255,255,255,0.5);

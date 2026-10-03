@@ -10,7 +10,7 @@ const CATEGORIES: { key: ServiceCategory | 'all'; label: string; icon: React.Rea
   { key: 'facial', label: 'Facial', icon: <Heart size={15} /> },
   { key: 'corporal', label: 'Corporal', icon: <Sparkles size={15} /> },
   { key: 'belleza', label: 'Belleza', icon: <Scissors size={15} /> },
-  { key: 'medicina', label: 'Medicina Estética', icon: <Syringe size={15} /> },
+  { key: 'medicina', label: 'Medicina estética', icon: <Syringe size={15} /> },
 ];
 
 const CAT_COLORS: Record<ServiceCategory, string> = {
@@ -73,12 +73,12 @@ export default function Services() {
     <div className="services-page">
       <div className="services-page__header">
         <div>
-          <h1 className="clients__title">Catálogo de Servicios</h1>
+          <h1 className="clients__title">Servicios</h1>
           <p className="clients__subtitle">{services.filter(s => s.active).length} servicios activos</p>
         </div>
         {user?.role === 'admin' && (
           <button className="appts__add-btn" onClick={openCreate} id="btn-new-service">
-            <Plus size={18} /> Nuevo Servicio
+            <Plus size={18} /> Nuevo servicio
           </button>
         )}
       </div>
@@ -123,7 +123,7 @@ export default function Services() {
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 {s.hasSession && (
                   <span className="service-item__session-badge">
-                    <Package size={11} /> Con Sesiones
+                    <Package size={11} /> Con sesiones
                   </span>
                 )}
                 {!s.active && <span className="service-item__inactive-badge">Inactivo</span>}
@@ -177,12 +177,12 @@ export default function Services() {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h2>{editingId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+              <h2>{editingId ? 'Editar servicio' : 'Nuevo servicio'}</h2>
               <button className="modal__close" onClick={() => setShowModal(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleSubmit} className="modal__form" id="service-form">
               <div className="modal__field">
-                <label>Nombre del Servicio</label>
+                <label>Nombre del servicio</label>
                 <input required placeholder="Ej: Depilación Láser - Piernas" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div className="modal__row">
@@ -242,7 +242,7 @@ export default function Services() {
               <div className="modal__actions">
                 <div style={{ flex: 1 }} />
                 <button type="button" className="modal__cancel-btn" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="modal__submit-btn" id="service-submit">{editingId ? 'Guardar' : 'Crear Servicio'}</button>
+                <button type="submit" className="modal__submit-btn" id="service-submit">{editingId ? 'Guardar' : 'Crear servicio'}</button>
               </div>
             </form>
           </div>

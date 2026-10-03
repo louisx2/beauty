@@ -30,18 +30,17 @@ import {
   AlertCircle,
   PlayCircle,
   Ban,
-  Edit2,
-  CalendarClock,
   CalendarOff,
-  Trash2,
-  Save,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
-import { notifyStatusChange } from '../../lib/whatsapp';
 import { capitalizarNombre } from '../../lib/nombres';
 import SaveClientModal from '../../components/SaveClientModal';
 import ScheduleBlocksModal from '../../components/ScheduleBlocksModal';
+import MenuAcciones from '../../components/MenuAcciones';
+import { ETIQUETA_ESTADO } from '../../lib/estadosCita';
+import { accionPrincipal } from './citas/acciones';
+import { useAccionesCita, ICONO_PRINCIPAL } from './citas/useAccionesCita';
 import { useBlockStore, isBlocked, timeToMinutes, minutesToTime } from '../../store/blockStore';
 import './Appointments.css';
 
@@ -81,21 +80,12 @@ function validateAppt(form: typeof emptyForm, isEditing: boolean): ApptErrors {
 }
 
 const STATUS_CONFIG: Record<AppointmentStatus, { label: string; class: string; icon: React.ReactNode }> = {
-  pending: { label: 'Pendiente', class: 'badge--amber', icon: <AlertCircle size={14} /> },
-  confirmed: { label: 'Confirmada', class: 'badge--green', icon: <CheckCircle2 size={14} /> },
-  in_progress: { label: 'En Proceso', class: 'badge--blue', icon: <PlayCircle size={14} /> },
-  completed: { label: 'Completada', class: 'badge--emerald', icon: <CheckCircle2 size={14} /> },
-  cancelled: { label: 'Cancelada', class: 'badge--red', icon: <XCircle size={14} /> },
-  no_show: { label: 'No Asistió', class: 'badge--gray', icon: <Ban size={14} /> },
-};
-
-const STATUS_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
-  pending: ['confirmed', 'cancelled'],
-  confirmed: ['in_progress', 'cancelled', 'no_show'],
-  in_progress: ['completed'],
-  completed: [],
-  cancelled: [],
-  no_show: [],
+  pending: { label: ETIQUETA_ESTADO.pending, class: 'badge--amber', icon: <AlertCircle size={14} /> },
+  confirmed: { label: ETIQUETA_ESTADO.confirmed, class: 'badge--green', icon: <CheckCircle2 size={14} /> },
+  in_progress: { label: ETIQUETA_ESTADO.in_progress, class: 'badge--blue', icon: <PlayCircle size={14} /> },
+  completed: { label: ETIQUETA_ESTADO.completed, class: 'badge--emerald', icon: <CheckCircle2 size={14} /> },
+  cancelled: { label: ETIQUETA_ESTADO.cancelled, class: 'badge--red', icon: <XCircle size={14} /> },
+  no_show: { label: ETIQUETA_ESTADO.no_show, class: 'badge--gray', icon: <Ban size={14} /> },
 };
 
 const ALL_HOURS = Array.from({ length: 11 }, (_, i) => {
@@ -104,8 +94,7 @@ const ALL_HOURS = Array.from({ length: 11 }, (_, i) => {
 }).flatMap((h) => [h, h.replace(':00', ':30')]);
 
 function getAvailableHours(dateStr: string): string[] {
-  const today = new Date().toISOString().split('T')[0];
-  if (dateStr !== today) return ALL_HOURS;
+  if (dateStr !== getToday()) return ALL_HOURS;
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   return ALL_HOURS.filter((h) => {
@@ -190,7 +179,6 @@ export default function Appointments() {
     fetchAppointments,
     addAppointment, 
     updateAppointment, 
-    updateStatus, 
     deleteAppointment,
     autoMarkNoShow 
   } = useAppointmentStore();
@@ -219,7 +207,7 @@ export default function Appointments() {
   const [form, setForm] = useState(emptyForm);
   const [apptErrors, setApptErrors] = useState<ApptErrors>({});
   const [submitting, setSubmitting] = useState(false);
-  const [showStatusMenu, setShowStatusMenu] = useState<string | null>(null);
+  const [reprogramando, setReprogramando] = useState(false); // el formulario se abrió desde "Reprogramar"
   const [savingClientFor, setSavingClientFor] = useState<Appointment | null>(null);
   const [showBlocksModal, setShowBlocksModal] = useState(false);
 
@@ -385,13 +373,16 @@ export default function Appointments() {
 
   const openCreate = () => {
     setEditingId(null);
+    setReprogramando(false);
     setForm({ ...emptyForm, date: selectedDate });
     setApptErrors({});
     setShowModal(true);
   };
 
-  const openEdit = (appt: Appointment) => {
+  /** Abre la cita en el formulario; desde "Reprogramar" el foco va directo a la fecha. */
+  const openEdit = (appt: Appointment, reprogramar = false) => {
     setEditingId(appt.id);
+    setReprogramando(reprogramar);
     setForm({
       client_id: appt.client_id || null,
       clientName: appt.clientName,
@@ -497,49 +488,20 @@ export default function Appointments() {
     window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  const handleReschedule = (appt: Appointment) => {
-    if (!window.confirm(`¿Estás segura de que deseas reprogramar (mover) la cita de ${appt.clientName}?`)) return;
-    setEditingId(appt.id);
-    setForm({
-      client_id: appt.client_id || null,
-      clientName: appt.clientName,
-      clientPhone: appt.clientPhone,
-      service: appt.service,
-      employee: appt.employee,
-      date: appt.date,
-      time: appt.time,
-      duration: appt.duration,
-      status: appt.status,
-      notes: appt.notes,
-      source: appt.source,
-      startedAt: appt.startedAt,
-      services: appt.services.length > 0
-        ? appt.services.map((l) => ({ ...l }))
-        : [{
-            serviceId: null,
-            serviceName: appt.service,
-            employee: appt.employee,
-            startTime: appt.time,
-            duration: appt.duration,
-            price: 0,
-          }],
-    });
-    setShowModal(true);
-  };
-
-  const handleCancel = (appt: Appointment) => {
-    if (appt.status === 'cancelled' || appt.status === 'completed') return;
-    if (!window.confirm(`¿Estás segura de que deseas cancelar la cita de ${appt.clientName}?`)) return;
-    updateStatus(appt.id, 'cancelled');
-    notifyStatusChange(appt, 'cancelled');
-  };
+  // Confirmar / Llegó / Completar, el menú "⋯" y cancelar: lo mismo que en el Dashboard.
+  // Reprogramar abre el mismo formulario con el foco en la fecha; mover la cita se confirma al guardar.
+  const acciones = useAccionesCita({
+    editar: (appt) => openEdit(appt),
+    reprogramar: (appt) => openEdit(appt, true),
+    guardarClienta: setSavingClientFor,
+  });
 
   return (
     <div className="appts">
       {/* Header */}
       <div className="appts__header">
         <div>
-          <h1 className="appts__title">Gestión de Citas</h1>
+          <h1 className="appts__title">Citas</h1>
           <p className="appts__subtitle">Agenda y administra todas las citas del salón</p>
         </div>
         <div className="appts__header-actions">
@@ -547,7 +509,7 @@ export default function Appointments() {
             <CalendarOff size={18} /> Bloquear horario
           </button>
           <button className="appts__add-btn" onClick={openCreate} id="btn-new-appointment">
-            <Plus size={18} /> Nueva Cita
+            <Plus size={18} /> Nueva cita
           </button>
         </div>
       </div>
@@ -567,7 +529,7 @@ export default function Appointments() {
               <span className="appts__current-date">{formatDate(selectedDate)}</span>
             </>
           ) : (
-            <span className="appts__current-date" style={{ marginLeft: 0 }}>Todas las Fechas</span>
+            <span className="appts__current-date" style={{ marginLeft: 0 }}>Todas las fechas</span>
           )}
         </div>
 
@@ -671,7 +633,9 @@ export default function Appointments() {
             <p>No hay citas {view === 'day' ? 'para este día' : view === 'week' ? 'esta semana' : 'registradas'}</p>
           </div>
         ) : (
-          filteredAppointments.map((appt) => (
+          filteredAppointments.map((appt) => {
+            const paso = accionPrincipal(appt.status);
+            return (
             <div className={`appt-card appt-card--${appt.status}`} key={appt.id}>
               <div className="appt-card__time-col">
                 <span className="appt-card__time">{format12h(appt.time)}</span>
@@ -681,41 +645,10 @@ export default function Appointments() {
               <div className="appt-card__body" onClick={() => openEdit(appt)}>
                 <div className="appt-card__top">
                   <h4 className="appt-card__client">{appt.clientName}</h4>
-                  <div className="appt-card__status-wrap" style={{ position: 'relative' }}>
-                    <button
-                      className={`badge ${STATUS_CONFIG[appt.status].class}`}
-                      onClick={(e) => { e.stopPropagation(); setShowStatusMenu(showStatusMenu === appt.id ? null : appt.id); }}
-                      id={`status-btn-${appt.id}`}
-                    >
-                      {STATUS_CONFIG[appt.status].icon}
-                      {STATUS_CONFIG[appt.status].label}
-                    </button>
-
-                    {showStatusMenu === appt.id && STATUS_TRANSITIONS[appt.status].length > 0 && (
-                      <div className="appt-card__status-menu" onClick={(e) => e.stopPropagation()}>
-                        {STATUS_TRANSITIONS[appt.status].map((s) => (
-                          <button
-                            key={s}
-                            className="appt-card__status-option"
-                            onClick={() => {
-                              if (s === 'cancelled' && !window.confirm(`¿Estás segura de que deseas cancelar la cita de ${appt.clientName}?`)) return;
-                              updateStatus(appt.id, s);
-                              setShowStatusMenu(null);
-                              notifyStatusChange(appt, s);
-                            }}
-                          >
-                            {STATUS_CONFIG[s].icon}
-                            {STATUS_CONFIG[s].label}
-                          </button>
-                        ))}
-                        {!appt.client_id && (
-                          <button className="status-menu__item" onClick={() => { setSavingClientFor(appt); setShowStatusMenu(null); }} style={{ color: '#60a5fa', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 8, marginTop: 8 }}>
-                            <Save size={16} /> Guardar Clienta
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <span className={`badge appt-card__estado ${STATUS_CONFIG[appt.status].class}`}>
+                    {STATUS_CONFIG[appt.status].icon}
+                    {STATUS_CONFIG[appt.status].label}
+                  </span>
                 </div>
 
                 {appt.services.length > 1 ? (
@@ -750,68 +683,42 @@ export default function Appointments() {
                 )}
               </div>
 
+              {/* WhatsApp y Llamar a mano; lo demás en "⋯", con Cancelar al final y separado.
+                  El botón con texto es el paso que sigue según el estado (Confirmar, Llegó, Completar). */}
               <div className="appt-card__actions">
                 <button
+                  type="button"
                   className="appt-card__action-btn appt-card__action-btn--wa"
                   onClick={(e) => { e.stopPropagation(); handleWhatsApp(appt); }}
+                  aria-label={`Enviar recordatorio por WhatsApp a ${appt.clientName}`}
                   title="Enviar recordatorio por WhatsApp"
                 >
-                  <MessageCircle size={16} />
+                  <MessageCircle size={18} aria-hidden="true" />
                 </button>
                 <a
                   href={`tel:${appt.clientPhone}`}
                   className="appt-card__action-btn"
                   onClick={(e) => e.stopPropagation()}
+                  aria-label={`Llamar a ${appt.clientName}`}
                   title="Llamar"
                 >
-                  <Phone size={16} />
+                  <Phone size={18} aria-hidden="true" />
                 </a>
-                {appt.status === 'confirmed' && (
-                  <>
-                    <button
-                      className="appt-card__action-btn appt-card__action-btn--success"
-                      onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'in_progress'); }}
-                      title="Llego / Iniciar"
-                    >
-                      <CheckCircle2 size={16} />
-                    </button>
-                    <button
-                      className="appt-card__action-btn appt-card__action-btn--dianger"
-                      onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'no_show'); notifyStatusChange(appt, 'no_show'); }}
-                      title="No Asistió"
-                    >
-                      <Ban size={16} />
-                    </button>
-                  </>
+                <MenuAcciones etiqueta={`Más acciones para la cita de ${appt.clientName}`} items={acciones.itemsDe(appt)} />
+                {paso && (
+                  <button
+                    type="button"
+                    className={`appt-card__principal appt-card__principal--${paso.accion}`}
+                    onClick={(e) => { e.stopPropagation(); acciones.avanzar(appt, paso); }}
+                  >
+                    {ICONO_PRINCIPAL[paso.accion]}
+                    {paso.etiqueta}
+                  </button>
                 )}
-                {appt.status !== 'completed' && appt.status !== 'cancelled' && (
-                  <>
-                    <button
-                      className="appt-card__action-btn appt-card__action-btn--reschedule"
-                      onClick={(e) => { e.stopPropagation(); handleReschedule(appt); }}
-                      title="Mover / Reprogramar"
-                    >
-                      <CalendarClock size={16} />
-                    </button>
-                    <button
-                      className="appt-card__action-btn appt-card__action-btn--cancel"
-                      onClick={(e) => { e.stopPropagation(); handleCancel(appt); }}
-                      title="Cancelar Cita"
-                    >
-                      <XCircle size={16} />
-                    </button>
-                  </>
-                )}
-                <button
-                  className="appt-card__action-btn"
-                  onClick={(e) => { e.stopPropagation(); openEdit(appt); }}
-                  title="Editar"
-                >
-                  <Edit2 size={16} />
-                </button>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -820,14 +727,14 @@ export default function Appointments() {
         <div className="modal-overlay" onClick={() => { setShowModal(false); setApptErrors({}); }}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h2>{editingId ? 'Editar Cita' : 'Nueva Cita'}</h2>
+              <h2>{!editingId ? 'Nueva cita' : reprogramando ? 'Reprogramar cita' : 'Editar cita'}</h2>
               <button className="modal__close" onClick={() => { setShowModal(false); setApptErrors({}); }}><X size={20} /></button>
             </div>
 
             <form onSubmit={handleSubmit} className="modal__form" id="appointment-form" noValidate>
               <div className="modal__row">
                 <div className="modal__field">
-                  <label><User size={14} /> Nombre de la Clienta *</label>
+                  <label><User size={14} /> Nombre de la clienta *</label>
                   <ClientAutocomplete
                     clients={clients}
                     value={form.clientName}
@@ -927,6 +834,7 @@ export default function Appointments() {
                   <label><Calendar size={14} /> Fecha *</label>
                   <input
                     type="date"
+                    autoFocus={reprogramando}
                     value={form.date}
                     min={editingId ? undefined : getToday()}
                     className={apptErrors.date ? 'input--error' : ''}
@@ -980,13 +888,13 @@ export default function Appointments() {
                       }
                     }}
                   >
-                    Eliminar Cita
+                    Eliminar cita
                   </button>
                 )}
                 <div style={{ flex: 1 }} />
                 <button type="button" className="modal__cancel-btn" onClick={() => { setShowModal(false); setApptErrors({}); }}>Cancelar</button>
                 <button type="submit" className="modal__submit-btn" id="appointment-submit" disabled={submitting}>
-                  {submitting ? 'Guardando...' : editingId ? 'Guardar Cambios' : 'Crear Cita'}
+                  {submitting ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear cita'}
                 </button>
               </div>
             </form>

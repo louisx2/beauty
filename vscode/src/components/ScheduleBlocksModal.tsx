@@ -5,6 +5,7 @@ import { useBlockStore } from '../store/blockStore';
 import { useStaffStore } from '../store/staffStore';
 import { format12h } from '../lib/timeFormat';
 import './ScheduleBlocksModal.css';
+import { fechaLocal } from '../lib/fechas';
 
 interface Props {
   onClose: () => void;
@@ -46,7 +47,7 @@ export default function ScheduleBlocksModal({ onClose, defaultDate }: Props) {
 
   // Solo bloqueos que aun no terminan: lo viejo no le sirve a nadie.
   const upcoming = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = fechaLocal();
     return blocks
       .filter((b) => b.endDate >= today)
       .sort((a, b) => a.startDate.localeCompare(b.startDate));

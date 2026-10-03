@@ -4,9 +4,10 @@ import { useStaffStore } from '../store/staffStore';
 import { X, CalendarPlus, AlertCircle } from 'lucide-react';
 import { format12h } from '../lib/timeFormat';
 import toast from 'react-hot-toast';
+import { fechaLocal } from '../lib/fechas';
 
 function getTodayStr(): string {
-  return new Date().toISOString().split('T')[0];
+  return fechaLocal();
 }
 
 function getAvailableHours(dateStr: string): string[] {
@@ -86,7 +87,7 @@ export default function NextSessionModal() {
     <div className="modal-overlay" onClick={clearNextSessionPrompt}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
-          <h2>Agendar Siguiente Sesión</h2>
+          <h2>Agendar la siguiente sesión</h2>
           <button className="modal__close" onClick={clearNextSessionPrompt}><X size={20} /></button>
         </div>
         
@@ -141,7 +142,7 @@ export default function NextSessionModal() {
               No, en otro momento
             </button>
             <button type="submit" className="modal__submit-btn" disabled={submitting || !time}>
-              {submitting ? 'Agendando...' : 'Agendar Sesión'}
+              {submitting ? 'Agendando...' : 'Agendar sesión'}
             </button>
           </div>
         </form>

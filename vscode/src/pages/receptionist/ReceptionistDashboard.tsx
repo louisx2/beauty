@@ -5,25 +5,20 @@ import { useServiceStore } from '../../store/serviceStore';
 import { useStaffStore } from '../../store/staffStore';
 import { useClientStore } from '../../store/clientStore';
 import {
-  CalendarDays, Plus, Phone, Clock, CheckCircle2, AlertCircle,
+  CalendarDays, Plus, Phone, Clock, CheckCircle2,
   XCircle, Search, MessageCircle, ChevronDown, RefreshCw,
   Users, Scissors, Sparkles, CalendarCheck, UserCheck,
-  Timer, Bell, ArrowRight, UserPlus, RefreshCcw,
+  Timer, Bell, ArrowRight,
 } from 'lucide-react';
 import { format12h } from '../../lib/timeFormat';
+import { ETIQUETA_ESTADO } from '../../lib/estadosCita';
 import { notifyStatusChange } from '../../lib/whatsapp';
 import toast from 'react-hot-toast';
 import './ReceptionistDashboard.css';
+import { fechaLocal } from '../../lib/fechas';
 
 /* ── helpers ── */
-const STATUS_LABELS: Record<string, string> = {
-  pending:     'Pendiente',
-  confirmed:   'Confirmada',
-  in_progress: 'En Curso',
-  completed:   'Completada',
-  cancelled:   'Cancelada',
-  no_show:     'No Asistió',
-};
+const STATUS_LABELS: Record<string, string> = ETIQUETA_ESTADO;
 
 const STATUS_NEXT: Record<string, AppointmentStatus[]> = {
   pending:     ['confirmed', 'cancelled', 'no_show'],
@@ -73,7 +68,7 @@ const HOURS = Array.from({ length: 11 }, (_, i) => {
 }).flat();
 
 function getAvailableHours(dateStr: string): string[] {
-  const today = new Date().toISOString().split('T')[0];
+  const today = fechaLocal();
   if (dateStr !== today) return HOURS;
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -102,7 +97,7 @@ export default function ReceptionistDashboard() {
   const [bookSaving,   setBookSaving]  = useState(false);
   const [form, setForm] = useState<BookForm>({
     clientName: '', clientPhone: '', clientId: '',
-    service: '', employee: '', date: new Date().toISOString().split('T')[0],
+    service: '', employee: '', date: fechaLocal(),
     time: '', duration: 45, notes: '',
   });
 
@@ -141,7 +136,7 @@ export default function ReceptionistDashboard() {
       if (newAppts.length > 0) {
         newAppts.forEach(a => {
           if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('¡Nueva Cita Registrada!', {
+            new Notification('¡Nueva cita registrada!', {
               body: `${a.clientName} - ${a.service} a las ${format12h(a.time)}`,
               icon: '/favicon.ico'
             });
@@ -152,7 +147,7 @@ export default function ReceptionistDashboard() {
     prevAppointmentsRef.current = appointments;
   }, [appointments]);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = fechaLocal();
 
   /* ── Stats ── */
   const todayAppts = useMemo(() =>
@@ -196,10 +191,10 @@ export default function ReceptionistDashboard() {
   const upcomingAppts = useMemo(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tStr = tomorrow.toISOString().split('T')[0];
+    const tStr = fechaLocal(tomorrow);
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + 7);
-    const eStr = endDate.toISOString().split('T')[0];
+    const eStr = fechaLocal(endDate);
     return appointments
       .filter(a => a.date >= tStr && a.date <= eStr && (a.status === 'pending' || a.status === 'confirmed'))
       .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
@@ -260,7 +255,7 @@ export default function ReceptionistDashboard() {
   function openBook() {
     setForm({
       clientName: '', clientPhone: '', clientId: '',
-      service: '', employee: '', date: new Date().toISOString().split('T')[0],
+      service: '', employee: '', date: fechaLocal(),
       time: '', duration: 45, notes: '',
     });
     setClientSearch('');
@@ -313,7 +308,7 @@ export default function ReceptionistDashboard() {
             <RefreshCw size={15} />
           </button>
           <button className="rec__btn-primary" onClick={openBook}>
-            <Plus size={18} /> Nueva Cita
+            <Plus size={18} /> Nueva cita
           </button>
         </div>
       </div>
@@ -395,7 +390,7 @@ export default function ReceptionistDashboard() {
           {/* ══ EN SALA AHORA ══ */}
           <div className="rec__section">
             <h2 className="rec__section-title">
-              <span className="rec__live-dot" /> En Sala Ahora
+              <span className="rec__live-dot" /> En sala ahora
             </h2>
             {enSala.length === 0 ? (
               <div className="rec__empty-sm">
@@ -441,7 +436,7 @@ export default function ReceptionistDashboard() {
           {proximas.length > 0 && (
             <div className="rec__section">
               <h2 className="rec__section-title">
-                <ArrowRight size={16} /> Próximas Llegadas — Hoy
+                <ArrowRight size={16} /> Próximas llegadas — hoy
               </h2>
               <div className="rec__proximas">
                 {proximas.map(a => (
@@ -583,7 +578,7 @@ export default function ReceptionistDashboard() {
 
           {/* Búsqueda rápida de clientes */}
           <div className="rec__side-card">
-            <h3 className="rec__side-title"><Search size={15} /> Buscar Cliente</h3>
+            <h3 className="rec__side-title"><Search size={15} /> Buscar clienta</h3>
             <input
               className="rec__search-input"
               placeholder="Nombre o teléfono..."
@@ -669,7 +664,7 @@ export default function ReceptionistDashboard() {
         <div className="rec__modal-overlay" onClick={() => setBookOpen(false)}>
           <div className="rec__modal" onClick={e => e.stopPropagation()}>
             <div className="rec__modal-header">
-              <h2><Plus size={20} /> Nueva Cita</h2>
+              <h2><Plus size={20} /> Nueva cita</h2>
               <button className="rec__modal-close" onClick={() => setBookOpen(false)}>✕</button>
             </div>
 
@@ -793,7 +788,7 @@ export default function ReceptionistDashboard() {
                 Cancelar
               </button>
               <button className="rec__btn-primary" onClick={handleBook} disabled={bookSaving}>
-                {bookSaving ? 'Guardando…' : <><CalendarCheck size={16} /> Confirmar Cita</>}
+                {bookSaving ? 'Guardando…' : <><CalendarCheck size={16} /> Confirmar cita</>}
               </button>
             </div>
           </div>
