@@ -372,7 +372,7 @@ export default function Reports() {
           <title>Reporte de Rendimiento - Anadsll Beauty Esthetic</title>
           <style>
             body { font-family: 'Outfit', sans-serif; padding: 40px; color: #1a1a1a; background: #fff; }
-            h1 { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; margin-bottom: 5px; color: #4a342a; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+            h1 { font-family: 'Playfair Display', Georgia, serif; font-weight: 500; font-size: 2.5rem; margin-bottom: 5px; color: #4a342a; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
             .meta { font-size: 0.95rem; color: #6b7280; margin-bottom: 30px; }
             .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
             .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; background: #fdfcf9; }
@@ -811,11 +811,12 @@ export default function Reports() {
             <tbody>
               {specialistStats.map((s) => (
                 <tr key={s.name}>
-                  <td><strong>{s.name}</strong></td>
-                  <td>{s.completedAppts}</td>
-                  {user?.role !== 'specialist' && <td>{fmtPrice(s.revenue)}</td>}
-                  <td>{s.commissionPct}%</td>
-                  <td><strong style={{ color: '#4ade80' }}>{fmtPrice(s.commission)}</strong></td>
+                  {/* data-label: en pantallas angostas cada fila se muestra como tarjeta y la etiqueta va al lado del dato */}
+                  <td data-label="Especialista"><strong>{s.name}</strong></td>
+                  <td data-label="Citas realizadas">{s.completedAppts}</td>
+                  {user?.role !== 'specialist' && <td data-label="Ingresos generados">{fmtPrice(s.revenue)}</td>}
+                  <td data-label="% Comisión">{s.commissionPct}%</td>
+                  <td data-label="Comisión calculada"><strong style={{ color: '#4ade80' }}>{fmtPrice(s.commission)}</strong></td>
                 </tr>
               ))}
               {specialistStats.length === 0 && (

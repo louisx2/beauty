@@ -1,7 +1,7 @@
 /* ── Mi suscripción (pago mensual del sistema) ── */
 .susc { display: flex; flex-direction: column; gap: 20px; max-width: 1100px; }
 .susc__head { margin-bottom: 4px; }
-.susc__title { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; font-family: 'Outfit', sans-serif; font-size: 1.8rem; font-weight: 700; color: #fff; }
+.susc__title { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; font-family: var(--panel-titulo); font-size: 1.9rem; font-weight: 500; color: #fff; }
 .susc__subtitle { margin: 0; font-size: 0.9rem; color: rgba(255, 255, 255, 0.55); }
 .susc__cargando { display: flex; align-items: center; gap: 8px; color: rgba(255, 255, 255, 0.7); }
 .susc__spin { animation: susc-gira 1s linear infinite; }
@@ -32,7 +32,7 @@
 .susc__banco { padding: 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); }
 .susc__banco-nombre { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
 .susc__banco-nombre span, .susc__titular { font-size: 0.85rem; color: rgba(255, 255, 255, 0.65); overflow-wrap: anywhere; }
-.susc__numero { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 2px; font-family: ui-monospace, monospace; font-size: 1rem; overflow-wrap: anywhere; }
+.susc__numero { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 2px; font-family: 'Outfit', sans-serif; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; font-size: 1.05rem; overflow-wrap: anywhere; }
 .susc__icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 14px; white-space: nowrap; font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 600; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: inherit; cursor: pointer; }
 
 .susc__form { display: flex; flex-direction: column; gap: 14px; }

@@ -80,7 +80,9 @@
 .billing__ncf-badge {
   display: block;
   font-size: 0.78rem;
-  font-family: 'Courier New', monospace;
+  font-family: 'Outfit', sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
   color: var(--lavender);
   font-weight: 600;
 }
@@ -134,7 +136,7 @@
 }
 
 .billing__inv-header h3 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--panel-titulo);
   color: white;
   font-size: 1.3rem;
   margin-bottom: 4px;

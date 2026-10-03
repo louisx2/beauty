@@ -59,8 +59,8 @@
 
 .admin__brand-name {
   display: block;
-  font-family: 'Cormorant Garamond', serif;
-  font-weight: 600;
+  font-family: var(--panel-titulo);
+  font-weight: 500;
   font-size: 1.1rem;
   color: white;
   line-height: 1.1;

@@ -9,9 +9,9 @@
 }
 
 .appts__title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--panel-titulo);
   font-size: 2rem;
-  font-weight: 600;
+  font-weight: 500;
   color: white;
   margin-bottom: 4px;
 }
@@ -645,7 +645,7 @@
 }
 
 .modal__header h2 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--panel-titulo);
   font-size: 1.4rem;
   color: white;
 }
@@ -842,6 +842,23 @@
   }
   .modal { max-width: 100%; border-radius: 20px; }
   .modal__row { grid-template-columns: 1fr; }
+}
+
+/* La tarjeta también va en columna cuando la LISTA es angosta, no solo la pantalla: en el iPad vertical el menú
+   lateral le quita ancho y los siete botones dejaban a la clienta y sus servicios en una columna de 80 px. */
+.appts__list { container-type: inline-size; }
+@container (max-width: 760px) {
+  .appt-card { flex-direction: column; }
+  .appt-card__time-col {
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    min-width: 0;
+    padding: 10px 16px;
+    justify-content: flex-start;
+    gap: 12px;
+  }
+  .appt-card__actions { padding: 8px 16px 12px; justify-content: flex-end; }
 }
 
 /* ── Servicios de una cita ────────────────────────────────────────────────
