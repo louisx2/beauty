@@ -93,7 +93,6 @@ export default function SiteMenu({ abierto, origen, activa, secciones, tema, onT
             <a key={s.id} href={`/#${s.id}`} style={{ '--i': i } as CSSProperties}
               className={activa === s.id ? 'is-on' : ''} aria-current={activa === s.id ? 'true' : undefined}
               onClick={irA(s.id)}>
-              <span className="s-ml-n">{String(i + 1).padStart(2, '0')}</span>
               <span className="s-ml-t"><span>{s.etiqueta}</span></span>
               <span className="s-ml-here">Estás aquí</span>
               <span className="s-ml-arrow" aria-hidden="true">→</span>
