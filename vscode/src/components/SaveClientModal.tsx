@@ -137,7 +137,7 @@ export default function SaveClientModal({ appointment, onClose }: SaveClientModa
           <div className="modal__actions" style={{ marginTop: 24 }}>
             <button type="button" className="modal__cancel-btn" onClick={onClose} disabled={loading}>Cancelar</button>
             <button type="submit" className="modal__submit-btn" disabled={loading} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <Save size={18} /> Guardar Clienta
+              <Save size={18} /> Guardar clienta
             </button>
           </div>
         </form>

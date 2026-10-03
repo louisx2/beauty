@@ -4,9 +4,9 @@ import { useServiceStore } from '../../store/serviceStore';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
 import {
-  Plus, Search, User, UserPlus, Phone, Mail, Edit2, Trash2, X,
+  Search, User, UserPlus, Phone, Mail, Edit2, Trash2, X,
   Clock, Shield, Sparkles, CheckCircle2, XCircle, AlertCircle,
-  Percent, Calendar, TrendingUp, Filter, Key, Lock, Unlock, UserCog, Globe,
+  Percent, Filter, Key, Lock, Unlock, UserCog, Globe,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
@@ -79,65 +79,6 @@ function validateStaffForm(form: Omit<StaffMember, 'id' | 'createdAt'>): StaffEr
   return errors;
 }
 
-const SQL_MIGRATION_CODE = `-- Ejecuta esto en Supabase SQL Editor para habilitar la gestión de inicios de sesión
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
-CREATE OR REPLACE FUNCTION public.list_staff_logins()
-RETURNS TABLE (id UUID, email VARCHAR, created_at TIMESTAMPTZ, last_sign_in_at TIMESTAMPTZ)
-LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM public.staff WHERE email = auth.jwt() ->> 'email' AND role = 'admin' AND active = true) THEN
-    RAISE EXCEPTION 'No autorizado';
-  END IF;
-  RETURN QUERY SELECT u.id, u.email, u.created_at, u.last_sign_in_at FROM auth.users u;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.create_staff_user(user_email TEXT, user_password TEXT, user_name TEXT, user_role TEXT)
-RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE
-  new_user_id UUID := gen_random_uuid();
-  encrypted_pass TEXT;
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM public.staff WHERE email = auth.jwt() ->> 'email' AND role = 'admin' AND active = true) THEN
-    RAISE EXCEPTION 'No autorizado';
-  END IF;
-  IF EXISTS (SELECT 1 FROM auth.users WHERE email = user_email) THEN
-    RAISE EXCEPTION 'El correo electrónico ya está registrado.';
-  END IF;
-  encrypted_pass := extensions.crypt(user_password, extensions.gen_salt('bf', 10));
-  INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, is_super_admin)
-  VALUES ('00000000-0000-0000-0000-000000000000', new_user_id, 'authenticated', 'authenticated', user_email, encrypted_pass, now(), '{"provider": "email", "providers": ["email"]}'::jsonb, jsonb_build_object('name', user_name, 'role', user_role), now(), now(), '', '', '', false);
-  INSERT INTO auth.identities (provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
-  VALUES (new_user_id::text, new_user_id, jsonb_build_object('sub', new_user_id, 'email', user_email), 'email', now(), now(), now());
-  RETURN new_user_id;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.update_staff_user_password(user_email TEXT, new_password TEXT)
-RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE encrypted_pass TEXT;
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM public.staff WHERE email = auth.jwt() ->> 'email' AND role = 'admin' AND active = true) THEN
-    RAISE EXCEPTION 'No autorizado';
-  END IF;
-  encrypted_pass := extensions.crypt(new_password, extensions.gen_salt('bf', 10));
-  UPDATE auth.users SET encrypted_password = encrypted_pass, updated_at = now() WHERE email = user_email;
-  RETURN FOUND;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.delete_staff_user(user_email TEXT)
-RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM public.staff WHERE email = auth.jwt() ->> 'email' AND role = 'admin' AND active = true) THEN
-    RAISE EXCEPTION 'No autorizado';
-  END IF;
-  DELETE FROM auth.users WHERE email = user_email;
-  RETURN FOUND;
-END;
-$$;`;
-
 export default function Staff() {
   const { staff, loading, fetchStaff, addStaff, updateStaff, deleteStaff, fetchStaffStats } = useStaffStore();
   const { services, fetchAll: fetchServices } = useServiceStore();
@@ -165,7 +106,6 @@ export default function Staff() {
   const [loginStaff, setLoginStaff] = useState<StaffMember | null>(null);
   const [loginPassword, setLoginPassword] = useState('');
   const [loginSubmitting, setLoginSubmitting] = useState(false);
-  const [showSqlHelp, setShowSqlHelp] = useState(false);
 
   const loadLogins = useCallback(async () => {
     try {
@@ -341,7 +281,7 @@ export default function Staff() {
   const handleDeleteLogin = async () => {
     if (!loginStaff || !loginStaff.email) return;
     if (!window.confirm(`¿Estás segura de revocar el acceso a ${loginStaff.name}? La cuenta en Supabase Auth será eliminada.`)) return;
-    
+
     setLoginSubmitting(true);
     try {
       const { data, error } = await supabase.rpc('delete_staff_user', {
@@ -461,7 +401,7 @@ export default function Staff() {
       {/* Header */}
       <div className="staff-page__header">
         <div>
-          <h1 className="staff-page__title">Equipo y Colaboradoras</h1>
+          <h1 className="staff-page__title">Equipo</h1>
           <p className="staff-page__subtitle">
             {activeCount} activas{inactiveCount > 0 && ` · ${inactiveCount} inactivas`}
           </p>
@@ -625,16 +565,16 @@ export default function Staff() {
                     {m.email ? (
                       hasLogin(m.email) ? (
                         <span className="staff-card__login-badge staff-card__login-badge--active" title="Acceso habilitado">
-                          <Lock size={11} /> Login Activo
+                          <Lock size={11} /> Con acceso
                         </span>
                       ) : (
                         <span className="staff-card__login-badge staff-card__login-badge--inactive" title="Sin cuenta de acceso">
-                          <Unlock size={11} /> Sin Acceso
+                          <Unlock size={11} /> Sin acceso
                         </span>
                       )
                     ) : (
                       <span className="staff-card__login-badge staff-card__login-badge--noemail" title="Introduce un email para habilitar acceso">
-                        <AlertCircle size={11} /> Falta Email
+                        <AlertCircle size={11} /> Falta el correo
                       </span>
                     )}
                   </div>
@@ -683,7 +623,7 @@ export default function Staff() {
               <div className="staff-delete-modal__icon">
                 <AlertCircle size={32} />
               </div>
-              <h3>Eliminar Empleada</h3>
+              <h3>Eliminar empleada</h3>
               <p>
                 ¿Estás segura de que deseas eliminar a <strong>{selected.name}</strong>?
                 Esta acción removerá su ficha de empleada de la base de datos.
@@ -718,7 +658,7 @@ export default function Staff() {
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h2>{editingId ? 'Editar Empleada' : 'Nueva Empleada'}</h2>
+              <h2>{editingId ? 'Editar empleada' : 'Nueva empleada'}</h2>
               <button className="modal__close" onClick={closeModal}>
                 <X size={20} />
               </button>
@@ -760,7 +700,7 @@ export default function Staff() {
 
               <div className="modal__row">
                 <div className="modal__field">
-                  <label><User size={14} /> Nombre Completo *</label>
+                  <label><User size={14} /> Nombre completo *</label>
                   <input
                     type="text"
                     placeholder="Nombre de la empleada"
@@ -864,7 +804,7 @@ export default function Staff() {
 
               {/* Days */}
               <div className="modal__field">
-                <label><Clock size={14} /> Días de Trabajo</label>
+                <label><Clock size={14} /> Días de trabajo</label>
                 <div className="staff-day-picker">
                   {WEEKDAYS.map((d) => (
                     <button
@@ -882,7 +822,7 @@ export default function Staff() {
               {/* Schedule */}
               <div className="modal__row">
                 <div className="modal__field">
-                  <label>Hora de Entrada</label>
+                  <label>Hora de entrada</label>
                   <select
                     value={form.workingStart}
                     onChange={(e) => {
@@ -894,7 +834,7 @@ export default function Staff() {
                   </select>
                 </div>
                 <div className="modal__field">
-                  <label>Hora de Salida</label>
+                  <label>Hora de salida</label>
                   <select
                     value={form.workingEnd}
                     onChange={(e) => {
@@ -989,52 +929,10 @@ export default function Staff() {
                   Cancelar
                 </button>
                 <button type="submit" className="modal__submit-btn" id="staff-submit" disabled={submitting}>
-                  {submitting ? 'Guardando...' : editingId ? 'Guardar Cambios' : 'Crear Empleada'}
+                  {submitting ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear empleada'}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* SQL Migration Help Modal */}
-      {showSqlHelp && (
-        <div className="modal-overlay" onClick={() => setShowSqlHelp(false)}>
-          <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h2><Shield size={20} /> Configuración de Base de Datos para Logins</h2>
-              <button className="modal__close" onClick={() => setShowSqlHelp(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className="sql-help-modal-body">
-              <p>
-                Para habilitar la creación y administración de usuarios (inicio de sesión) directamente
-                desde este panel, es necesario instalar funciones administrativas especiales en la base de datos de Supabase.
-              </p>
-              <p>
-                Copia el código SQL a continuación y pégalo en el <strong>SQL Editor</strong> de tu Supabase Dashboard,
-                luego ejecútalo haciendo clic en <strong>Run</strong>.
-              </p>
-              <div className="sql-code-container">
-                <pre><code>{SQL_MIGRATION_CODE}</code></pre>
-              </div>
-              <div className="modal__actions">
-                <button
-                  type="button"
-                  className="modal__submit-btn"
-                  onClick={() => {
-                    navigator.clipboard.writeText(SQL_MIGRATION_CODE);
-                    toast.success('SQL copiado al portapapeles');
-                  }}
-                >
-                  Copiar Código SQL
-                </button>
-                <button type="button" className="modal__cancel-btn" onClick={() => setShowSqlHelp(false)}>
-                  Cerrar
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -1044,7 +942,7 @@ export default function Staff() {
         <div className="modal-overlay" onClick={() => setShowLoginModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h2><UserCog size={18} /> Gestionar Acceso de Login</h2>
+              <h2><UserCog size={18} /> Acceso al panel</h2>
               <button className="modal__close" onClick={() => setShowLoginModal(false)}>
                 <X size={20} />
               </button>
@@ -1058,20 +956,13 @@ export default function Staff() {
               </div>
 
               {!userManagementEnabled ? (
-                <div className="sql-warning-banner">
+                <div className="staff-aviso-acceso" role="alert">
                   <AlertCircle size={20} />
                   <div>
-                    <strong>Instalación pendiente:</strong>
-                    <p>Las funciones de acceso no están instaladas en la base de datos.</p>
-                    <button
-                      type="button"
-                      className="sql-warning-banner__btn"
-                      onClick={() => {
-                        setShowLoginModal(false);
-                        setShowSqlHelp(true);
-                      }}
-                    >
-                      Ver instrucciones SQL
+                    <strong>No pudimos cargar los accesos.</strong>
+                    <p>Revisa la conexión e intenta de nuevo. Si sigue pasando, avísale a soporte.</p>
+                    <button type="button" className="staff-aviso-acceso__btn" onClick={() => loadLogins()}>
+                      Intentar de nuevo
                     </button>
                   </div>
                 </div>
@@ -1084,7 +975,7 @@ export default function Staff() {
                         <CheckCircle2 size={16} style={{ color: '#4ade80' }} />
                         <span>Tiene acceso activo a la plataforma.</span>
                       </div>
-                      
+
                       {getLoginDetails(loginStaff.email)?.last_sign_in_at && (
                         <p className="login-status-details__last-login">
                           Última conexión: {new Date(getLoginDetails(loginStaff.email)!.last_sign_in_at!).toLocaleString('es-DO')}
@@ -1092,7 +983,7 @@ export default function Staff() {
                       )}
 
                       <div className="modal__field" style={{ marginTop: 16 }}>
-                        <label><Key size={14} /> Nueva Contraseña</label>
+                        <label><Key size={14} /> Nueva contraseña</label>
                         <input
                           type="password"
                           placeholder="Mínimo 6 caracteres para cambiar"
@@ -1109,7 +1000,7 @@ export default function Staff() {
                           disabled={loginSubmitting}
                           style={{ flex: 1 }}
                         >
-                          {loginSubmitting ? 'Cambiando...' : 'Cambiar Contraseña'}
+                          {loginSubmitting ? 'Cambiando...' : 'Cambiar contraseña'}
                         </button>
                         <button
                           type="button"
@@ -1117,7 +1008,7 @@ export default function Staff() {
                           onClick={handleDeleteLogin}
                           disabled={loginSubmitting}
                         >
-                          <XCircle size={14} /> Revocar Acceso
+                          <XCircle size={14} /> Quitar acceso
                         </button>
                       </div>
                     </div>
@@ -1130,7 +1021,7 @@ export default function Staff() {
                       </div>
 
                       <div className="modal__field" style={{ marginTop: 16 }}>
-                        <label><Key size={14} /> Contraseña de Acceso *</label>
+                        <label><Key size={14} /> Contraseña de acceso *</label>
                         <input
                           type="password"
                           placeholder="Mínimo 6 caracteres"
@@ -1153,7 +1044,7 @@ export default function Staff() {
                           onClick={handleCreateLogin}
                           disabled={loginSubmitting}
                         >
-                          {loginSubmitting ? 'Creando acceso...' : 'Habilitar Acceso'}
+                          {loginSubmitting ? 'Creando acceso...' : 'Habilitar acceso'}
                         </button>
                       </div>
                     </div>

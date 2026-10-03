@@ -1,16 +1,15 @@
 import { useMemo, useEffect, useState } from 'react';
-import { useBillingStore, NCF_LABELS } from '../../store/billingStore';
+import { useBillingStore } from '../../store/billingStore';
 import { useAppointmentStore } from '../../store/appointmentStore';
 import { useServiceStore } from '../../store/serviceStore';
 import { useClientStore } from '../../store/clientStore';
 import { useStaffStore } from '../../store/staffStore';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
-import {
-  FileText, Download, DollarSign, Receipt,
-  CalendarDays, Users, UserCog, Calendar, TrendingUp
-} from 'lucide-react';
+import { FileText, Download, Receipt, CalendarDays, UserCog, TrendingUp } from 'lucide-react';
 import { format12h } from '../../lib/timeFormat';
+import { serviciosConPrecio } from '../../lib/ingresos';
+import { FACTURACION_NCF } from '../../lib/modulos';
 import './Reports.css';
 
 function fmtPrice(p: number) { return `RD$ ${Math.round(p).toLocaleString('es-DO')}`; }
@@ -35,7 +34,7 @@ export default function Reports() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
-    fetchBilling();
+    if (FACTURACION_NCF) fetchBilling(); // las facturas solo alimentan métodos de pago y DGII
     fetchAppointments();
     fetchServices();
     fetchClients();
@@ -138,19 +137,10 @@ export default function Reports() {
   /** Servicios de una cita, ya con precio resuelto. Una cita puede llevar
    *  varios, cada uno de una especialista distinta. Las citas antiguas sin
    *  lineas se tratan como un unico servicio. */
-  const serviciosDe = useMemo(() => {
-    const precioDe = (nombre: string, guardado: number) =>
-      guardado > 0 ? guardado : (services.find((sv) => sv.name === nombre)?.price ?? 0);
-
-    return (a: (typeof filteredAppointments)[number]) =>
-      (a.services.length > 0
-        ? a.services.map((l) => ({
-            nombre: l.serviceName,
-            empleada: l.employee,
-            precio: precioDe(l.serviceName, l.price),
-          }))
-        : [{ nombre: a.service, empleada: a.employee, precio: precioDe(a.service, 0) }]);
-  }, [services, filteredAppointments]);
+  const serviciosDe = useMemo(
+    () => (a: (typeof filteredAppointments)[number]) => serviciosConPrecio(a, services),
+    [services],
+  );
 
   const totalRevenue = useMemo(() => {
     return filteredAppointments
@@ -189,7 +179,7 @@ export default function Reports() {
   }, [staff, filteredAppointments, serviciosDe, user]);
 
   // ── Advanced Stats Calculations ──
-  
+
   // Category stats (Laser, Facial, Corporal, Belleza, Medicina)
   const categoryStats = useMemo(() => {
     const stats: Record<string, { count: number; revenue: number }> = {};
@@ -335,12 +325,14 @@ export default function Reports() {
       });
       csv += `\n`;
 
-      csv += `METODOS DE PAGO\n`;
-      csv += `Metodo;Transacciones;Total Recibido\n`;
-      paymentStats.forEach(p => {
-        csv += `"${p.method}";${p.count};RD$ ${p.total}\n`;
-      });
-      csv += `\n`;
+      if (FACTURACION_NCF) {
+        csv += `METODOS DE PAGO\n`;
+        csv += `Metodo;Transacciones;Total Recibido\n`;
+        paymentStats.forEach(p => {
+          csv += `"${p.method}";${p.count};RD$ ${p.total}\n`;
+        });
+        csv += `\n`;
+      }
 
       csv += `ORIGEN DE CITAS\n`;
       csv += `Origen;Citas;Porcentaje\n`;
@@ -386,7 +378,7 @@ export default function Reports() {
             .footer { margin-top: 50px; text-align: center; font-size: 0.8rem; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 15px; }
             .adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
             .bar-track { background: #f3f4f6; border-radius: 99px; height: 10px; overflow: hidden; margin-top: 8px; width: 100%; }
-            .bar-fill { background: #c97d97; height: 100%; border-radius: 99px; }
+            .bar-fill { background: #B2967D; height: 100%; border-radius: 99px; }
             .donut-container { display: flex; align-items: center; gap: 20px; }
             @media print {
               body { padding: 20px; }
@@ -442,7 +434,7 @@ export default function Reports() {
           ${showAdvanced ? `
             <h2>Análisis Avanzado de Negocios</h2>
             <div class="adv-grid">
-              
+
               <div class="card">
                 <h3>Categorias de Servicio</h3>
                 ${categoryStats.map(c => `
@@ -467,7 +459,7 @@ export default function Reports() {
                       <strong>RD$ ${c.spent.toLocaleString('es-DO')} (${c.count} citas)</strong>
                     </div>
                     <div class="bar-track">
-                      <div class="bar-fill" style="width: ${Math.round((c.spent / maxClientSpent) * 100)}%; background: #9a82cc;"></div>
+                      <div class="bar-fill" style="width: ${Math.round((c.spent / maxClientSpent) * 100)}%; background: #7D5A44;"></div>
                     </div>
                   </div>
                 `).join('')}
@@ -478,18 +470,18 @@ export default function Reports() {
                 <div class="donut-container">
                   <svg viewBox="0 0 36 36" style="width: 80px; height: 80px;">
                     <circle cx="18" cy="18" r="15.9154" fill="transparent" stroke="#f3f4f6" stroke-width="3" />
-                    <circle cx="18" cy="18" r="15.9154" fill="transparent" stroke="#c97d97" stroke-width="3"
+                    <circle cx="18" cy="18" r="15.9154" fill="transparent" stroke="#B2967D" stroke-width="3"
                             stroke-dasharray="${sourceStats.onlinePct} ${100 - sourceStats.onlinePct}"
                             stroke-dashoffset="25" />
                   </svg>
                   <div style="font-size:0.85rem;">
-                    <div><span style="color:#c97d97;font-weight:bold;">■</span> Online: ${sourceStats.onlinePct}% (${sourceStats.online} citas)</div>
+                    <div><span style="color:#B2967D;font-weight:bold;">■</span> Online: ${sourceStats.onlinePct}% (${sourceStats.online} citas)</div>
                     <div><span style="color:#9ca3af;font-weight:bold;">■</span> Manual: ${sourceStats.manualPct}% (${sourceStats.manual} citas)</div>
                   </div>
                 </div>
               </div>
 
-              <div class="card">
+              ${FACTURACION_NCF ? `<div class="card">
                 <h3>Métodos de Pago</h3>
                 ${paymentStats.map(p => `
                   <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding: 6px 0; border-bottom:1px solid #f3f4f6;">
@@ -497,7 +489,7 @@ export default function Reports() {
                     <strong>RD$ ${p.total.toLocaleString('es-DO')} (${p.count} trans.)</strong>
                   </div>
                 `).join('')}
-              </div>
+              </div>` : ''}
 
             </div>
           ` : ''}
@@ -545,7 +537,7 @@ export default function Reports() {
     <div className="reports">
       <div className="clients__header" style={{ marginBottom: 16 }}>
         <div>
-          <h1 className="clients__title">Reportes & Estadísticas</h1>
+          <h1 className="clients__title">{user?.role === 'specialist' ? 'Mis reportes' : 'Reportes'}</h1>
           <p className="clients__subtitle">
             {user?.role === 'specialist'
               ? 'Consulta tu rendimiento individual y comisiones acumuladas'
@@ -557,25 +549,25 @@ export default function Reports() {
       {/* ── Period Selector & Downloads ── */}
       <div className="reports__filters">
         <div className="reports__period-tabs">
-          <button 
+          <button
             className={`reports__period-btn ${timePeriod === 'day' ? 'reports__period-btn--active' : ''}`}
             onClick={() => setTimePeriod('day')}
           >
             Diario
           </button>
-          <button 
+          <button
             className={`reports__period-btn ${timePeriod === 'week' ? 'reports__period-btn--active' : ''}`}
             onClick={() => setTimePeriod('week')}
           >
             Semanal
           </button>
-          <button 
+          <button
             className={`reports__period-btn ${timePeriod === 'month' ? 'reports__period-btn--active' : ''}`}
             onClick={() => setTimePeriod('month')}
           >
             Mensual
           </button>
-          <button 
+          <button
             className={`reports__period-btn ${timePeriod === 'year' ? 'reports__period-btn--active' : ''}`}
             onClick={() => setTimePeriod('year')}
           >
@@ -585,8 +577,8 @@ export default function Reports() {
 
         <div>
           {timePeriod === 'day' && (
-            <input 
-              type="date" 
+            <input
+              type="date"
               className="reports__date-input"
               value={activeDate}
               onChange={(e) => setActiveDate(e.target.value)}
@@ -594,27 +586,27 @@ export default function Reports() {
           )}
           {timePeriod === 'week' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 className="reports__date-input"
                 value={activeDate}
                 onChange={(e) => setActiveDate(e.target.value)}
               />
-              <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+              <span className="reports__periodo">
                 {getPeriodLabel()}
               </span>
             </div>
           )}
           {timePeriod === 'month' && (
-            <input 
-              type="month" 
+            <input
+              type="month"
               className="reports__date-input"
               value={activeDate.slice(0, 7)}
               onChange={(e) => setActiveDate(e.target.value + '-01')}
             />
           )}
           {timePeriod === 'year' && (
-            <select 
+            <select
               className="reports__date-input"
               value={activeDate.slice(0, 4)}
               onChange={(e) => setActiveDate(e.target.value + '-01-01')}
@@ -628,21 +620,21 @@ export default function Reports() {
 
         <div className="reports__download-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {user?.role !== 'specialist' && (
-            <button 
+            <button
               className={`reports__download-btn ${showAdvanced ? 'reports__download-btn--advanced-active' : 'reports__download-btn--advanced'}`}
               onClick={() => setShowAdvanced(!showAdvanced)}
             >
-              <TrendingUp size={16} /> {showAdvanced ? 'Vista General' : 'Vista Avanzada'}
+              <TrendingUp size={16} /> {showAdvanced ? 'Vista general' : 'Vista avanzada'}
             </button>
           )}
-          <button 
-            className="reports__download-btn reports__download-btn--excel" 
+          <button
+            className="reports__download-btn reports__download-btn--excel"
             onClick={downloadExcel}
           >
             <Download size={16} /> Excel
           </button>
-          <button 
-            className="reports__download-btn reports__download-btn--pdf" 
+          <button
+            className="reports__download-btn reports__download-btn--pdf"
             onClick={downloadPDF}
           >
             <Download size={16} /> PDF
@@ -652,143 +644,145 @@ export default function Reports() {
 
       {/* ── Key Metrics Cards ── */}
       <div className="reports__section">
-        <h2><CalendarDays size={20} /> Resumen de Rendimiento del Periodo</h2>
+        <h2><CalendarDays size={20} /> Resumen del periodo</h2>
         <div className="reports__cards">
           <div className="report-card">
-            <span>Citas Completadas</span>
+            <span>Citas completadas</span>
             <strong>{totalCompleted}</strong>
           </div>
           <div className="report-card report-card--red">
-            <span>Citas Perdidas (No Show)</span>
+            <span>No asistieron</span>
             <strong>{totalNoShow}</strong>
           </div>
           <div className="report-card report-card--amber">
-            <span>Citas Canceladas</span>
+            <span>Citas canceladas</span>
             <strong>{totalCancelled}</strong>
           </div>
           <div className="report-card report-card--rose">
-            <span>Clientes Nuevos</span>
+            <span>Clientas nuevas</span>
             <strong>{totalNewClients}</strong>
           </div>
           {user?.role !== 'specialist' && (
             <div className="report-card report-card--green" style={{ gridColumn: 'span 2' }}>
-              <span>Ingresos Generados (Citas Completas)</span>
+              <span>Ingresos de citas completadas</span>
               <strong>{fmtPrice(totalRevenue)}</strong>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Advanced Charts Grid ── */}
+      {/* ── Vista avanzada ── */}
       {showAdvanced && (
         <div className="reports__section">
-          <h2>Reportes & Gráficos Avanzados de Negocios</h2>
-          <div className="reports__row" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
-            
-            {/* Chart 1: Circular SVG Donut Chart (Source Booking) */}
-            <div className="report-card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <h3 style={{ fontSize: '0.9rem', color: 'white', fontWeight: 600, margin: 0 }}>Distribución por Origen de Reservas</h3>
+          <h2><TrendingUp size={20} /> Análisis avanzado</h2>
+          <div className="reports__avanzado">
+
+            {/* Origen de las reservas (dona) */}
+            <div className="report-card reports__chart">
+              <h3 className="reports__chart-title">Origen de las reservas</h3>
               <div className="reports__advanced-donut-wrap" style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
                 <div style={{ position: 'relative', width: '90px', height: '90px' }}>
-                  <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
-                    <circle cx="18" cy="18" r="15.91549430918954" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
+                  <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }} aria-hidden="true">
+                    <circle className="reports__chart-ring" cx="18" cy="18" r="15.91549430918954" fill="transparent" strokeWidth="4" />
                     <circle cx="18" cy="18" r="15.91549430918954" fill="transparent" stroke="var(--rose)" strokeWidth="4"
                             strokeDasharray={`${sourceStats.onlinePct} ${100 - sourceStats.onlinePct}`}
                             strokeDashoffset="0" />
                   </svg>
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 'bold', color: 'white' }}>
+                  <div className="reports__donut-num">
                     {sourceStats.onlinePct}%
                   </div>
                 </div>
-                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div className="reports__chart-text" style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div><span style={{ color: 'var(--rose)', marginRight: '6px' }}>■</span><strong>Online:</strong> {sourceStats.onlinePct}% ({sourceStats.online} citas)</div>
-                  <div><span style={{ color: 'rgba(255,255,255,0.3)', marginRight: '6px' }}>■</span><strong>Presencial / Manual:</strong> {sourceStats.manualPct}% ({sourceStats.manual} citas)</div>
+                  <div><span className="reports__chart-muted" style={{ marginRight: '6px' }}>■</span><strong>Presencial / manual:</strong> {sourceStats.manualPct}% ({sourceStats.manual} citas)</div>
                 </div>
               </div>
             </div>
 
-            {/* Chart 2: Horizontal Bars (Services Categories) */}
-            <div className="report-card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <h3 style={{ fontSize: '0.9rem', color: 'white', fontWeight: 600, margin: 0 }}>Ingresos por Categorías</h3>
+            {/* Ingresos por categoría (barras) */}
+            <div className="report-card reports__chart">
+              <h3 className="reports__chart-title">Ingresos por categoría</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {categoryStats.map(c => (
                   <div key={c.category} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>
+                    <div className="reports__chart-text" style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ textTransform: 'capitalize' }}>{c.category}</span>
                       <strong>{fmtPrice(c.revenue)} ({c.count})</strong>
                     </div>
-                    <div className="reports__horizontal-track" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
+                    <div className="reports__horizontal-track reports__chart-track" style={{ borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
                       <div className="reports__horizontal-fill" style={{ background: 'linear-gradient(90deg, var(--rose), var(--lavender))', height: '100%', borderRadius: '99px', width: `${Math.round((c.revenue / maxCategoryRevenue) * 100)}%` }} />
                     </div>
                   </div>
                 ))}
-                {categoryStats.length === 0 && <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '10px 0' }}>Sin datos disponibles</div>}
+                {categoryStats.length === 0 && <div className="reports__chart-muted" style={{ textAlign: 'center', padding: '10px 0' }}>Sin datos disponibles</div>}
               </div>
             </div>
 
-            {/* Chart 3: Horizontal Bars (Top VIP Clients) */}
-            <div className="report-card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <h3 style={{ fontSize: '0.9rem', color: 'white', fontWeight: 600, margin: 0 }}>Top 5 Clientes VIP (Top Spenders)</h3>
+            {/* Las clientas que más gastan (barras) */}
+            <div className="report-card reports__chart">
+              <h3 className="reports__chart-title">Las 5 clientas que más gastan</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {topClients.map(c => (
                   <div key={c.name} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>
+                    <div className="reports__chart-text" style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span>{c.name}</span>
                       <strong>{fmtPrice(c.spent)} ({c.count} citas)</strong>
                     </div>
-                    <div className="reports__horizontal-track" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
-                      <div className="reports__horizontal-fill" style={{ background: 'linear-gradient(90deg, #60a5fa, #3b82f6)', height: '100%', borderRadius: '99px', width: `${Math.round((c.spent / maxClientSpent) * 100)}%` }} />
+                    <div className="reports__horizontal-track reports__chart-track" style={{ borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
+                      <div className="reports__horizontal-fill" style={{ background: 'linear-gradient(90deg, var(--camel), var(--cocoa))', height: '100%', borderRadius: '99px', width: `${Math.round((c.spent / maxClientSpent) * 100)}%` }} />
                     </div>
                   </div>
                 ))}
-                {topClients.length === 0 && <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '10px 0' }}>Sin datos disponibles</div>}
+                {topClients.length === 0 && <div className="reports__chart-muted" style={{ textAlign: 'center', padding: '10px 0' }}>Sin datos disponibles</div>}
               </div>
             </div>
 
-            {/* Chart 4: Vertical Columns (Peak Hours) */}
-            <div className="report-card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <h3 style={{ fontSize: '0.9rem', color: 'white', fontWeight: 600, margin: 0 }}>Horas Pico de Citas Realizadas</h3>
+            {/* Horas con más citas (columnas) */}
+            <div className="report-card reports__chart">
+              <h3 className="reports__chart-title">Horas con más citas</h3>
               <div className="reports__vertical-chart" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', height: '90px', paddingTop: '10px', gap: '8px' }}>
                 {peakHours.map(p => (
                   <div key={p.time} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: '6px' }}>
-                    <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)' }}>{p.count}</span>
-                    <div style={{ background: 'rgba(255,255,255,0.04)', width: '100%', height: '50px', borderRadius: '4px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+                    <span className="reports__chart-text" style={{ fontSize: '0.72rem' }}>{p.count}</span>
+                    <div className="reports__chart-track" style={{ width: '100%', height: '50px', borderRadius: '4px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
                       <div style={{ background: 'linear-gradient(to top, var(--lavender-dark), var(--lavender))', width: '100%', height: `${Math.round((p.count / maxPeakCount) * 100)}%` }} />
                     </div>
-                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>{format12h(p.time)}</span>
+                    <span className="reports__chart-muted" style={{ fontSize: '0.7rem' }}>{format12h(p.time)}</span>
                   </div>
                 ))}
-                {peakHours.length === 0 && <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center', width: '100%', paddingBottom: '30px' }}>Sin datos de horas</div>}
+                {peakHours.length === 0 && <div className="reports__chart-muted" style={{ textAlign: 'center', width: '100%', paddingBottom: '30px' }}>Sin datos de horas</div>}
               </div>
             </div>
 
-            {/* Chart 5: Table of Payment Methods usage */}
-            <div className="report-card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px', gridColumn: 'span 2' }}>
-              <h3 style={{ fontSize: '0.9rem', color: 'white', fontWeight: 600, margin: 0 }}>Métodos de Pago Utilizados (Facturación)</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', textTransform: 'uppercase', fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', textAlign: 'left' }}>
-                    <th style={{ padding: '8px 0' }}>Método</th>
-                    <th>Transacciones</th>
-                    <th style={{ textAlign: 'right' }}>Monto Recibido</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paymentStats.map(p => (
-                    <tr key={p.method} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      <td style={{ padding: '8px 0', fontWeight: 600, color: 'white' }}>{p.method}</td>
-                      <td>{p.count}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 'bold', color: '#4ade80' }}>{fmtPrice(p.total)}</td>
+            {/* Métodos de pago: salen de las facturas, así que solo con la facturación encendida */}
+            {FACTURACION_NCF && (
+              <div className="report-card reports__chart" style={{ gridColumn: '1 / -1' }}>
+                <h3 className="reports__chart-title">Métodos de pago (facturación)</h3>
+                <table className="reports__chart-text" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                  <thead>
+                    <tr className="reports__chart-muted" style={{ textTransform: 'uppercase', fontSize: '0.7rem', textAlign: 'left' }}>
+                      <th style={{ padding: '8px 0' }}>Método</th>
+                      <th>Transacciones</th>
+                      <th style={{ textAlign: 'right' }}>Monto recibido</th>
                     </tr>
-                  ))}
-                  {paymentStats.length === 0 && (
-                    <tr>
-                      <td colSpan={3} style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(255,255,255,0.4)' }}>No hay facturas pagadas registradas en este periodo.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paymentStats.map(p => (
+                      <tr key={p.method}>
+                        <td style={{ padding: '8px 0', fontWeight: 600 }}>{p.method}</td>
+                        <td>{p.count}</td>
+                        <td className="reports__comision" style={{ textAlign: 'right', fontWeight: 'bold' }}>{fmtPrice(p.total)}</td>
+                      </tr>
+                    ))}
+                    {paymentStats.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="reports__chart-muted" style={{ textAlign: 'center', padding: '16px 0' }}>No hay facturas pagadas registradas en este periodo.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
           </div>
         </div>
@@ -796,16 +790,16 @@ export default function Reports() {
 
       {/* ── Specialist Report ── */}
       <div className="reports__section">
-        <h2><UserCog size={20} /> Reporte de Rendimiento y Comisiones por Especialista</h2>
+        <h2><UserCog size={20} /> Rendimiento y comisiones por especialista</h2>
         <div className="reports__table-wrap">
           <table className="reports__table">
             <thead>
               <tr>
                 <th>Especialista</th>
-                <th>Citas Realizadas</th>
-                {user?.role !== 'specialist' && <th>Ingresos Generados</th>}
+                <th>Citas realizadas</th>
+                {user?.role !== 'specialist' && <th>Ingresos generados</th>}
                 <th>% Comisión</th>
-                <th>Comisión Calculada</th>
+                <th>Comisión calculada</th>
               </tr>
             </thead>
             <tbody>
@@ -816,7 +810,7 @@ export default function Reports() {
                   <td data-label="Citas realizadas">{s.completedAppts}</td>
                   {user?.role !== 'specialist' && <td data-label="Ingresos generados">{fmtPrice(s.revenue)}</td>}
                   <td data-label="% Comisión">{s.commissionPct}%</td>
-                  <td data-label="Comisión calculada"><strong style={{ color: '#4ade80' }}>{fmtPrice(s.commission)}</strong></td>
+                  <td data-label="Comisión calculada"><strong className="reports__comision">{fmtPrice(s.commission)}</strong></td>
                 </tr>
               ))}
               {specialistStats.length === 0 && (
@@ -831,11 +825,11 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* ── Packages Summary & DGII ── */}
+      {/* ── Paquetes (y DGII, solo con la facturación encendida) ── */}
       {user?.role !== 'specialist' && (
-        <div className="reports__row">
+        <div className={FACTURACION_NCF ? 'reports__row' : undefined}>
           <div className="reports__section">
-            <h2><Receipt size={20} /> Control de Paquetes Activos</h2>
+            <h2><Receipt size={20} /> Paquetes activos</h2>
             <div className="reports__cards reports__cards--small">
               <div className="report-card report-card--green">
                 <span>Activos</span>
@@ -846,21 +840,23 @@ export default function Reports() {
                 <strong>{clientPackages.filter((c) => c.usedSessions >= c.totalSessions).length}</strong>
               </div>
               <div className="report-card report-card--rose">
-                <span>Sesiones Usadas</span>
+                <span>Sesiones usadas</span>
                 <strong>{clientPackages.reduce((a, c) => a + c.usedSessions, 0)}</strong>
               </div>
             </div>
           </div>
 
-          <div className="reports__section">
-            <h2><FileText size={20} /> Reportes DGII</h2>
-            <p className="reports__dgii-note">Genera los archivos de formato DGII para el periodo correspondiente.</p>
-            <div className="reports__dgii-buttons">
-              <button className="reports__dgii-btn" onClick={generate607} id="btn-dgii-607">
-                <Download size={16} /> Formato 607 — Ingresos ({activeDate.slice(0, 7)})
-              </button>
+          {FACTURACION_NCF && (
+            <div className="reports__section">
+              <h2><FileText size={20} /> Reportes DGII</h2>
+              <p className="reports__dgii-note">Genera los archivos de formato DGII para el periodo correspondiente.</p>
+              <div className="reports__dgii-buttons">
+                <button className="reports__dgii-btn" onClick={generate607} id="btn-dgii-607">
+                  <Download size={16} /> Formato 607 — Ingresos ({activeDate.slice(0, 7)})
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 

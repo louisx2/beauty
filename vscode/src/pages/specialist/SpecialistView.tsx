@@ -3,22 +3,16 @@ import { useAppointmentStore, type Appointment } from '../../store/appointmentSt
 import { useAuthStore } from '../../store/authStore';
 import {
   Play, CheckCircle2, Clock, Phone, CalendarDays,
-  Sparkles, User, RefreshCw, X, AlertCircle, Timer, FileText,
-  History,
+  Sparkles, User, RefreshCw, X, AlertCircle, Timer,
 } from 'lucide-react';
 import { format12h } from '../../lib/timeFormat';
+import { ETIQUETA_ESTADO } from '../../lib/estadosCita';
 import { notifyStatusChange } from '../../lib/whatsapp';
 import toast from 'react-hot-toast';
 import './SpecialistView.css';
+import { fechaLocal } from '../../lib/fechas';
 
-const STATUS_LABELS: Record<string, string> = {
-  pending:     'Pendiente',
-  confirmed:   'Confirmada',
-  in_progress: 'En Curso',
-  completed:   'Completada',
-  cancelled:   'Cancelada',
-  no_show:     'No Asistió',
-};
+const STATUS_LABELS: Record<string, string> = ETIQUETA_ESTADO;
 
 function timeGreeting(): string {
   const h = new Date().getHours();
@@ -92,7 +86,7 @@ export default function SpecialistView() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [inProgressForTimer?.id, inProgressForTimer?.startedAt]);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = fechaLocal();
   const todayLabel = new Date().toLocaleDateString('es-DO', {
     weekday: 'long', day: 'numeric', month: 'long',
   });
@@ -276,7 +270,7 @@ export default function SpecialistView() {
                     disabled={!!loadingId}
                   >
                     <CheckCircle2 size={16} />
-                    {loadingId === inProgress.id ? 'Guardando…' : 'Confirmar Completado'}
+                    {loadingId === inProgress.id ? 'Guardando…' : 'Completar'}
                   </button>
                   <button
                     className="spec-card__btn spec-card__btn--dismiss"
@@ -356,7 +350,7 @@ export default function SpecialistView() {
               <Play size={16} />
               {inProgress
                 ? 'Completa el servicio actual primero'
-                : (loadingId === nextUp.id ? 'Iniciando…' : 'Iniciar Servicio')}
+                : (loadingId === nextUp.id ? 'Iniciando…' : 'Iniciar servicio')}
             </button>
           </div>
         </div>

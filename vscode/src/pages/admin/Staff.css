@@ -39,7 +39,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #c97d97, #b16580);
+  background: linear-gradient(135deg, var(--rose-dark), var(--lavender-dark));
   border: none;
   border-radius: 12px;
   color: #fff;
@@ -48,35 +48,13 @@
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(201, 125, 151, 0.2);
+  box-shadow: 0 4px 12px rgba(178, 150, 125, 0.2);
   transition: all 0.25s;
 }
 
 .staff-page__add-btn:hover {
-  box-shadow: 0 6px 16px rgba(201, 125, 151, 0.35);
-  background: linear-gradient(135deg, #d48da5, #be748f);
-}
-
-.staff-page__sql-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px dashed rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  color: rgba(255, 255, 255, 0.6);
-  padding: 9px 16px;
-  font-family: 'Outfit', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.staff-page__sql-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #fff;
+  box-shadow: 0 6px 16px rgba(178, 150, 125, 0.35);
+  background: linear-gradient(135deg, var(--camel), var(--cocoa));
 }
 
 .staff-page__loading {
@@ -110,9 +88,9 @@
 }
 
 .staff-filters__search:focus-within {
-  border-color: rgba(201, 125, 151, 0.4);
+  border-color: rgba(178, 150, 125, 0.4);
   background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 0 0 3px rgba(201, 125, 151, 0.15);
+  box-shadow: 0 0 0 3px rgba(178, 150, 125, 0.15);
 }
 
 .staff-filters__search svg {
@@ -162,7 +140,7 @@
 }
 
 .staff-filter-tab--active {
-  background: rgba(201, 125, 151, 0.12);
+  background: rgba(178, 150, 125, 0.12);
   color: #e8a5b8;
 }
 
@@ -436,7 +414,7 @@
 }
 
 .staff-card__day-dot--active {
-  background: rgba(201, 125, 151, 0.15);
+  background: rgba(178, 150, 125, 0.15);
   color: #e8a5b8;
 }
 
@@ -577,14 +555,14 @@
 }
 
 .staff-card__action-btn--login {
-  background: rgba(201, 125, 151, 0.05);
-  border-color: rgba(201, 125, 151, 0.1);
+  background: rgba(178, 150, 125, 0.05);
+  border-color: rgba(178, 150, 125, 0.1);
   color: #e8a5b8;
 }
 
 .staff-card__action-btn--login:hover {
-  background: rgba(201, 125, 151, 0.15);
-  border-color: rgba(201, 125, 151, 0.3);
+  background: rgba(178, 150, 125, 0.15);
+  border-color: rgba(178, 150, 125, 0.3);
   color: #fff;
 }
 
@@ -610,47 +588,6 @@
   color: #f87171;
 }
 
-/* ── SQL instructions design in settings ── */
-.sql-help-modal-body {
-  padding: 20px 24px;
-}
-
-.sql-help-modal-body p {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.88rem;
-  line-height: 1.6;
-  margin: 0 0 12px 0;
-}
-
-.sql-code-container {
-  background: #0d0d12;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 16px;
-  max-height: 250px;
-  overflow-y: auto;
-  margin-bottom: 24px;
-}
-
-.sql-code-container pre {
-  margin: 0;
-}
-
-.sql-code-container code {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 0.75rem;
-  color: #a78bfa;
-}
-
-.sql-code-container::-webkit-scrollbar {
-  width: 6px;
-}
-.sql-code-container::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.1);
-  border-radius: 99px;
-}
-
-/* ── Login Modal Content ── */
 .login-details-summary {
   background: rgba(0, 0, 0, 0.15);
   border-radius: 12px;
@@ -674,7 +611,7 @@
   font-weight: 600;
 }
 
-.sql-warning-banner {
+.staff-aviso-acceso {
   background: rgba(245, 158, 11, 0.06);
   border: 1px solid rgba(245, 158, 11, 0.15);
   border-radius: 12px;
@@ -684,25 +621,25 @@
   color: #fbbf24;
 }
 
-.sql-warning-banner svg {
+.staff-aviso-acceso svg {
   flex-shrink: 0;
   margin-top: 2px;
 }
 
-.sql-warning-banner strong {
+.staff-aviso-acceso strong {
   font-size: 0.88rem;
   font-weight: 600;
   display: block;
   margin-bottom: 4px;
 }
 
-.sql-warning-banner p {
+.staff-aviso-acceso p {
   margin: 0 0 10px 0;
   font-size: 0.78rem;
   color: rgba(251, 191, 36, 0.75);
 }
 
-.sql-warning-banner__btn {
+.staff-aviso-acceso__btn {
   background: rgba(251, 191, 36, 0.1);
   border: 1px solid rgba(251, 191, 36, 0.2);
   border-radius: 8px;
@@ -715,7 +652,7 @@
   transition: all 0.2s;
 }
 
-.sql-warning-banner__btn:hover {
+.staff-aviso-acceso__btn:hover {
   background: rgba(251, 191, 36, 0.18);
 }
 
@@ -850,9 +787,9 @@
 }
 
 .staff-day-btn--on {
-  background: rgba(201, 125, 151, 0.15);
+  background: rgba(178, 150, 125, 0.15);
   color: #e8a5b8;
-  border-color: rgba(201, 125, 151, 0.25);
+  border-color: rgba(178, 150, 125, 0.25);
 }
 
 /* Services picker */

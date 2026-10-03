@@ -35,12 +35,12 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(201,125,151,0.3);
+  box-shadow: 0 4px 16px rgba(178, 150, 125, 0.3);
 }
 
 .appts__add-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(201,125,151,0.45);
+  box-shadow: 0 8px 24px rgba(178, 150, 125, 0.45);
 }
 
 /* Acciones del encabezado: bloquear horario + nueva cita */
@@ -140,7 +140,6 @@
   font-size: 0.92rem;
   color: rgba(255,255,255,0.7);
   font-weight: 500;
-  text-transform: capitalize;
   margin-left: 8px;
 }
 
@@ -166,7 +165,7 @@
 }
 
 .appts__view-btn--active {
-  background: linear-gradient(135deg, rgba(201,125,151,0.2), rgba(154,130,204,0.15));
+  background: linear-gradient(135deg, rgba(178, 150, 125, 0.2), rgba(160, 122, 98, 0.15));
   color: white;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
@@ -316,7 +315,7 @@
 }
 
 .appts__week-day--selected {
-  background: linear-gradient(135deg, rgba(201,125,151,0.15), rgba(154,130,204,0.1));
+  background: linear-gradient(135deg, rgba(178, 150, 125, 0.15), rgba(160, 122, 98, 0.1));
   border-color: rgba(232,165,184,0.4);
 }
 
@@ -493,21 +492,18 @@
 
 .appt-card__notes svg { color: rgba(255,255,255,0.2); }
 
-/* Status badge as button */
-.appt-card__status-wrap { position: relative; }
-
-.appt-card__status-wrap .badge {
-  cursor: pointer;
+/* Estado de la cita: solo se muestra; los cambios van en los botones de la tarjeta */
+.appt-card__estado {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  border: none;
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
   font-family: 'Outfit', sans-serif;
-  transition: all 0.2s;
-}
-
-.appt-card__status-wrap .badge:hover {
-  filter: brightness(1.2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .badge--amber { background: rgba(251,191,36,0.1); color: #fbbf24; }
@@ -517,59 +513,25 @@
 .badge--red { background: rgba(248,113,113,0.1); color: #f87171; }
 .badge--gray { background: rgba(156,163,175,0.1); color: #9ca3af; }
 
-/* Status dropdown menu */
-.appt-card__status-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background: #2A1F1A;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  padding: 6px;
-  min-width: 160px;
-  z-index: 20;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-  animation: fadeInUp 0.2s ease;
-}
-
-.appt-card__status-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 9px 12px;
-  background: none;
-  border: none;
-  border-radius: 8px;
-  color: rgba(255,255,255,0.7);
-  font-family: 'Outfit', sans-serif;
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.appt-card__status-option:hover {
-  background: rgba(255,255,255,0.06);
-  color: white;
-}
-
+/* Acciones: WhatsApp, Llamar, "⋯" y el paso que sigue con texto. Todo de 44 px para el dedo. */
 .appt-card__actions {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 12px 16px;
   justify-content: flex-end;
 }
 
 .appt-card__action-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
   background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.4);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.75);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -579,7 +541,7 @@
 }
 
 .appt-card__action-btn:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.1);
   color: white;
 }
 
@@ -589,24 +551,29 @@
   border-color: rgba(37,211,102,0.25);
 }
 
-.appt-card__action-btn--reschedule:hover {
-  background: rgba(96,165,250,0.12);
-  color: #60a5fa;
-  border-color: rgba(96,165,250,0.25);
+.appt-card__action-btn:focus-visible,
+.appt-card__principal:focus-visible { outline: 2px solid var(--camel); outline-offset: 2px; }
+
+.appt-card__principal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--camel);
+  color: #1f1611;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.appt-card__action-btn--cancel:hover,
-.appt-card__action-btn--danger:hover {
-  background: rgba(248,113,113,0.12);
-  color: #f87171;
-  border-color: rgba(248,113,113,0.25);
-}
-
-.appt-card__action-btn--success:hover {
-  background: rgba(52,211,153,0.12);
-  color: #34d399;
-  border-color: rgba(52,211,153,0.25);
-}
+.appt-card__principal:hover { background: var(--camel-light); }
 
 /* ── Modal ── */
 .modal-overlay {
@@ -780,12 +747,12 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 4px 16px rgba(201,125,151,0.25);
+  box-shadow: 0 4px 16px rgba(178, 150, 125, 0.25);
 }
 
 .modal__submit-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(201,125,151,0.4);
+  box-shadow: 0 6px 20px rgba(178, 150, 125, 0.4);
 }
 
 .modal__submit-btn:disabled {
@@ -825,27 +792,12 @@
   .appts__week-header { grid-template-columns: repeat(7, 1fr); gap: 4px; }
   .appts__week-day { padding: 8px 4px; }
   .appts__week-day-name { font-size: 0.6rem; }
-  .appt-card { flex-direction: column; }
-  .appt-card__time-col {
-    flex-direction: row;
-    border-right: none;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    min-width: 0;
-    padding: 10px 16px;
-    justify-content: flex-start;
-    gap: 12px;
-  }
-  .appt-card__actions {
-    flex-direction: row;
-    padding: 8px 16px 12px;
-    justify-content: flex-end;
-  }
   .modal { max-width: 100%; border-radius: 20px; }
   .modal__row { grid-template-columns: 1fr; }
 }
 
-/* La tarjeta también va en columna cuando la LISTA es angosta, no solo la pantalla: en el iPad vertical el menú
-   lateral le quita ancho y los siete botones dejaban a la clienta y sus servicios en una columna de 80 px. */
+/* La tarjeta va en columna cuando la LISTA es angosta, no solo la pantalla: en el iPad vertical el menú lateral
+   le quita ancho y la clienta y sus servicios quedaban en una columna de 80 px. Cubre también el teléfono. */
 .appts__list { container-type: inline-size; }
 @container (max-width: 760px) {
   .appt-card { flex-direction: column; }
@@ -858,7 +810,9 @@
     justify-content: flex-start;
     gap: 12px;
   }
-  .appt-card__actions { padding: 8px 16px 12px; justify-content: flex-end; }
+  /* WhatsApp y Llamar a la izquierda; "⋯" y el paso que sigue a la derecha, cerca del pulgar */
+  .appt-card__actions { padding: 8px 16px 12px; justify-content: flex-start; }
+  .appt-card__actions .macc__boton { margin-left: auto; }
 }
 
 /* ── Servicios de una cita ────────────────────────────────────────────────
@@ -996,3 +950,6 @@
 
 [data-theme="light"] .appt-card__service-line { color: var(--espresso); }
 [data-theme="light"] .appt-card__service-staff { background: rgba(74, 52, 42, 0.07); }
+
+/* fechas: mayúscula solo al inicio ("Sábado, 3 de octubre"), no en cada palabra */
+.appts__current-date::first-letter { text-transform: uppercase; }

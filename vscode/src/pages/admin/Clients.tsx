@@ -5,12 +5,13 @@ import { useAppointmentStore } from '../../store/appointmentStore';
 import { useServiceStore } from '../../store/serviceStore';
 import {
   Plus, Search, User, Phone, Mail, FileText,
-  X, Edit2, Trash2, Heart, Shield, MessageCircle, ChevronRight, AlertCircle, Calendar,
+  X, Edit2, Trash2, Heart, Shield, MessageCircle, AlertCircle, Calendar,
   Package,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
 import { capitalizarNombre } from '../../lib/nombres';
+import { ETIQUETA_ESTADO } from '../../lib/estadosCita';
 import './Clients.css';
 
 const SKIN_TYPES = ['Normal', 'Seca', 'Grasa', 'Mixta', 'Sensible'];
@@ -153,11 +154,11 @@ export default function Clients() {
     <div className="clients-page">
       <div className="clients-page__header">
         <div>
-          <h1 className="clients-page__title">CRM de Clientas</h1>
+          <h1 className="clients-page__title">Clientas</h1>
           <p className="clients-page__subtitle">{clients.length} clientas registradas</p>
         </div>
         <button className="clients-page__add-btn" onClick={openCreate} id="btn-new-client">
-          <Plus size={18} /> Nueva Clienta
+          <Plus size={18} /> Nueva clienta
         </button>
       </div>
 
@@ -208,7 +209,7 @@ export default function Clients() {
 
                 <div className="client-card__stats">
                   <div className="client-card__stat">
-                    <span className="client-card__stat-label">Total Citas</span>
+                    <span className="client-card__stat-label">Total de citas</span>
                     <span className="client-card__stat-value">{clientAppts.length}</span>
                   </div>
                   <div className="client-card__stat">
@@ -241,7 +242,7 @@ export default function Clients() {
                   <div className="client-card__active-packages">
                     <div className="client-card__packages-title">
                       <Package size={13} />
-                      <span>Paquetes Activos ({activePkgs.length})</span>
+                      <span>Paquetes activos ({activePkgs.length})</span>
                     </div>
                     <div className="client-card__packages-list">
                       {activePkgs.map((pkg) => (
@@ -298,13 +299,13 @@ export default function Clients() {
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h2>{editingId ? 'Editar Clienta' : 'Nueva Clienta'}</h2>
+              <h2>{editingId ? 'Editar clienta' : 'Nueva clienta'}</h2>
               <button className="modal__close" onClick={closeModal}><X size={20} /></button>
             </div>
             <form onSubmit={handleSubmit} className="modal__form" id="client-form" noValidate>
               <div className="modal__row">
                 <div className="modal__field">
-                  <label><User size={14} /> Nombre Completo *</label>
+                  <label><User size={14} /> Nombre completo *</label>
                   <input
                     type="text"
                     placeholder="Nombre de la clienta"
@@ -366,7 +367,7 @@ export default function Clients() {
               </div>
               <div className="modal__row">
                 <div className="modal__field">
-                  <label><Heart size={14} /> Tipo de Piel</label>
+                  <label><Heart size={14} /> Tipo de piel</label>
                   <select value={form.skin_type} onChange={(e) => setForm({ ...form, skin_type: e.target.value })}>
                     <option value="">Seleccionar</option>
                     {SKIN_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -386,7 +387,7 @@ export default function Clients() {
                 <div style={{ flex: 1 }} />
                 <button type="button" className="modal__cancel-btn" onClick={closeModal}>Cancelar</button>
                 <button type="submit" className="modal__submit-btn" id="client-submit" disabled={submitting}>
-                  {submitting ? 'Guardando...' : editingId ? 'Guardar' : 'Crear Clienta'}
+                  {submitting ? 'Guardando...' : editingId ? 'Guardar' : 'Crear clienta'}
                 </button>
               </div>
             </form>
@@ -416,7 +417,7 @@ export default function Clients() {
                 {selectedClient.email && <p className="client-history-profile__email">{selectedClient.email}</p>}
                 
                 <div className="client-history-profile__section">
-                  <strong>Tipo de Piel:</strong>
+                  <strong>Tipo de piel:</strong>
                   <span>{selectedClient.skin_type || 'No especificado'}</span>
                 </div>
                 
@@ -437,7 +438,7 @@ export default function Clients() {
               <div className="client-history-modal__timeline-section">
                 {/* Active Packages list */}
                 <div className="client-history-modal__section-block" style={{ marginBottom: 24 }}>
-                  <h4 className="section-title"><Package size={14} /> Paquetes de Citas</h4>
+                  <h4 className="section-title"><Package size={14} /> Paquetes de citas</h4>
                   {clientPackages.filter(cp => cp.clientId === selectedClient.id).length === 0 ? (
                     <p className="empty-text">No tiene paquetes registrados.</p>
                   ) : (
@@ -469,7 +470,7 @@ export default function Clients() {
 
                 {/* Timeline of appointments */}
                 <div className="client-history-modal__section-block">
-                  <h4 className="section-title"><Calendar size={14} /> Historial de Visitas</h4>
+                  <h4 className="section-title"><Calendar size={14} /> Historial de visitas</h4>
                   {appointments.filter(a => a.client_id === selectedClient.id).length === 0 ? (
                     <p className="empty-text">No registra visitas en la agenda todavía.</p>
                   ) : (
@@ -487,7 +488,7 @@ export default function Clients() {
                               <div className="history-timeline__title-row">
                                 <h5 className="history-timeline__service">{a.service}</h5>
                                 <span className={`timeline-status timeline-status--${a.status}`}>
-                                  {a.status === 'completed' ? 'Completada' : a.status === 'pending' ? 'Pendiente' : a.status === 'confirmed' ? 'Confirmada' : a.status === 'cancelled' ? 'Cancelada' : 'No asistió'}
+                                  {ETIQUETA_ESTADO[a.status]}
                                 </span>
                               </div>
                               <p className="history-timeline__meta">

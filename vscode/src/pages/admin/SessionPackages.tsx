@@ -13,16 +13,17 @@ import toast from 'react-hot-toast';
 import ClientAutocomplete from '../../components/ClientAutocomplete';
 import { format12h } from '../../lib/timeFormat';
 import './SessionPackages.css';
+import { fechaLocal } from '../../lib/fechas';
 
 function fmtPrice(p: number) { return `RD$ ${p.toLocaleString('es-DO')}`; }
-function todayStr() { return new Date().toISOString().split('T')[0]; }
+function todayStr() { return fechaLocal(); }
 
 function getAvailableHours(dateStr: string): string[] {
   const allHours = Array.from({ length: 11 }, (_, i) => {
     const h = i + 8;
     return `${String(h).padStart(2, '0')}:00`;
   }).flatMap((h) => [h, h.replace(':00', ':30')]);
-  const today = new Date().toISOString().split('T')[0];
+  const today = fechaLocal();
   if (dateStr !== today) return allHours;
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -290,7 +291,7 @@ export default function SessionPackages() {
     <div className="spa-pkgs">
       <div className="spa-pkgs__header-wrapper">
         <div>
-          <h1 className="clients__title">Gestión de Paquetes</h1>
+          <h1 className="clients__title">Paquetes</h1>
           <p className="clients__subtitle">Administra los paquetes y sesiones de tus clientas</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -302,7 +303,7 @@ export default function SessionPackages() {
                 onClick={() => setShowModalPkg(true)}
                 id="btn-new-package"
               >
-                <Package size={16} /> Nuevo Tipo
+                <Package size={16} /> Nuevo tipo
               </button>
               <button 
                 className="btn-primary" 
@@ -310,7 +311,7 @@ export default function SessionPackages() {
                 onClick={() => setShowModalSell(true)} 
                 id="btn-sell-package"
               >
-                <Plus size={16} /> Vender Paquete
+                <Plus size={16} /> Vender paquete
               </button>
             </>
           )}
@@ -321,11 +322,11 @@ export default function SessionPackages() {
       <div className="spa-pkgs__stats">
         <div className="spa-pkgs__stat">
           <span className="spa-pkgs__stat-val">{stats.total}</span>
-          <span className="spa-pkgs__stat-lbl">Vendidos Totales</span>
+          <span className="spa-pkgs__stat-lbl">Vendidos en total</span>
         </div>
         <div className="spa-pkgs__stat spa-pkgs__stat--green">
           <span className="spa-pkgs__stat-val">{stats.active}</span>
-          <span className="spa-pkgs__stat-lbl">Con Sesiones Activas</span>
+          <span className="spa-pkgs__stat-lbl">Con sesiones activas</span>
         </div>
         <div className="spa-pkgs__stat spa-pkgs__stat--amber">
           <span className="spa-pkgs__stat-val">{stats.aboutToExpire}</span>
@@ -411,7 +412,7 @@ export default function SessionPackages() {
                   {/* Progress Area */}
                   <div className="client-pkg__progress-area">
                     <div className="client-pkg__progress-stats">
-                      <span>Sesiones Completadas</span>
+                      <span>Sesiones completadas</span>
                       <strong>{cp.usedSessions} / {cp.totalSessions}</strong>
                     </div>
                     <div className="client-pkg__dots">
@@ -526,12 +527,12 @@ export default function SessionPackages() {
         <div className="modal-overlay" onClick={() => { setShowModalPkg(false); setPkgErrors({}); }}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h2>{editingPkgId ? 'Editar Paquete' : 'Nuevo Tipo de Paquete'}</h2>
+              <h2>{editingPkgId ? 'Editar paquete' : 'Nuevo tipo de paquete'}</h2>
               <button className="modal__close" onClick={() => { setShowModalPkg(false); setPkgErrors({}); }}><X size={20} /></button>
             </div>
             <form onSubmit={handlePkgSubmit} className="modal__form" noValidate>
               <div className="modal__field">
-                <label>Nombre del Paquete *</label>
+                <label>Nombre del paquete *</label>
                 <input
                   placeholder="Ej: Láser Premium x5"
                   value={pkgForm.name}
@@ -541,7 +542,7 @@ export default function SessionPackages() {
                 {pkgErrors.name && <span className="field-error"><AlertCircle size={12} /> {pkgErrors.name}</span>}
               </div>
               <div className="modal__field">
-                <label>Servicio Incluido *</label>
+                <label>Servicio incluido *</label>
                 <select
                   value={pkgForm.serviceId}
                   className={pkgErrors.serviceId ? 'input--error' : ''}
@@ -559,7 +560,7 @@ export default function SessionPackages() {
                   {pkgErrors.sessions && <span className="field-error"><AlertCircle size={12} /> {pkgErrors.sessions}</span>}
                 </div>
                 <div className="modal__field">
-                  <label>Precio Total (RD$) *</label>
+                  <label>Precio total (RD$) *</label>
                   <input type="number" min={0} value={pkgPriceStr} placeholder="Ej: 5000" className={pkgErrors.price ? 'input--error' : ''} onChange={(e) => { setPkgPriceStr(e.target.value); setPkgErrors({ ...pkgErrors, price: undefined }); }} />
                   {pkgErrors.price && <span className="field-error"><AlertCircle size={12} /> {pkgErrors.price}</span>}
                 </div>
@@ -568,7 +569,7 @@ export default function SessionPackages() {
                 <div style={{ flex: 1 }} />
                 <button type="button" className="modal__cancel-btn" onClick={() => { setShowModalPkg(false); setPkgErrors({}); }}>Cancelar</button>
                 <button type="submit" className="modal__submit-btn" disabled={submittingPkg}>
-                  {submittingPkg ? 'Guardando...' : editingPkgId ? 'Guardar Cambios' : 'Crear Paquete'}
+                  {submittingPkg ? 'Guardando...' : editingPkgId ? 'Guardar cambios' : 'Crear paquete'}
                 </button>
               </div>
             </form>
@@ -581,7 +582,7 @@ export default function SessionPackages() {
         <div className="modal-overlay" onClick={() => setShowModalSell(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h2>Vender Paquete</h2>
+              <h2>Vender paquete</h2>
               <button className="modal__close" onClick={() => setShowModalSell(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleSellSubmit} className="modal__form">
@@ -617,7 +618,7 @@ export default function SessionPackages() {
                 );
               })()}
               <div className="modal__field">
-                <label>Abono Inicial (RD$)</label>
+                <label>Abono inicial (RD$)</label>
                 <input
                   type="number"
                   min="0"
@@ -637,7 +638,7 @@ export default function SessionPackages() {
                 <div style={{ flex: 1 }} />
                 <button type="button" className="modal__cancel-btn" onClick={() => setShowModalSell(false)}>Cancelar</button>
                 <button type="submit" className="modal__submit-btn" disabled={submittingSell}>
-                  {submittingSell ? 'Confirmando...' : 'Confirmar Venta'}
+                  {submittingSell ? 'Confirmando...' : 'Confirmar venta'}
                 </button>
               </div>
             </form>
@@ -650,7 +651,7 @@ export default function SessionPackages() {
         <div className="modal-overlay" onClick={() => setShowModalEdit(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h2>Editar Paquete — {editingCp.clientName}</h2>
+              <h2>Editar paquete — {editingCp.clientName}</h2>
               <button className="modal__close" onClick={() => setShowModalEdit(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleEditCpSubmit} className="modal__form">
@@ -696,7 +697,7 @@ export default function SessionPackages() {
               <div className="modal__actions">
                 <div style={{ flex: 1 }} />
                 <button type="button" className="modal__cancel-btn" onClick={() => setShowModalEdit(false)}>Cancelar</button>
-                <button type="submit" className="modal__submit-btn">Guardar Cambios</button>
+                <button type="submit" className="modal__submit-btn">Guardar cambios</button>
               </div>
             </form>
           </div>
@@ -708,7 +709,7 @@ export default function SessionPackages() {
         <div className="modal-overlay" onClick={() => setShowModalSchedule(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h2>Agendar Sesión — {scheduleCp.clientName}</h2>
+              <h2>Agendar sesión — {scheduleCp.clientName}</h2>
               <button className="modal__close" onClick={() => setShowModalSchedule(false)}><X size={20} /></button>
             </div>
             <div style={{ padding: '0 0 16px', margin: '0 0 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.85rem', color: 'var(--text-muted, rgba(255,255,255,0.5))' }}>
@@ -754,7 +755,7 @@ export default function SessionPackages() {
                 <div style={{ flex: 1 }} />
                 <button type="button" className="modal__cancel-btn" onClick={() => setShowModalSchedule(false)}>Cancelar</button>
                 <button type="submit" className="modal__submit-btn" disabled={schedSubmitting}>
-                  {schedSubmitting ? 'Agendando...' : 'Crear Cita'}
+                  {schedSubmitting ? 'Agendando...' : 'Crear cita'}
                 </button>
               </div>
             </form>
@@ -777,7 +778,7 @@ export default function SessionPackages() {
                 <strong style={{ color: 'var(--text-main, white)' }}>{paymentCp.packageName}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ color: 'var(--text-muted, rgba(255,255,255,0.6))' }}>Precio Total:</span>
+                <span style={{ color: 'var(--text-muted, rgba(255,255,255,0.6))' }}>Precio total:</span>
                 <strong style={{ color: 'var(--text-main, white)' }}>{fmtPrice(paymentCp.totalPrice)}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -785,14 +786,14 @@ export default function SessionPackages() {
                 <strong style={{ color: 'var(--emerald)' }}>{fmtPrice(paymentCp.amountPaid)}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
-                <span style={{ color: 'var(--text-muted, rgba(255,255,255,0.6))' }}>Balance Pendiente:</span>
+                <span style={{ color: 'var(--text-muted, rgba(255,255,255,0.6))' }}>Balance pendiente:</span>
                 <strong style={{ color: 'var(--amber)' }}>{fmtPrice(paymentCp.totalPrice - paymentCp.amountPaid)}</strong>
               </div>
             </div>
 
             {paymentCp.totalPrice - paymentCp.amountPaid > 0 && (
               <form onSubmit={handlePaymentSubmit} className="modal__form" style={{ marginBottom: 24 }}>
-                <h3 style={{ fontSize: '1rem', marginBottom: 12, color: 'var(--text-main, white)' }}>Registrar Abono</h3>
+                <h3 style={{ fontSize: '1rem', marginBottom: 12, color: 'var(--text-main, white)' }}>Registrar abono</h3>
                 <div className="modal__row">
                   <div className="modal__field">
                     <label>Monto (RD$)</label>
@@ -806,7 +807,7 @@ export default function SessionPackages() {
                     />
                   </div>
                   <div className="modal__field">
-                    <label>Método de Pago</label>
+                    <label>Método de pago</label>
                     <select
                       value={paymentForm.paymentMethod}
                       onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value as any })}
@@ -818,7 +819,7 @@ export default function SessionPackages() {
                   </div>
                 </div>
                 <div className="modal__field">
-                  <label>Notas del Pago</label>
+                  <label>Notas del pago</label>
                   <input
                     type="text"
                     placeholder="Referencia de transferencia, banco..."
@@ -827,12 +828,12 @@ export default function SessionPackages() {
                   />
                 </div>
                 <button type="submit" className="modal__submit-btn" disabled={paymentSubmitting || paymentForm.amount <= 0}>
-                  {paymentSubmitting ? 'Registrando...' : 'Registrar Pago'}
+                  {paymentSubmitting ? 'Registrando...' : 'Registrar pago'}
                 </button>
               </form>
             )}
 
-            <h3 style={{ fontSize: '1rem', marginBottom: 12, color: 'var(--text-main, white)' }}>Historial de Pagos</h3>
+            <h3 style={{ fontSize: '1rem', marginBottom: 12, color: 'var(--text-main, white)' }}>Historial de pagos</h3>
             {payments.filter(p => p.packageId === paymentCp.id).length === 0 ? (
               <p style={{ color: 'var(--text-muted, rgba(255,255,255,0.4))', fontSize: '0.9rem' }}>No hay abonos registrados.</p>
             ) : (

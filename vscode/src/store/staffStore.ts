@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { fechaLocal } from '../lib/fechas';
 
 export type StaffRole = 'admin' | 'specialist' | 'receptionist';
 
@@ -154,7 +155,7 @@ export const useStaffStore = create<StaffState>()((set, get) => ({
   },
 
   fetchStaffStats: async (staffName: string): Promise<StaffStats> => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = fechaLocal();
 
     const { data, error } = await supabase
       .from('appointments')
