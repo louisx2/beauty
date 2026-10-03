@@ -46,8 +46,14 @@ test('quién puede: la administración solo hace lo suyo; sin servicios (soporte
 test('libre: solo en sus días y dentro de su horario', () => {
   assert.equal(estaLibre(ana, 600, 60, DOMINGO, agenda()), false);
   assert.equal(estaLibre(ana, 510, 60, JUEVES, agenda()), false);
-  assert.equal(estaLibre(ana, 1050, 60, JUEVES, agenda()), false);
   assert.equal(estaLibre(ana, 1020, 60, JUEVES, agenda()), true);
+});
+
+test('libre: toma citas hasta su salida; la de las 6:00 puede terminar después', () => {
+  assert.equal(estaLibre(ana, 1080, 60, JUEVES, agenda()), true);
+  assert.equal(estaLibre(ana, 1110, 30, JUEVES, agenda()), false);
+  // el segundo servicio de una visita que empezó a las 6:00 sí entra
+  assert.equal(estaLibre(ana, 1110, 30, JUEVES, agenda(), 1080), true);
 });
 
 test('libre: una cita ocupa su tramo, pero justo antes y justo después queda libre', () => {
@@ -90,12 +96,12 @@ test('reparto: con una especialista elegida es ella o nada', () => {
   assert.deepEqual(quienes(repartirDesde([{ ...limpieza, staffId: 'ana' }], 660, JUEVES, a)), ['Limpieza@ana']);
 });
 
-test('horarios: cada media hora de 9:00 a la última que cabe; las ocupadas quedan sin reparto', () => {
+test('horarios: cada media hora de 9:00 a 6:00; las ocupadas quedan sin reparto', () => {
   const a = agenda({ ocupados: { ana: [{ time: '10:00:00', duration: 60 }], sinlista: [{ time: '10:00:00', duration: 60 }] } });
   const h = horariosDelDia([limpieza], JUEVES, a, OTRO_DIA);
   assert.equal(h[0].hora, '09:00');
-  assert.equal(h.at(-1)?.hora, '17:00');
-  assert.equal(h.length, 17);
+  assert.equal(h.at(-1)?.hora, '18:00');
+  assert.equal(h.length, 19);
   const libre = (hora: string) => h.find((x) => x.hora === hora)!.plan !== null;
   assert.equal(libre('09:00'), true);
   assert.equal(libre('09:30'), false);
@@ -103,12 +109,13 @@ test('horarios: cada media hora de 9:00 a la última que cabe; las ocupadas qued
   assert.equal(libre('11:00'), true);
 });
 
-test('horarios: el sábado el salón cierra a las 2:00, aunque ella trabaje hasta las 6:00', () => {
-  const h = horariosDelDia([limpieza], SABADO, agenda(), OTRO_DIA);
+test('horarios: la última visita empieza a las 6:00 aunque termine después, también el sábado', () => {
+  const h = horariosDelDia([limpieza, cejas], SABADO, agenda(), OTRO_DIA);
   assert.equal(h[0].hora, '09:00');
-  assert.equal(h.at(-1)?.hora, '13:00');
+  assert.equal(h.at(-1)?.hora, '18:00');
   assert.ok(h.every((x) => x.plan !== null));
-  assert.equal(horariosDelDia([cejas], SABADO, agenda(), OTRO_DIA).at(-1)?.hora, '13:30');
+  // a las 6:00: la limpieza hasta las 7:00 y las cejas después
+  assert.deepEqual(quienes(h.at(-1)!.plan), ['Limpieza@ana', 'Cejas@bea']);
 });
 
 test('horarios: el domingo el salón no abre, aunque alguien tenga marcado el domingo', () => {
@@ -120,7 +127,7 @@ test('horarios: si ella entra a las 8:00, se ofrece desde las 8:00', () => {
   const temprano = { ...ana, working_start: '08:00:00' };
   const h = horariosDelDia([limpieza], JUEVES, agenda({ staff: [temprano] }), OTRO_DIA);
   assert.equal(h[0].hora, '08:00');
-  assert.equal(h.at(-1)?.hora, '17:00');
+  assert.equal(h.at(-1)?.hora, '18:00');
 });
 
 test('horarios: hoy no ofrece horas que ya pasaron (con 15 minutos de margen)', () => {

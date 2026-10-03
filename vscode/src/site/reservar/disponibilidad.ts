@@ -62,12 +62,16 @@ export function quienPuede(staff: Especialista[], serviceId: string): Especialis
 }
 
 /** ¿Está libre esa persona en ese tramo? Mira su horario de trabajo, sus citas y los bloqueos (vacaciones,
- *  almuerzo, feriado del salón). Los bloqueos ya vienen filtrados por el día. */
-export function estaLibre(m: Especialista, desde: number, dur: number, dia: string, agenda: Agenda): boolean {
+ *  almuerzo, feriado del salón). Los bloqueos ya vienen filtrados por el día.
+ *  Toma citas hasta su hora de salida: la visita puede empezar a esa hora aunque termine después
+ *  (`inicioVisita` es cuándo empezó la visita, para los servicios que van después del primero). */
+export function estaLibre(
+  m: Especialista, desde: number, dur: number, dia: string, agenda: Agenda, inicioVisita = desde,
+): boolean {
   const dayName = WEEKDAYS[new Date(`${dia}T12:00:00`).getDay()];
   if (!(m.working_days ?? []).includes(dayName)) return false;
   if (desde < timeToMinutes(m.working_start)) return false;
-  if (desde + dur > timeToMinutes(m.working_end)) return false;
+  if (inicioVisita > timeToMinutes(m.working_end)) return false;
 
   const ocupada = (agenda.ocupados[m.id] ?? []).some((a) => {
     const ini = timeToMinutes(String(a.time).slice(0, 5));
@@ -96,7 +100,7 @@ export function repartirDesde(elegidos: Elegido[], inicio: number, dia: string, 
       : quienPuede(agenda.staff, e.serviceId);
 
     const libre = candidatas.find((m) => {
-      if (!estaLibre(m, cursor, e.duracion, dia, agenda)) return false;
+      if (!estaLibre(m, cursor, e.duracion, dia, agenda, inicio)) return false;
       // tampoco puede estar haciendo otro servicio de ESTA misma cita
       return !(ocupadasAqui[m.id] ?? []).some(([a, b]) => cursor < b && cursor + e.duracion > a);
     });
@@ -109,9 +113,9 @@ export function repartirDesde(elegidos: Elegido[], inicio: number, dia: string, 
   return plan;
 }
 
-/** Cada media hora del día, dentro del horario del salón: si cabe la visita completa, con su reparto; si no,
- *  ocupada (plan null). El día que el salón no abre, nada. Hoy nunca se ofrecen horas que ya pasaron (con 15
- *  minutos de margen). */
+/** Cada media hora del día, desde que abre el salón hasta el último turno (la visita puede terminar después):
+ *  si se puede hacer la visita completa, con su reparto; si no, ocupada (plan null). El día que el salón no abre,
+ *  nada. Hoy nunca se ofrecen horas que ya pasaron (con 15 minutos de margen). */
 export function horariosDelDia(
   elegidos: Elegido[], dia: string, agenda: Agenda, ahora: { hoy: string; minutos: number },
 ): Horario[] {
@@ -121,11 +125,11 @@ export function horariosDelDia(
   const salon = tramoDelSalon(dia);
   if (!salon) return [];
   const apertura = Math.max(salon.abre, Math.min(...agenda.staff.map((m) => timeToMinutes(m.working_start)), 9 * 60));
-  const cierre = Math.min(salon.cierra, Math.max(...agenda.staff.map((m) => timeToMinutes(m.working_end)), 18 * 60));
+  const ultimo = Math.min(salon.ultimoTurno, Math.max(...agenda.staff.map((m) => timeToMinutes(m.working_end)), 18 * 60));
   const desdeAhora = dia === ahora.hoy ? ahora.minutos + 15 : 0;
 
   const salida: Horario[] = [];
-  for (let cursor = apertura; cursor + duracionTotal <= cierre; cursor += 30) {
+  for (let cursor = apertura; cursor <= ultimo; cursor += 30) {
     if (cursor < desdeAhora) continue;
     salida.push({ hora: minutesToTime(cursor), plan: repartirDesde(elegidos, cursor, dia, agenda) });
   }
