@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AlertTriangle, CalendarClock, Hourglass, X } from 'lucide-react';
-import { useSuscripcionStore } from '../store/suscripcionStore';
+import { supabase } from '../lib/supabase';
+import { EVENTO_CAMBIO_SUSCRIPCION, useSuscripcionStore } from '../store/suscripcionStore';
 import { avisoDeCuota, hoySantoDomingo } from '../lib/suscripcion';
+import { bajarASeccion } from '../lib/bajarASeccion';
 import './AvisoSuscripcion.css';
 
 const ICONO = { rojo: AlertTriangle, ambar: CalendarClock, azul: Hourglass } as const;
@@ -21,6 +23,44 @@ export default function AvisoSuscripcion() {
   useEffect(() => {
     void cargarCuenta();
   }, [cargarCuenta, pathname]);
+
+  // En tiempo real: SellAlleS avisa (función aviso-cobro → tabla avisos_cobro) cada vez que cambia un comprobante
+  // o un pago del salón. En Mi suscripción la página recarga todo y deja la cuenta en el store; en las demás
+  // pantallas se pide solo la cuenta para el banner. Al volver a la pestaña también, porque el teléfono corta la
+  // conexión en segundo plano y ahí se pierden avisos.
+  const rutaRef = useRef(pathname);
+  useEffect(() => {
+    rutaRef.current = pathname;
+  }, [pathname]);
+  useEffect(() => {
+    let espera: ReturnType<typeof setTimeout> | null = null;
+    const refrescar = () => {
+      if (espera) clearTimeout(espera);
+      espera = setTimeout(() => {
+        if (rutaRef.current.replace(/\/+$/, '') === '/admin/suscripcion') {
+          window.dispatchEvent(new Event(EVENTO_CAMBIO_SUSCRIPCION));
+        } else {
+          void cargarCuenta(true);
+        }
+      }, 800);
+    };
+    const canal = supabase
+      .channel(`avisos-cobro:${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'avisos_cobro' }, refrescar)
+      .subscribe();
+    // al volver a la pestaña solo si lo último que se cargó tiene más de un minuto: cada consulta pasa por dos
+    // funciones y por SellAlleS, y en el teléfono se entra y se sale de la pestaña muchas veces
+    const alVolver = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - useSuscripcionStore.getState().cargadaEn > 60_000) refrescar();
+    };
+    document.addEventListener('visibilitychange', alVolver);
+    return () => {
+      if (espera) clearTimeout(espera);
+      document.removeEventListener('visibilitychange', alVolver);
+      void supabase.removeChannel(canal);
+    };
+  }, [cargarCuenta]);
 
   const aviso = avisoDeCuota(cuenta);
   if (!aviso || cerrado === aviso.clave) return null;
@@ -43,6 +83,15 @@ export default function AvisoSuscripcion() {
     setCerrado(aviso.clave);
   };
 
+  // El botón lleva a lo que hay que ver: el comprobante en revisión (azul) o el formulario para pagar.
+  const seccion = aviso.tono === 'azul' ? 'susc-comprobantes' : 'susc-reportar';
+  const irASeccion = (e: MouseEvent<HTMLAnchorElement>) => {
+    // ya en Mi suscripción, el enlace no cambiaría nada: se baja a la sección
+    if (pathname !== '/admin/suscripcion') return;
+    e.preventDefault();
+    bajarASeccion(seccion);
+  };
+
   const Icono = ICONO[aviso.tono];
   return (
     <div className={`aviso-susc aviso-susc--${aviso.tono}`} role="status">
@@ -52,7 +101,7 @@ export default function AvisoSuscripcion() {
         <p className="aviso-susc__detalle">{aviso.detalle}</p>
       </div>
       <div className="aviso-susc__acciones">
-        <Link className="aviso-susc__btn" to="/admin/suscripcion">
+        <Link className="aviso-susc__btn" to={`/admin/suscripcion#${seccion}`} onClick={irASeccion}>
           {aviso.tono === 'azul' ? 'Ver estado' : 'Pagar / subir comprobante'}
         </Link>
         {aviso.ocultable && (

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { Copy, CreditCard, Download, Eye, FileText, Loader2, RotateCcw, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
-import { useSuscripcionStore } from '../../store/suscripcionStore';
+import { EVENTO_CAMBIO_SUSCRIPCION, useSuscripcionStore } from '../../store/suscripcionStore';
 import {
   ESTADO_CUENTA, ESTADO_REPORTE, METODO_PAGO, cuotasPendientesTexto, dinero, fechaLarga, hoySantoDomingo,
   montoSugerido, proximoCobroVisible, validarReporte, type ErroresReporte,
@@ -12,6 +12,7 @@ import {
   ErrorSuscripcion, cargarSuscripcion, obtenerFactura, reportarPago, retirarReporte, urlComprobante,
   type DatosSuscripcion,
 } from '../../lib/suscripcionApi';
+import { bajarASeccion } from '../../lib/bajarASeccion';
 import './Subscription.css';
 
 const mensajeDe = (e: unknown, def: string) => (e instanceof Error && e.message ? e.message : def);
@@ -59,6 +60,25 @@ export default function Subscription() {
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  // Cuando SellAlleS avisa que cambió un comprobante o un pago (Louis confirmó, rechazó, registró un pago…), se
+  // vuelve a cargar sin que ella tenga que recargar la página. El aviso lo recibe el banner (AvisoSuscripcion).
+  useEffect(() => {
+    const alCambiar = () => {
+      void cargar();
+    };
+    window.addEventListener(EVENTO_CAMBIO_SUSCRIPCION, alCambiar);
+    return () => window.removeEventListener(EVENTO_CAMBIO_SUSCRIPCION, alCambiar);
+  }, [cargar]);
+
+  // Si se llegó desde el banner (#susc-comprobantes o #susc-reportar), se baja a esa sección una vez, cuando ya
+  // está dibujada; los refrescos posteriores no vuelven a mover la vista.
+  const { hash } = useLocation();
+  const bajadoA = useRef('');
+  useEffect(() => {
+    if (!datos || !hash || bajadoA.current === hash) return;
+    if (bajarASeccion(hash.slice(1))) bajadoA.current = hash;
+  }, [datos, hash]);
 
   if (user && user.role !== 'admin') return <Navigate to="/admin" replace />;
 
@@ -198,7 +218,7 @@ function FormularioReporte({ datos, onListo }: { datos: DatosSuscripcion; onList
   };
 
   return (
-    <section className="susc__card" aria-labelledby="susc-reportar-t">
+    <section id="susc-reportar" className="susc__card" aria-labelledby="susc-reportar-t">
       <h2 id="susc-reportar-t" className="susc__card-title">Reportar un pago</h2>
       <form className="susc__form" onSubmit={enviar} noValidate>
         <label className="susc__campo">
@@ -269,7 +289,7 @@ function Comprobantes({ datos, onCambio }: { datos: DatosSuscripcion; onCambio: 
   };
 
   return (
-    <section className="susc__card" aria-labelledby="susc-comprobantes-t">
+    <section id="susc-comprobantes" className="susc__card" aria-labelledby="susc-comprobantes-t">
       <h2 id="susc-comprobantes-t" className="susc__card-title">Comprobantes enviados</h2>
       <ul className="susc__lista">
         {datos.reportes.map((r) => {
