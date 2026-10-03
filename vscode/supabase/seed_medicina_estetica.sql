@@ -22,6 +22,10 @@ INSERT INTO public.services (id, name, category, description, duration, price, a
   ('33333333-0003-0003-0003-000000000020', 'HIFU Facial', 'medicina', '', 60, 0, true),
   ('33333333-0003-0003-0003-000000000021', 'HIFU Corporal', 'medicina', '', 75, 0, true),
   ('33333333-0003-0003-0003-000000000022', 'HIFU Vaginal', 'medicina', '', 45, 0, true),
-  ('33333333-0003-0003-0003-000000000023', 'Radiofrecuencia', 'medicina', '', 45, 0, true)
+  ('33333333-0003-0003-0003-000000000023', 'Radiofrecuencia', 'medicina', '', 45, 0, true),
+  ('33333333-0003-0003-0003-000000000024', 'PRP - Rostro', 'medicina', '', 45, 5000, true),
+  ('33333333-0003-0003-0003-000000000025', 'PRP - Cuero cabelludo', 'medicina', '', 45, 4500, true),
+  ('33333333-0003-0003-0003-000000000026', 'PRP - Cuello', 'medicina', '', 45, 3500, true),
+  ('33333333-0003-0003-0003-000000000027', 'PRP - Ojeras', 'medicina', '', 30, 2500, true)
 ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, category=EXCLUDED.category, duration=EXCLUDED.duration, price=EXCLUDED.price, active=true;
 COMMIT;
