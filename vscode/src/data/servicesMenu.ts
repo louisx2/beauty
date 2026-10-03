@@ -75,7 +75,6 @@ export const servicesMenu: ServiceCategory[] = [
     specialist: specialists.nadieska,
     familia: 'facial',
     imagen: '/fotos/servicio-limpieza.jpg',
-    posicion: '50% 30%',
     descripcion: 'Protocolos de limpieza y renovación según tu tipo de piel.',
     items: [
       { name: 'Limpieza facial express / hidratación' },
@@ -149,7 +148,6 @@ export const servicesMenu: ServiceCategory[] = [
     specialist: specialists.anabel,
     familia: 'cejas-maquillaje',
     imagen: '/fotos/servicio-pest.jpg',
-    posicion: '60% 50%',
     items: [
       { name: 'Lifting de pestañas' },
       { name: 'Laminado de cejas' },
@@ -190,7 +188,6 @@ export const servicesMenu: ServiceCategory[] = [
     specialist: specialists.carmen,
     familia: 'corporal',
     imagen: '/fotos/servicio-blanq.jpg',
-    posicion: '25% 50%',
     items: [
       {
         name: 'Blanqueamiento corporal',
@@ -230,6 +227,7 @@ export const servicesMenu: ServiceCategory[] = [
     title: 'Toxina Botulínica',
     specialist: specialists.nadieska,
     familia: 'medicina',
+    imagen: '/fotos/servicio-toxina.jpg',
     items: [
       {
         name: 'Toxina botulínica',
@@ -247,6 +245,7 @@ export const servicesMenu: ServiceCategory[] = [
     title: 'Rellenos con Ácido Hialurónico',
     specialist: specialists.nadieska,
     familia: 'medicina',
+    imagen: '/fotos/servicio-rellenos.jpg',
     items: [
       {
         name: 'Rellenos',
@@ -266,6 +265,7 @@ export const servicesMenu: ServiceCategory[] = [
     title: 'Bioestimuladores de Colágeno',
     specialist: specialists.nadieska,
     familia: 'medicina',
+    imagen: '/fotos/servicio-bioestim.jpg',
     items: [
       {
         name: 'Bioestimuladores',
@@ -284,6 +284,7 @@ export const servicesMenu: ServiceCategory[] = [
     title: 'Mesoterapias',
     specialist: specialists.nadieska,
     familia: 'medicina',
+    imagen: '/fotos/servicio-meso.jpg',
     items: [
       {
         name: 'Mesoterapias',
@@ -299,6 +300,7 @@ export const servicesMenu: ServiceCategory[] = [
     title: 'Escleroterapia',
     specialist: specialists.nadieska,
     familia: 'medicina',
+    imagen: '/fotos/servicio-esclero.jpg',
     descripcion: 'Tratamiento para várices.',
     items: [
       {
@@ -314,6 +316,7 @@ export const servicesMenu: ServiceCategory[] = [
     title: 'Eliminación de Verrugas',
     specialist: specialists.nadieska,
     familia: 'medicina',
+    imagen: '/fotos/servicio-verrugas.jpg',
     descripcion: 'El precio varía según la cantidad y el tamaño.',
     items: [
       {
