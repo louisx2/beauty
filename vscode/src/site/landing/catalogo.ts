@@ -62,6 +62,7 @@ export function nombreEnTabla(catId: string, bloque: string, opcion: string): st
       if (p.startsWith('PDRN')) p = 'PDRN de Salmón - Ojeras';
       return `Mesoterapia ${p}`;
     }
+    case 'plasma-rico-plaquetas': return `PRP - ${it}`;
     case 'escleroterapia': return 'Escleroterapia - Ampolla 2ml';
     case 'verrugas': return 'Eliminación de Verrugas (desde)';
     default: return it;

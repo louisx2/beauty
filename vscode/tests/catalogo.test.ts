@@ -15,14 +15,14 @@ test('formato de precio con comas y sin decimales', () => {
   assert.equal(formatoRD(1500.4), 'RD$ 1,500');
 });
 
-test('las 15 especialidades en 4 familias, en el orden de la spec', () => {
+test('las 16 especialidades en 4 familias, en el orden de la spec', () => {
   const cat = construirCatalogo(servicesMenu, []);
   assert.deepEqual(FAMILIAS.map((f) => f.id), ['facial', 'corporal', 'cejas-maquillaje', 'medicina']);
   assert.deepEqual(cat.map((c) => c.id), [
     'limpieza-facial', 'hidra-lips',
     'depilacion-laser', 'depilacion-cera', 'blanqueamiento-corporal', 'remocion-tatuaje', 'aparatologia',
     'cejas-pestanas', 'maquillaje',
-    'toxina-botulinica', 'rellenos', 'bioestimuladores', 'mesoterapia', 'escleroterapia', 'verrugas',
+    'toxina-botulinica', 'rellenos', 'bioestimuladores', 'mesoterapia', 'plasma-rico-plaquetas', 'escleroterapia', 'verrugas',
   ]);
 });
 
@@ -32,6 +32,7 @@ test('nombre en la tabla: la misma regla del sitio actual', () => {
   assert.equal(nombreEnTabla('cejas-pestanas', '', 'Laminado de cejas'), 'Laminado de cejas');
   assert.equal(nombreEnTabla('bioestimuladores', '', 'Hilos PDO — RD$12,000 (x10 hilos)'), 'Bioestimulador - Hilos PDO (x10)');
   assert.equal(nombreEnTabla('mesoterapia', '', 'NCTF para ojeras — RD$5,000 / sesión'), 'Mesoterapia NCTF - Ojeras');
+  assert.equal(nombreEnTabla('plasma-rico-plaquetas', '', 'Cuero cabelludo — RD$4,500'), 'PRP - Cuero cabelludo');
   assert.equal(nombreEnTabla('verrugas', '', 'Eliminación de verrugas — desde RD$1,000'), 'Eliminación de Verrugas (desde)');
   assert.equal(nombreEnTabla('limpieza-facial', '', 'Peeling'), 'Peeling');
 });

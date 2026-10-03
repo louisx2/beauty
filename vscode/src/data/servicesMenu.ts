@@ -296,6 +296,25 @@ export const servicesMenu: ServiceCategory[] = [
     ],
   },
   {
+    id: 'plasma-rico-plaquetas',
+    title: 'Plasma Rico en Plaquetas',
+    specialist: specialists.nadieska,
+    familia: 'medicina',
+    imagen: '/fotos/servicio-prp.jpg',
+    descripcion: 'PRP: tu propio plasma, rico en factores de crecimiento, para regenerar la piel y fortalecer el cabello.',
+    items: [
+      {
+        name: 'Plasma rico en plaquetas (PRP)',
+        options: [
+          'Rostro — RD$5,000',
+          'Cuero cabelludo — RD$4,500',
+          'Cuello — RD$3,500',
+          'Ojeras — RD$2,500',
+        ],
+      },
+    ],
+  },
+  {
     id: 'escleroterapia',
     title: 'Escleroterapia',
     specialist: specialists.nadieska,

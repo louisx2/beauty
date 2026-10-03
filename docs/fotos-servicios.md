@@ -20,5 +20,6 @@ Si la dueña manda una foto propia de un servicio, basta con reemplazar el archi
 | rellenos | `servicio-rellenos.jpg` | Studio Michael França | https://unsplash.com/photos/wsLalHyHflQ |
 | bioestimuladores | `servicio-bioestim.jpg` | Patient Perfect | https://unsplash.com/photos/SH4pZQtTdOs |
 | mesoterapia | `servicio-meso.jpg` | Alexander Mass | https://unsplash.com/photos/GjhkH-Pt99s |
+| plasma-rico-plaquetas | `servicio-prp.jpg` | Dermexperia | https://unsplash.com/photos/xb-6wrS8wwI |
 | escleroterapia | `servicio-esclero.jpg` | Mina Rad | https://unsplash.com/photos/EM9VdLxwqPs |
 | verrugas | `servicio-verrugas.jpg` | Sum Sum | https://unsplash.com/photos/Skzxaqy8KpQ |
