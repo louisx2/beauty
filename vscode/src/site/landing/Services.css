@@ -7,7 +7,7 @@
 .s-card-img{ aspect-ratio:4/5.2; overflow:hidden }
 .s-card-img img{ width:100%; height:100%; object-fit:cover; transition:transform 1.2s var(--s-ease) }
 .s-card-bd{ position:absolute; left:0; right:0; bottom:0; padding:46px 14px 14px; background:linear-gradient(180deg, rgba(20,14,10,0), rgba(20,14,10,.88)) }
-.s-card-bd p, .s-card-num{ display:none }
+.s-card-bd p{ display:none }
 .s-card-bd .s-h3{ margin:0 0 4px; font-size:17px; color:#F5F1EA }
 .s-card-link{ display:inline-flex; gap:8px; font-size:12.5px; font-weight:500; color:var(--s-camel-l) }
 
@@ -35,7 +35,6 @@
   .s-card{ border-radius:22px }
   .s-card-img{ aspect-ratio:4/4.6; margin:10px 10px 0; border-radius:16px }
   .s-card-bd{ position:static; padding:20px 22px 24px; background:none }
-  .s-card-num{ display:block; margin-bottom:10px; font:500 12px var(--s-f-body); letter-spacing:.2em; color:var(--s-accent) }
   .s-card-bd .s-h3{ margin:0 0 10px; font-size:23px; color:var(--s-text) }
   .s-card-bd p{ display:block; min-height:4.8em; margin:0 0 18px; font-size:14px; line-height:1.6; font-weight:300; color:var(--s-soft) }
   .s-card-link{ font-size:14px; color:var(--s-accent) }
