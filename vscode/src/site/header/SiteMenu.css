@@ -18,8 +18,6 @@
 .s-menu-list a{ position:relative; display:flex; align-items:center; gap:14px; padding:9px 0; -webkit-tap-highlight-color:transparent }
 .s-menu-list a::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:1px; background:var(--s-line); transform:scaleX(0); transform-origin:left; transition:transform .5s var(--s-ease) }
 .s-menu.is-open .s-menu-list a::after{ transform:scaleX(1); transition:transform 1s var(--s-ease) calc(.32s + var(--i) * 60ms) }
-.s-ml-n{ font:500 11px var(--s-f-body); letter-spacing:.2em; color:var(--s-accent); width:22px; flex-shrink:0; opacity:0; transition:opacity .3s }
-.s-menu.is-open .s-ml-n{ opacity:1; transition:opacity .6s calc(.4s + var(--i) * 60ms) }
 /* la ventana que recorta deja un margen a la derecha para que la cursiva no se corte */
 .s-ml-t{ display:block; overflow:hidden; padding:2px .25em 6px 0 }
 .s-ml-t > span{ display:block; font-family:var(--s-f-display); font-size:30px; line-height:1.1; transform:translateY(115%); transition:transform .45s var(--s-ease-x), color .4s }
@@ -36,13 +34,11 @@
 /* al pasar el mouse: se desliza y toma color, sin cambiar la letra; solo cuando la entrada terminó */
 .s-menu.is-listo .s-ml-t{ transition:transform .6s cubic-bezier(.2,.8,.2,1) }
 .s-menu.is-listo .s-ml-t > span{ transition:color .45s ease }
-.s-menu.is-listo .s-ml-n{ transition:transform .6s cubic-bezier(.2,.8,.2,1) }
 .s-menu.is-listo .s-menu-list a::after{ transition:transform .6s var(--s-ease), background-color .45s ease }
 .s-menu.is-listo .s-ml-arrow{ transition:opacity .45s ease, transform .6s cubic-bezier(.2,.8,.2,1) }
 @media (hover:hover){
   .s-menu.is-listo .s-menu-list a:hover .s-ml-t{ transform:translateX(12px) }
   .s-menu.is-listo .s-menu-list a:hover .s-ml-t > span{ color:var(--s-accent) }
-  .s-menu.is-listo .s-menu-list a:hover .s-ml-n{ transform:translateX(4px) }
   .s-menu.is-listo .s-menu-list a:hover::after{ background:color-mix(in srgb, var(--s-accent) 70%, transparent) }
   .s-menu.is-listo .s-menu-list a:hover .s-ml-arrow{ opacity:1; transform:none }
 }
