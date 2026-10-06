@@ -22,7 +22,8 @@ const CAT_COLORS: Record<ServiceCategory, string> = {
 };
 
 const emptyForm: Omit<Service, 'id'> = {
-  name: '', category: 'facial', description: '', duration: 45, price: 0, taxable: true, hasSession: false, active: true,
+  // sin ITBIS por defecto: el salón no lo cobra (se puede marcar servicio por servicio)
+  name: '', category: 'facial', description: '', duration: 45, price: 0, taxable: false, hasSession: false, active: true,
 };
 
 function fmtPrice(p: number) {
@@ -154,9 +155,11 @@ export default function Services() {
               {s.taxable && <span className="service-item__tax">+ITBIS 18%</span>}
             </div>
 
-            <div className="service-item__total">
-              Total con ITBIS: <strong>{fmtPrice(Math.round(priceWithTax(s.price, s.taxable)))}</strong>
-            </div>
+            {s.taxable && (
+              <div className="service-item__total">
+                Total con ITBIS: <strong>{fmtPrice(Math.round(priceWithTax(s.price, s.taxable)))}</strong>
+              </div>
+            )}
 
             {user?.role === 'admin' && (
               <div className="service-item__actions">
@@ -222,7 +225,7 @@ export default function Services() {
                   </label>
                 </div>
               </div>
-              {Number(priceStr) > 0 && (
+              {Number(priceStr) > 0 && form.taxable && (
                 <div className="service-modal__total">
                   Total con ITBIS: <strong>{fmtPrice(Math.round(form.taxable ? Number(priceStr) * 1.18 : Number(priceStr)))}</strong>
                 </div>
