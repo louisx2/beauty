@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { MONOGRAMA } from '../brand';
+import CarruselCentrado from '../ui/CarruselCentrado';
 import { useRevela } from '../ui/useRevela';
 import type { MiembroPublico } from './equipo';
 import './Team.css';
 
-/** Nuestro equipo: retratos en arco con nombre, cargo y especialidades, sin carrusel (spec §5.7 y §6.5). */
+/** Nuestro equipo: retratos en arco con nombre, cargo y especialidades (spec §5.7 y §6.5). En computadora van
+ *  todas en fila; en tableta y celular se deslizan una a una, como Misión, visión y valores. */
 export default function Team({ miembros }: { miembros: MiembroPublico[] }) {
   const cabeza = useRevela<HTMLDivElement>();
-  const grilla = useRevela<HTMLUListElement>();
+  const grilla = useRevela<HTMLDivElement>();
   return (
     <section className="s-sec s-team" id="s-equipo" data-spy="">
       <div className="s-wrap">
@@ -18,9 +20,11 @@ export default function Team({ miembros }: { miembros: MiembroPublico[] }) {
           </div>
           <p className="s-lead">Cada tratamiento lo realiza una especialista formada en su área. Al reservar, puedes elegir con quién.</p>
         </div>
-        <ul className="s-team-grid s-rv" ref={grilla}>
-          {miembros.map((m) => <Miembro key={m.id} m={m} />)}
-        </ul>
+        <div className="s-rv" ref={grilla}>
+          <CarruselCentrado etiqueta="Nuestro equipo" className="s-team-carr">
+            {miembros.map((m) => <Miembro key={m.id} m={m} />)}
+          </CarruselCentrado>
+        </div>
       </div>
     </section>
   );
@@ -31,7 +35,7 @@ function Miembro({ m }: { m: MiembroPublico }) {
   const [fotoRota, setFotoRota] = useState(false);
   const foto = fotoRota ? null : m.foto;
   return (
-    <li className="s-tm">
+    <article className="s-tm">
       <div className={foto ? 's-arco s-tm-arco' : 's-arco s-tm-arco is-ph'}>
         {foto ? (
           // el nombre va justo debajo: la foto no repite nada al lector de pantalla
@@ -45,6 +49,6 @@ function Miembro({ m }: { m: MiembroPublico }) {
       <h3 className="s-display s-tm-nombre">{m.nombre}</h3>
       {m.cargo && <p className="s-tm-cargo">{m.cargo}</p>}
       {m.especialidades && <p className="s-tm-tags">{m.especialidades}</p>}
-    </li>
+    </article>
   );
 }
