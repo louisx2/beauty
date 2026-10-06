@@ -96,6 +96,7 @@ export default function Staff() {
   const [selected, setSelected] = useState<StaffMember | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   // Stats for all staff loaded concurrently
@@ -348,14 +349,25 @@ export default function Staff() {
   };
 
   const handleDelete = async () => {
-    if (!selected) return;
+    if (!selected || eliminando) return;
+    setEliminando(true);
     try {
+      // Si tiene acceso al panel, primero se borra el acceso: así no queda un login suelto, sin ficha, que ya no
+      // se puede revocar desde aquí. Si falla (o es la cuenta de quien está dentro), la ficha no se toca.
+      if (selected.email && hasLogin(selected.email)) {
+        const { data, error } = await supabase.rpc('delete_staff_user', { user_email: selected.email });
+        if (error) throw error;
+        if (!data) throw new Error('No se pudo borrar su acceso al panel.');
+        loadLogins();
+      }
       await deleteStaff(selected.id);
       setSelected(null);
       setShowDeleteConfirm(false);
       toast.success('Empleada eliminada');
-    } catch {
-      toast.error('Error al eliminar empleada');
+    } catch (err) {
+      toast.error((err as { message?: string } | null)?.message || 'Error al eliminar empleada');
+    } finally {
+      setEliminando(false);
     }
   };
 
@@ -637,7 +649,7 @@ export default function Staff() {
               {hasLogin(selected.email) && (
                 <div className="staff-delete-modal__warning" style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', borderColor: 'rgba(239,68,68,0.15)' }}>
                   <Shield size={14} />
-                  Atención: Esta empleada tiene un inicio de sesión activo. Su login también debe ser revocado.
+                  Tiene acceso al panel ({selected.email}): también se borrará y ya no podrá entrar.
                 </div>
               )}
               <div className="staff-delete-modal__actions">
@@ -650,8 +662,9 @@ export default function Staff() {
                 <button
                   className="staff-delete-modal__confirm"
                   onClick={handleDelete}
+                  disabled={eliminando}
                 >
-                  <Trash2 size={14} /> Eliminar
+                  <Trash2 size={14} /> {eliminando ? 'Eliminando…' : 'Eliminar'}
                 </button>
               </div>
             </div>
