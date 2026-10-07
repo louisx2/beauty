@@ -2,7 +2,7 @@
 
 Las de **Limpieza facial, Depilación láser, Pestañas y Maquillaje** las mandó la dueña del salón (octubre 2026), y la de **Cejas** es de su Instagram, que ella autorizó usar [@anadsllbeautyesthetic.rd](https://www.instagram.com/anadsllbeautyesthetic.rd/). El resto son fotos alusivas de [Unsplash](https://unsplash.com) con su [licencia](https://unsplash.com/license): uso comercial gratis, sin pedir permiso y sin obligación de dar crédito. Ninguna es de Unsplash+ (de pago).
 
-Están en `vscode/public/fotos/`, recortadas a la proporción de la tarjeta (4:5.2, 900×1170) y comprimidas a 70-150 KB. La de Aparatologías (`servicio-aparatologia.jpg`) es la máquina real del salón y no se cambió.
+Están en `vscode/public/fotos/`, recortadas a la proporción de la tarjeta (4:5.2, 900×1170) y comprimidas a 70-150 KB. La de Aparatologías (`servicio-aparatologia.jpg`) es la máquina real del salón y no se cambió; desde que esa especialidad salió de la página (octubre 2026) solo la usan los paquetes de HIFU, radiofrecuencia y microdermoabrasión.
 
 Si la dueña manda una foto propia de un servicio, basta con reemplazar el archivo con el mismo nombre.
 

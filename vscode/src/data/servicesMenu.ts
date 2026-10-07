@@ -139,7 +139,7 @@ export const servicesMenu: ServiceCategory[] = [
   },
   {
     id: 'cejas',
-    title: 'Cejas',
+    title: 'Diseño de Cejas',
     specialist: specialists.anabel,
     familia: 'cejas-maquillaje',
     imagen: '/fotos/servicio-cejas.jpg',
@@ -350,25 +350,6 @@ export const servicesMenu: ServiceCategory[] = [
         description:
           'El precio varía según la cantidad y el tamaño de las verrugas, desde RD$1,000 en adelante.',
         options: ['Eliminación de verrugas — desde RD$1,000'],
-      },
-    ],
-  },
-  {
-    id: 'aparatologia',
-    title: 'Aparatologías',
-    specialist: specialists.anabel,
-    familia: 'corporal',
-    imagen: '/fotos/servicio-aparatologia.jpg',
-    posicion: '50% 62%',
-    items: [
-      {
-        name: 'Aparatologías',
-        options: [
-          'HIFU facial',
-          'HIFU corporal',
-          'HIFU vaginal',
-          'Radiofrecuencia',
-        ],
       },
     ],
   },

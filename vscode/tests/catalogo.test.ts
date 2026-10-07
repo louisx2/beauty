@@ -15,12 +15,12 @@ test('formato de precio con comas y sin decimales', () => {
   assert.equal(formatoRD(1500.4), 'RD$ 1,500');
 });
 
-test('las 17 especialidades en 4 familias, en el orden de la spec', () => {
+test('las 16 especialidades en 4 familias, en el orden de la spec', () => {
   const cat = construirCatalogo(servicesMenu, []);
   assert.deepEqual(FAMILIAS.map((f) => f.id), ['facial', 'corporal', 'cejas-maquillaje', 'medicina']);
   assert.deepEqual(cat.map((c) => c.id), [
     'limpieza-facial', 'hidra-lips',
-    'depilacion-laser', 'depilacion-cera', 'blanqueamiento-corporal', 'remocion-tatuaje', 'aparatologia',
+    'depilacion-laser', 'depilacion-cera', 'blanqueamiento-corporal', 'remocion-tatuaje',
     'cejas', 'pestanas', 'maquillaje',
     'toxina-botulinica', 'rellenos', 'bioestimuladores', 'mesoterapia', 'plasma-rico-plaquetas', 'escleroterapia', 'verrugas',
   ]);
@@ -90,7 +90,7 @@ test('especialista con iniciales y total de servicios', () => {
 test('quién hace qué: Anabel la cosmetología y las cejas, Ana Herrera pestañas y maquillaje, la Dra. Melissa la medicina', () => {
   const cat = construirCatalogo(servicesMenu, []);
   const quien = (id: string) => cat.find((c) => c.id === id)!.especialista.nombre;
-  for (const id of ['limpieza-facial', 'hidra-lips', 'depilacion-laser', 'depilacion-cera', 'blanqueamiento-corporal', 'remocion-tatuaje', 'aparatologia', 'cejas']) {
+  for (const id of ['limpieza-facial', 'hidra-lips', 'depilacion-laser', 'depilacion-cera', 'blanqueamiento-corporal', 'remocion-tatuaje', 'cejas']) {
     assert.equal(quien(id), 'Anabel De los Santos', id);
   }
   assert.equal(quien('pestanas'), 'Ana Herrera');
@@ -104,6 +104,7 @@ test('quién hace qué: Anabel la cosmetología y las cejas, Ana Herrera pestañ
 test('cejas y pestañas van separadas, cada una con sus servicios', () => {
   const cat = construirCatalogo(servicesMenu, [{ name: 'Diseño de Cejas', price: 600, duration: 30 }]);
   const nombres = (id: string) => cat.find((c) => c.id === id)!.grupos.flatMap((g) => g.servicios.map((s) => s.nombre));
+  assert.equal(cat.find((c) => c.id === 'cejas')!.titulo, 'Diseño de Cejas');
   assert.deepEqual(nombres('cejas'), ['Diseño de cejas', 'Laminado de cejas', 'Depilación con hilo', 'Tintado de cejas']);
   assert.ok(nombres('pestanas').includes('Lifting de pestañas'));
   assert.ok(nombres('pestanas').includes('Wispy'));
