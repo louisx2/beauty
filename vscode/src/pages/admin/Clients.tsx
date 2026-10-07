@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
 import { capitalizarNombre } from '../../lib/nombres';
 import { ETIQUETA_ESTADO } from '../../lib/estadosCita';
+import HistorialAnterior from './clientes/HistorialAnterior';
 import './Clients.css';
 
 const SKIN_TYPES = ['Normal', 'Seca', 'Grasa', 'Mixta', 'Sensible'];
@@ -502,6 +503,9 @@ export default function Clients() {
                     </div>
                   )}
                 </div>
+
+                {/* Lo que se le hizo antes de usar el sistema: se agrega, se edita y se borra aquí */}
+                <HistorialAnterior key={selectedClient.id} clientId={selectedClient.id} />
               </div>
             </div>
           </div>
