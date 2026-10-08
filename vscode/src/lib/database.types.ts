@@ -142,6 +142,44 @@ export type Database = {
         Update: { id?: string; key?: string; value?: string }
         Relationships: []
       }
+      client_history: {
+        Row: {
+          client_id: string
+          created_at: string
+          date: string | null
+          employee: string | null
+          id: string
+          notes: string | null
+          service: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          date?: string | null
+          employee?: string | null
+          id?: string
+          notes?: string | null
+          service: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          date?: string | null
+          employee?: string | null
+          id?: string
+          notes?: string | null
+          service?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_history_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_packages: {
         Row: {
           amount_paid: number

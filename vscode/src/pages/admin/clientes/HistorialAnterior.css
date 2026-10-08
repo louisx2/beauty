@@ -1,0 +1,116 @@
+/* Historial anterior (Clientas → Historial). La lista usa la línea de tiempo de Clients.css y el formulario
+   reutiliza .modal__field / .modal__row, así que aquí solo va lo propio de esta sección. */
+
+.hist-ant__agregar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 4px 10px;
+  border: 1px solid rgba(178, 150, 125, 0.35);
+  border-radius: 99px;
+  background: rgba(178, 150, 125, 0.1);
+  color: var(--camel);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.hist-ant__agregar:hover {
+  background: rgba(178, 150, 125, 0.2);
+  color: #fff;
+}
+
+.hist-ant__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(178, 150, 125, 0.3);
+  border-radius: 12px;
+}
+
+.history-timeline .hist-ant__form {
+  margin-bottom: 0;
+}
+
+.hist-ant__form-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.history-timeline__dot.hist-ant__dot {
+  background: var(--camel);
+}
+
+.hist-ant__acciones {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.hist-ant__acciones button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.hist-ant__acciones button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.hist-ant__acciones .hist-ant__borrar {
+  color: #f87171;
+}
+
+.hist-ant__acciones .hist-ant__borrar:hover {
+  background: rgba(248, 113, 113, 0.1);
+  color: #f87171;
+}
+
+.hist-ant__notas {
+  white-space: pre-wrap;
+}
+
+/* Light Theme Overrides */
+:root[data-theme="light"] .hist-ant__agregar {
+  color: var(--camel-dark);
+}
+
+:root[data-theme="light"] .hist-ant__agregar:hover {
+  color: var(--espresso);
+}
+
+:root[data-theme="light"] .hist-ant__form {
+  background: #fdfbf8;
+  border-color: rgba(178, 150, 125, 0.4);
+}
+
+:root[data-theme="light"] .hist-ant__acciones button {
+  color: var(--muted);
+}
+
+:root[data-theme="light"] .hist-ant__acciones button:hover {
+  background: rgba(74, 52, 42, 0.06);
+  color: var(--espresso);
+}
+
+:root[data-theme="light"] .hist-ant__acciones .hist-ant__borrar {
+  color: #dc2626;
+}
