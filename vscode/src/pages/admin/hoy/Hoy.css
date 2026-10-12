@@ -1,0 +1,737 @@
+/* Hoy. Se acomoda al ancho que tiene (no al de la pantalla, porque el menú lateral ocupa parte):
+   ancha (tableta horizontal, computadora): la agenda y al lado En sala / Por confirmar;
+   media (tableta vertical): las dos tarjetas arriba, lado a lado, y la agenda debajo;
+   angosta (celular): todo en una columna y el día como lista. */
+
+.hoy {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-family: 'Outfit', sans-serif;
+  color: #fff;
+}
+
+.hoy__cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.hoy__titulo {
+  margin: 0;
+  font-family: var(--panel-titulo);
+  font-size: 2.2rem;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.hoy__fecha {
+  margin: 4px 0 0;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.hoy__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Botones: uno principal, el resto con borde; ninguno más bajo que 44 px */
+.hoy__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.hoy__btn:hover {
+  border-color: var(--camel);
+}
+
+.hoy__btn--principal {
+  border-color: var(--cocoa);
+  background: var(--cocoa);
+  color: #fff;
+}
+
+.hoy__btn--principal:hover {
+  background: var(--cocoa-dark);
+  border-color: var(--cocoa-dark);
+}
+
+.hoy__btn--chico {
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 0.85rem;
+}
+
+.hoy__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 11px;
+  color: inherit;
+}
+
+.hoy__enlace {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--camel);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hoy__vacio {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.hoy__vacio--agenda {
+  padding: 32px 20px;
+  text-align: center;
+}
+
+/* Cuerpo: tarjetas arriba en angosto y media, al lado en ancho */
+.hoy__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hoy__lado {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.hoy__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hoy__tarjeta-tit {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.hoy__sala {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hoy__sala + .hoy__sala {
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hoy__sala-nom,
+.hoy__confirmar-nom {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hoy__sala-nom b {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.hoy__sala-nom span,
+.hoy__confirmar-nom span {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.hoy__confirmar {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hoy__confirmar li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.hoy__confirmar li:last-child {
+  border-bottom: none;
+}
+
+.hoy__confirmar-nom {
+  flex: 1;
+}
+
+.hoy__confirmar-nom b {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.hoy__manana {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 16px;
+  background: rgba(178, 150, 125, 0.14);
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hoy__manana > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.hoy__manana b {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.hoy__manana span span {
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* La agenda */
+.hoy__agenda {
+  min-width: 0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.hoy__grilla {
+  display: none;
+  overflow-x: auto;
+}
+
+.hoy__grilla-cabeza,
+.hoy__grilla-cuerpo {
+  display: grid;
+  grid-template-columns: 54px repeat(var(--cols), minmax(150px, 1fr));
+  min-width: calc(54px + var(--cols) * 150px);
+}
+
+.hoy__grilla-cabeza {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hoy__persona {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 12px 10px;
+}
+
+.hoy__persona b {
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hoy__persona span {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.hoy__grilla-cuerpo {
+  position: relative;
+  height: var(--alto);
+  margin: 10px 0 14px;
+}
+
+.hoy__horas {
+  position: relative;
+}
+
+.hoy__horas span {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+}
+
+.hoy__col {
+  position: relative;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  background-image: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 0, rgba(255, 255, 255, 0.06) 1px, transparent 1px, transparent 64px);
+}
+
+.hoy__fuera {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0, rgba(255, 255, 255, 0.035) 6px, transparent 6px, transparent 12px);
+}
+
+.hoy__bloqueo {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  display: flex;
+  align-items: flex-start;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0, rgba(255, 255, 255, 0.06) 6px, transparent 6px, transparent 12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+}
+
+.hoy__libre {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 1.5px dashed rgba(178, 150, 125, 0.5);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--camel);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.hoy__libre span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.25;
+}
+
+.hoy__libre small {
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.hoy__libre:hover {
+  background: rgba(178, 150, 125, 0.1);
+}
+
+.hoy__libre.is-corto span {
+  flex-direction: row;
+}
+
+.hoy__bloque {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 1px;
+  box-sizing: border-box;
+  padding: 6px 9px;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  text-align: left;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.hoy__bloque b {
+  max-width: 100%;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hoy__bloque span {
+  max-width: 100%;
+  font-size: 0.74rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hoy__bloque.is-corto {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+}
+
+.hoy__bloque.is-corto span {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Colores de estado (los mismos en la cita, la lista y la hoja) */
+.hoy__bloque--pending { background: rgba(251, 191, 36, 0.16); color: #fde7b0; }
+.hoy__bloque--confirmed { background: rgba(96, 165, 250, 0.16); color: #cfe2fb; }
+.hoy__bloque--in_progress { background: rgba(178, 150, 125, 0.32); color: #fff; outline: 2px solid var(--camel); }
+.hoy__bloque--completed { background: rgba(74, 222, 128, 0.13); color: #c9f1d6; }
+
+.hoy__ahora {
+  position: absolute;
+  left: 48px;
+  right: 0;
+  z-index: 2;
+  height: 2px;
+  background: #e0785e;
+  pointer-events: none;
+}
+
+.hoy__ahora span {
+  position: absolute;
+  left: -46px;
+  top: -9px;
+  padding: 1px 5px;
+  border-radius: 99px;
+  background: #e0785e;
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Celular: el día en una lista */
+.hoy__lista {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 6px 14px;
+  list-style: none;
+}
+
+.hoy__lista > li {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.hoy__lista > li:last-child {
+  border-bottom: none;
+}
+
+.hoy__lista > .hoy__vacio {
+  padding: 18px 0;
+}
+
+.hoy__renglon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hoy__renglon--completed {
+  opacity: 0.6;
+}
+
+.hoy__renglon-hora {
+  flex-shrink: 0;
+  width: 70px;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.hoy__renglon-txt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hoy__renglon-txt b {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.hoy__renglon-txt span {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.hoy__renglon-libre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  margin: 8px 0;
+  padding: 0 14px;
+  border: 1.5px dashed rgba(178, 150, 125, 0.5);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--camel);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Hoja de la cita */
+.modal.hoy__hoja {
+  max-width: 480px;
+}
+
+.hoy__estado {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.hoy__estado--pending { background: rgba(251, 191, 36, 0.14); color: #fbbf24; }
+.hoy__estado--confirmed { background: rgba(96, 165, 250, 0.14); color: #93c5fd; }
+.hoy__estado--in_progress { background: rgba(178, 150, 125, 0.22); color: var(--camel-light); }
+.hoy__estado--completed { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
+.hoy__estado--cancelled,
+.hoy__estado--no_show { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.6); }
+
+.hoy__hoja-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 28px 8px;
+}
+
+.hoy__hoja-dia {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.hoy__hoja-servicios {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hoy__hoja-servicios li {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.hoy__hoja-servicios b {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.hoy__hoja-servicios span {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.hoy__hoja-nota {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 2px solid var(--camel);
+  font-size: 0.86rem;
+  white-space: pre-wrap;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.hoy__hoja-contacto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hoy__hoja-pie {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 28px 22px;
+}
+
+.hoy__hoja-pie .hoy__btn--principal {
+  flex: 1;
+  max-width: 260px;
+}
+
+/* Tableta vertical en adelante: la agenda en columnas y las dos tarjetas lado a lado */
+@container (min-width: 560px) {
+  .hoy__grilla { display: block; }
+  .hoy__lista { display: none; }
+  .hoy__lado { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hoy__manana { grid-column: 1 / -1; }
+}
+
+/* Tableta horizontal y computadora: la agenda a la izquierda y las tarjetas a la derecha */
+@container (min-width: 840px) {
+  .hoy__cuerpo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 290px;
+    align-items: start;
+  }
+  .hoy__agenda { grid-column: 1; grid-row: 1; }
+  .hoy__lado { grid-column: 2; grid-row: 1; grid-template-columns: 1fr; }
+  .hoy__manana { grid-column: auto; }
+}
+
+/* Tema claro */
+[data-theme="light"] .hoy { color: var(--espresso); }
+[data-theme="light"] .hoy__fecha,
+[data-theme="light"] .hoy__tarjeta-tit,
+[data-theme="light"] .hoy__vacio,
+[data-theme="light"] .hoy__sala-nom span,
+[data-theme="light"] .hoy__confirmar-nom span,
+[data-theme="light"] .hoy__persona span,
+[data-theme="light"] .hoy__horas span,
+[data-theme="light"] .hoy__renglon-txt span,
+[data-theme="light"] .hoy__hoja-servicios span,
+[data-theme="light"] .hoy__manana span span { color: var(--muted); }
+
+[data-theme="light"] .hoy__btn,
+[data-theme="light"] .hoy__icono {
+  background: #fff;
+  border-color: rgba(74, 52, 42, 0.16);
+  color: var(--espresso);
+}
+
+[data-theme="light"] .hoy__btn--principal {
+  background: var(--cocoa);
+  border-color: var(--cocoa);
+  color: #fff;
+}
+
+[data-theme="light"] .hoy__btn--principal:hover {
+  background: var(--cocoa-dark);
+  border-color: var(--cocoa-dark);
+}
+
+[data-theme="light"] .hoy__enlace { color: var(--cocoa); }
+
+[data-theme="light"] .hoy__tarjeta,
+[data-theme="light"] .hoy__agenda {
+  background: #fff;
+  border-color: rgba(74, 52, 42, 0.1);
+}
+
+[data-theme="light"] .hoy__sala + .hoy__sala,
+[data-theme="light"] .hoy__confirmar li,
+[data-theme="light"] .hoy__grilla-cabeza,
+[data-theme="light"] .hoy__lista > li { border-color: rgba(74, 52, 42, 0.09); }
+
+[data-theme="light"] .hoy__manana { background: #EFE6DD; }
+
+[data-theme="light"] .hoy__col {
+  border-left-color: rgba(74, 52, 42, 0.07);
+  background-image: repeating-linear-gradient(to bottom, rgba(74, 52, 42, 0.08) 0, rgba(74, 52, 42, 0.08) 1px, transparent 1px, transparent 64px);
+}
+
+[data-theme="light"] .hoy__fuera { background: repeating-linear-gradient(135deg, #F4EFE8 0, #F4EFE8 6px, transparent 6px, transparent 12px); }
+
+[data-theme="light"] .hoy__bloqueo {
+  background: repeating-linear-gradient(135deg, #EFE8DF 0, #EFE8DF 6px, #FBF8F4 6px, #FBF8F4 12px);
+  border-color: rgba(74, 52, 42, 0.12);
+  color: var(--muted);
+}
+
+[data-theme="light"] .hoy__libre,
+[data-theme="light"] .hoy__renglon-libre {
+  border-color: #CDBBA8;
+  color: var(--cocoa);
+}
+
+[data-theme="light"] .hoy__libre:hover { background: #F7F1EA; }
+
+[data-theme="light"] .hoy__bloque--pending { background: #FBEFD5; color: #7A4F00; }
+[data-theme="light"] .hoy__bloque--confirmed { background: #E4EDF6; color: #2D5B86; }
+[data-theme="light"] .hoy__bloque--in_progress { background: #F1E4D8; color: #6B4630; outline-color: #9A6A4C; }
+[data-theme="light"] .hoy__bloque--completed { background: #E3F0E7; color: #2F6B45; }
+[data-theme="light"] .hoy__bloque b { color: var(--espresso); }
+
+[data-theme="light"] .hoy__ahora,
+[data-theme="light"] .hoy__ahora span { background: #B4533A; }
+
+[data-theme="light"] .hoy__estado--pending { background: #FBEFD5; color: #7A4F00; }
+[data-theme="light"] .hoy__estado--confirmed { background: #E4EDF6; color: #2D5B86; }
+[data-theme="light"] .hoy__estado--in_progress { background: #F1E4D8; color: #6B4630; }
+[data-theme="light"] .hoy__estado--completed { background: #E3F0E7; color: #2F6B45; }
+[data-theme="light"] .hoy__estado--cancelled,
+[data-theme="light"] .hoy__estado--no_show { background: #EEEAE6; color: #5E5651; }
+
+[data-theme="light"] .hoy__hoja-servicios li { background: #F9F6F1; }
+[data-theme="light"] .hoy__hoja-nota { color: var(--espresso); }

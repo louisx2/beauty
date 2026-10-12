@@ -15,7 +15,6 @@ import {
   Sun,
   Moon,
   Settings as SettingsIcon,
-  LayoutDashboard,
   BarChart3,
   Clock,
   AlertCircle,
@@ -40,6 +39,7 @@ import { playNotificationSound } from '../lib/sound';
 import './AdminLayout.css';
 import { fechaLocal } from '../lib/fechas';
 import { atiendeClientas } from '../lib/quienAtiende';
+import { EVENTO_ATENDER_AHORA } from '../lib/eventosPanel';
 
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 10);
@@ -59,12 +59,12 @@ interface ItemNav {
 interface SeccionNav { titulo: string; items: ItemNav[] }
 
 const AHORA = 'ahora';
-const inicio: ItemNav = { to: '/admin/dashboard', icono: <LayoutDashboard size={20} />, etiqueta: 'Inicio' };
+// Hoy reemplaza a Inicio y a Recepción: es lo primero que se ve al entrar (Inicio y Recepción siguen en su dirección)
+const hoy: ItemNav = { to: '/admin/hoy', icono: <Sun size={20} />, etiqueta: 'Hoy' };
 const ahora: ItemNav = { to: AHORA, icono: <Zap size={20} />, etiqueta: 'Atender ahora', corto: 'Atender' };
 const citas: ItemNav = { to: '/admin/citas', icono: <CalendarDays size={20} />, etiqueta: 'Citas' };
 const clientas: ItemNav = { to: '/admin/clientes', icono: <Users size={20} />, etiqueta: 'Clientas' };
 const paquetes: ItemNav = { to: '/admin/paquetes', icono: <Package size={20} />, etiqueta: 'Paquetes' };
-const recepcion: ItemNav = { to: '/admin/recepcion', icono: <LayoutDashboard size={20} />, etiqueta: 'Recepción' };
 const miTurno: ItemNav = { to: '/admin/mi-turno', icono: <Scissors size={20} />, etiqueta: 'Mi turno' };
 const misCitas: ItemNav = { to: '/admin/citas', icono: <CalendarDays size={20} />, etiqueta: 'Mis citas' };
 const misReportes: ItemNav = { to: '/admin/reportes', icono: <BarChart3 size={20} />, etiqueta: 'Mis reportes', corto: 'Reportes' };
@@ -72,7 +72,7 @@ const misReportes: ItemNav = { to: '/admin/reportes', icono: <BarChart3 size={20
 // Cada rol ve solo lo suyo. Los nombres del menú son los mismos títulos de cada pantalla.
 const MENU: Record<'admin' | 'receptionist' | 'specialist', SeccionNav[]> = {
   admin: [
-    { titulo: 'Día a día', items: [inicio, ahora, citas, clientas] },
+    { titulo: 'Día a día', items: [hoy, ahora, citas, clientas] },
     { titulo: 'Negocio', items: [
       { to: '/admin/servicios', icono: <Sparkles size={20} />, etiqueta: 'Servicios' },
       paquetes,
@@ -81,17 +81,17 @@ const MENU: Record<'admin' | 'receptionist' | 'specialist', SeccionNav[]> = {
     ] },
     { titulo: 'Cuenta', items: [
       { to: '/admin/ajustes', icono: <SettingsIcon size={20} />, etiqueta: 'Ajustes' },
-      { to: '/admin/suscripcion', icono: <CreditCard size={20} />, etiqueta: 'Mi suscripción' },
+      { to: '/admin/suscripcion', icono: <CreditCard size={20} />, etiqueta: 'Mi suscripción', corto: 'Suscripción' },
     ] },
   ],
-  receptionist: [{ titulo: 'Día a día', items: [recepcion, ahora, citas, clientas, paquetes] }],
+  receptionist: [{ titulo: 'Día a día', items: [hoy, ahora, citas, clientas, paquetes] }],
   specialist: [{ titulo: 'Mi trabajo', items: [miTurno, misCitas, misReportes] }],
 };
 
 // Barra inferior del teléfono: lo de todos los días a un toque; "Más" abre el menú completo.
 const BARRA: Record<'admin' | 'receptionist' | 'specialist', ItemNav[]> = {
-  admin: [inicio, citas, ahora, clientas],
-  receptionist: [recepcion, citas, ahora, clientas],
+  admin: [hoy, citas, ahora, clientas],
+  receptionist: [hoy, citas, ahora, clientas],
   specialist: [miTurno, misCitas, misReportes],
 };
 
@@ -146,15 +146,22 @@ export default function AdminLayout() {
     return () => cleanupRealtime();
   }, [fetchAppointments, fetchStaff, fetchServices, initRealtime, cleanupRealtime]);
 
+  // "Atender sin cita" desde Hoy abre el mismo formulario que el botón del menú
+  useEffect(() => {
+    const abrir = () => setShowWalkin(true);
+    window.addEventListener(EVENTO_ATENDER_AHORA, abrir);
+    return () => window.removeEventListener(EVENTO_ATENDER_AHORA, abrir);
+  }, []);
+
   // Redirect non-admin roles to their home pages
   useEffect(() => {
     if (user?.role === 'specialist') {
-      const adminOnly = ['/admin', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/equipo', '/admin/ajustes', '/admin/suscripcion'];
+      const adminOnly = ['/admin', '/admin/hoy', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/equipo', '/admin/ajustes', '/admin/suscripcion'];
       if (adminOnly.includes(location.pathname)) navigate('/admin/mi-turno', { replace: true });
     }
     if (user?.role === 'receptionist') {
       const receptionistForbidden = ['/admin', '/admin/dashboard', '/admin/reportes', '/admin/ajustes', '/admin/equipo', '/admin/suscripcion'];
-      if (receptionistForbidden.includes(location.pathname)) navigate('/admin/recepcion', { replace: true });
+      if (receptionistForbidden.includes(location.pathname)) navigate('/admin/hoy', { replace: true });
     }
   }, [user?.role, location.pathname, navigate]);
 
@@ -344,7 +351,8 @@ export default function AdminLayout() {
                   onClick={() => { setSidebarOpen(false); setShowWalkin(true); }}
                 >
                   {item.icono}
-                  <span>{item.etiqueta}</span>
+                  <span className="admin__nav-largo">{item.etiqueta}</span>
+                  {item.corto && <span className="admin__nav-corto" aria-hidden="true">{item.corto}</span>}
                 </button>
               ) : (
                 <NavLink
@@ -354,7 +362,8 @@ export default function AdminLayout() {
                   onClick={() => setSidebarOpen(false)}
                 >
                   {item.icono}
-                  <span>{item.etiqueta}</span>
+                  <span className="admin__nav-largo">{item.etiqueta}</span>
+                  {item.corto && <span className="admin__nav-corto" aria-hidden="true">{item.corto}</span>}
                 </NavLink>
               ))}
             </div>
