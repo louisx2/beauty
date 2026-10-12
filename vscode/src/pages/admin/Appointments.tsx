@@ -420,7 +420,7 @@ export default function Appointments() {
   }, [location.search, appointments, navigate]);
 
   // Desde Hoy: "Agendar cita" (o un hueco libre) abre Nueva cita con el día, la hora y la especialista ya puestos;
-  // "Mañana" abre la agenda de ese día.
+  // desde Atender ahora, con la clienta. "Mañana" abre la agenda de ese día.
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const fecha = params.get('fecha');
@@ -437,6 +437,9 @@ export default function Appointments() {
       setReprogramando(false);
       setForm({
         ...emptyForm,
+        client_id: params.get('clienta'),
+        clientName: params.get('nombre') ?? '',
+        clientPhone: params.get('telefono') ?? '',
         date: dia,
         time: hora || (horas.includes('09:00') ? '09:00' : horas[0] ?? ''),
         services: [{ ...lineaVacia(), employee: params.get('empleada') ?? '' }],

@@ -164,8 +164,15 @@
   cursor: pointer;
 }
 
+.prox__agregar svg {
+  flex-shrink: 0;
+}
+
 .prox__agregar select {
   flex: 1;
+  min-width: 0;
+  width: 100%;
+  text-overflow: ellipsis;
   border: none;
   background: transparent;
   color: var(--camel);
