@@ -402,8 +402,8 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
           }
         }
 
-        // Prompt for next session if it's a package or if we just want to offer it
-        if (appt && (appt.service.toLowerCase().includes('paquete') || appt.notes?.toLowerCase().includes('paquete'))) {
+        // Al terminar, se ofrece agendar la próxima cita ahí mismo (con o sin paquete): ver ProximaCita
+        if (appt && appt.clientName.trim()) {
           get().promptNextSession(appt);
         }
       }

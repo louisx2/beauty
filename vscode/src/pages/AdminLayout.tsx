@@ -28,7 +28,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
-import NextSessionModal from '../components/NextSessionModal';
+import ProximaCita from '../components/ProximaCita';
 import ClientAutocomplete from '../components/ClientAutocomplete';
 import AvisoSuscripcion from '../components/AvisoSuscripcion';
 import { useServiceStore } from '../store/serviceStore';
@@ -550,7 +550,7 @@ export default function AdminLayout() {
         </button>
       </nav>
 
-      <NextSessionModal />
+      <ProximaCita />
 
       {/* Walk-in Modal */}
       {showWalkin && (

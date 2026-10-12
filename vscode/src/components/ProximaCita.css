@@ -1,0 +1,602 @@
+/* Agendar la próxima cita. La cabecera y los botones son los de .modal (index.css); aquí va lo propio:
+   la lista de servicios, el calendario con las horas libres de cada día y el pie fijo con el resumen. */
+
+.modal.prox {
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* En la tableta (lo principal) y el celular todo se toca con el dedo: nada más bajo que 44 px. */
+.prox .modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.prox__sub {
+  margin-top: 4px;
+  font-size: 0.86rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.prox__cuerpo {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 18px 28px 20px;
+}
+
+.prox__paquete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(178, 150, 125, 0.12);
+  color: var(--camel-light);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.prox__paso {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.prox__paso-tit {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.prox__aviso {
+  font-size: 0.86rem;
+  color: #fbbf24;
+}
+
+.prox__ayuda {
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Servicios */
+.prox__servicios {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.prox__servicio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.prox__servicio-nom {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.prox__servicio-nom b {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.prox__servicio-nom span {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.prox__servicio select,
+.prox__agregar select {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.84rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.prox__servicio select {
+  max-width: 48%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.prox__servicio select option,
+.prox__agregar select option {
+  background: #352820;
+  color: #fff;
+}
+
+.prox__quitar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+}
+
+.prox__quitar:hover {
+  background: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+}
+
+.prox__agregar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  box-sizing: border-box;
+  padding: 9px 14px;
+  border: 1px dashed rgba(178, 150, 125, 0.45);
+  border-radius: 12px;
+  color: var(--camel);
+  cursor: pointer;
+}
+
+.prox__agregar select {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--camel);
+  font-weight: 600;
+  outline: none;
+}
+
+/* Calendario */
+.prox__cal-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.prox__cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.prox__cal-nav button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+}
+
+.prox__cal-nav button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.prox__cal-nav button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.prox__cal-nav .prox__cal-mes {
+  flex-direction: column;
+  padding: 0 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.prox__cal-mes small {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--camel);
+}
+
+.prox__semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.prox__dia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 8px 2px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.prox__dia small {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.prox__dia b {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.prox__dia em {
+  font-style: normal;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #4ade80;
+  white-space: nowrap;
+}
+
+.prox__dia:hover:not(:disabled) {
+  border-color: var(--camel);
+}
+
+.prox__dia.is-hoy b {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prox__dia.is-lleno em,
+.prox__dia:disabled em {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.prox__dia:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.prox__dia.is-on {
+  background: var(--cocoa);
+  border-color: var(--cocoa);
+}
+
+.prox__dia.is-on small,
+.prox__dia.is-on em {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.prox__mes {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.prox__mes-dow {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+  padding-bottom: 2px;
+}
+
+.prox__mdia {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+}
+
+.prox__mdia b {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.prox__mdia i {
+  font-style: normal;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: #4ade80;
+}
+
+.prox__mdia:hover:not(:disabled) {
+  border-color: var(--camel);
+}
+
+.prox__mdia:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.prox__mdia.is-on {
+  background: var(--cocoa);
+}
+
+.prox__mdia.is-on i {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Horas */
+.prox__dia-horas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prox__dia-tit {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.prox__grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prox__grupo-tit {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.prox__horas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 6px;
+}
+
+.prox__hora {
+  min-height: 46px;
+  padding: 9px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.prox__hora:hover:not(:disabled) {
+  border-color: var(--camel);
+}
+
+.prox__hora:disabled {
+  opacity: 0.35;
+  text-decoration: line-through;
+  cursor: default;
+}
+
+.prox__hora.is-on {
+  background: var(--cocoa);
+  border-color: var(--cocoa);
+}
+
+.prox__notas span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Pie fijo: lo elegido y los botones siempre a la vista */
+.prox__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 28px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.prox__resumen {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1 1 260px;
+  min-width: 0;
+  font-size: 0.86rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.prox__resumen svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--camel);
+}
+
+.prox__resumen b {
+  color: #fff;
+  font-weight: 600;
+}
+
+.prox__botones {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.prox__botones button {
+  min-height: 48px;
+}
+
+@media (max-width: 560px) {
+  .modal.prox {
+    max-height: calc(100dvh - 24px);
+  }
+
+  .prox .modal__header {
+    padding: 18px 18px 12px;
+  }
+
+  .prox__cuerpo {
+    padding: 14px 18px 16px;
+    gap: 18px;
+  }
+
+  .prox__pie {
+    padding: 12px 18px 16px;
+  }
+
+  .prox__botones {
+    width: 100%;
+  }
+
+  .prox__botones button {
+    flex: 1;
+  }
+
+  .prox__semana {
+    gap: 4px;
+  }
+
+  .prox__dia em {
+    font-size: 0.6rem;
+  }
+}
+
+/* Tema claro */
+[data-theme="light"] .prox__sub,
+[data-theme="light"] .prox__servicio-nom span,
+[data-theme="light"] .prox__ayuda,
+[data-theme="light"] .prox__paso-tit,
+[data-theme="light"] .prox__grupo-tit,
+[data-theme="light"] .prox__notas span,
+[data-theme="light"] .prox__mes-dow,
+[data-theme="light"] .prox__dia small,
+[data-theme="light"] .prox__resumen {
+  color: var(--muted);
+}
+
+[data-theme="light"] .prox__paquete {
+  background: rgba(178, 150, 125, 0.14);
+  color: var(--cocoa);
+}
+
+[data-theme="light"] .prox__aviso {
+  color: #b45309;
+}
+
+[data-theme="light"] .prox__servicio {
+  background: #F9F6F1;
+  border-color: rgba(74, 52, 42, 0.1);
+}
+
+[data-theme="light"] .prox__servicio-nom b,
+[data-theme="light"] .prox__dia-tit,
+[data-theme="light"] .prox__resumen b,
+[data-theme="light"] .prox__cal-nav .prox__cal-mes {
+  color: var(--espresso);
+}
+
+[data-theme="light"] .prox__servicio select {
+  background: #fff;
+  border-color: rgba(74, 52, 42, 0.14);
+  color: var(--espresso);
+}
+
+[data-theme="light"] .prox__servicio select option,
+[data-theme="light"] .prox__agregar select option {
+  background: #fff;
+  color: var(--espresso);
+}
+
+[data-theme="light"] .prox__agregar,
+[data-theme="light"] .prox__agregar select,
+[data-theme="light"] .prox__cal-mes small {
+  color: var(--cocoa);
+}
+
+[data-theme="light"] .prox__quitar {
+  color: var(--muted);
+}
+
+[data-theme="light"] .prox__cal-nav button {
+  color: var(--espresso);
+}
+
+[data-theme="light"] .prox__cal-nav button:hover:not(:disabled) {
+  background: rgba(74, 52, 42, 0.06);
+}
+
+[data-theme="light"] .prox__dia,
+[data-theme="light"] .prox__mdia,
+[data-theme="light"] .prox__hora {
+  background: #fff;
+  border-color: rgba(74, 52, 42, 0.12);
+  color: var(--espresso);
+}
+
+[data-theme="light"] .prox__mdia {
+  border-color: transparent;
+  background: #F9F6F1;
+}
+
+[data-theme="light"] .prox__dia em,
+[data-theme="light"] .prox__mdia i {
+  color: #15803d;
+}
+
+[data-theme="light"] .prox__dia.is-lleno em,
+[data-theme="light"] .prox__dia:disabled em {
+  color: var(--muted);
+}
+
+[data-theme="light"] .prox__dia.is-on,
+[data-theme="light"] .prox__mdia.is-on,
+[data-theme="light"] .prox__hora.is-on {
+  background: var(--cocoa);
+  border-color: var(--cocoa);
+  color: #fff;
+}
+
+[data-theme="light"] .prox__dia.is-on small,
+[data-theme="light"] .prox__dia.is-on em,
+[data-theme="light"] .prox__mdia.is-on i {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+[data-theme="light"] .prox__pie {
+  border-top-color: rgba(74, 52, 42, 0.08);
+}
