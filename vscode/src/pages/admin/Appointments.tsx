@@ -419,6 +419,34 @@ export default function Appointments() {
     }
   }, [location.search, appointments, navigate]);
 
+  // Desde Hoy: "Agendar cita" (o un hueco libre) abre Nueva cita con el día, la hora y la especialista ya puestos;
+  // "Mañana" abre la agenda de ese día.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const fecha = params.get('fecha');
+    if (!params.has('nueva') && !fecha) return;
+    if (fecha) {
+      setView('day');
+      setSelectedDate(fecha);
+    }
+    if (params.has('nueva')) {
+      const dia = fecha || getToday();
+      const hora = params.get('hora') ?? '';
+      const horas = horasParaAgendar(dia, hora);
+      setEditingId(null);
+      setReprogramando(false);
+      setForm({
+        ...emptyForm,
+        date: dia,
+        time: hora || (horas.includes('09:00') ? '09:00' : horas[0] ?? ''),
+        services: [{ ...lineaVacia(), employee: params.get('empleada') ?? '' }],
+      });
+      setApptErrors({});
+      setShowModal(true);
+    }
+    navigate('/admin/citas', { replace: true });
+  }, [location.search, navigate]);
+
   // La base rechaza dos citas encimadas para la misma empleada; el mensaje
   // tecnico no le dice nada a la recepcionista, asi que se traduce.
   const conflictMessage = () =>

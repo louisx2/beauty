@@ -22,7 +22,7 @@ export default function Login() {
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      navigate('/admin/citas', { replace: true });
+      navigate('/admin', { replace: true });
     }
   }, [authLoading, isAuthenticated, navigate]);
 
@@ -66,7 +66,7 @@ export default function Login() {
     setLoading(true);
     localStorage.setItem('sb_remember_me', rememberMe ? 'true' : 'false');
     const ok = await login(email, password);
-    if (ok) navigate('/admin/citas');
+    if (ok) navigate('/admin');
     setLoading(false);
   };
 
