@@ -1,7 +1,7 @@
 // Acciones sobre una cita, iguales en Citas y en el Dashboard: el paso que sigue, el menú "⋯" y cancelar
 // (siempre con confirmación y con el aviso a la clienta).
 import type { ReactNode } from 'react';
-import { Ban, CalendarClock, CheckCheck, CheckCircle2, Edit2, Save, UserCheck, XCircle } from 'lucide-react';
+import { Ban, CalendarClock, CalendarPlus, CheckCheck, CheckCircle2, Edit2, Save, UserCheck, XCircle } from 'lucide-react';
 import { useAppointmentStore, type Appointment } from '../../../store/appointmentStore';
 import { notifyStatusChange } from '../../../lib/whatsapp';
 import type { ItemMenu } from '../../../components/MenuAcciones';
@@ -21,7 +21,7 @@ interface Opciones {
 }
 
 export function useAccionesCita({ editar, guardarClienta, reprogramar }: Opciones) {
-  const { updateStatus } = useAppointmentStore();
+  const { updateStatus, promptNextSession } = useAppointmentStore();
 
   /** Confirmar, Llegó o Completar: cambia el estado y ofrece avisarle a la clienta por WhatsApp. */
   const avanzar = (cita: Appointment, paso: AccionPrincipal) => {
@@ -41,6 +41,8 @@ export function useAccionesCita({ editar, guardarClienta, reprogramar }: Opcione
       case 'editar': return { id: accion, etiqueta: 'Editar', icono: <Edit2 size={16} aria-hidden="true" />, onSelect: () => editar(cita) };
       case 'reprogramar':
         return reprogramar ? { id: accion, etiqueta: 'Reprogramar', icono: <CalendarClock size={16} aria-hidden="true" />, onSelect: () => reprogramar(cita) } : null;
+      case 'agendar_proxima':
+        return { id: accion, etiqueta: 'Agendar próxima', icono: <CalendarPlus size={16} aria-hidden="true" />, onSelect: () => promptNextSession(cita) };
       case 'no_asistio':
         return { id: accion, etiqueta: 'No asistió', icono: <Ban size={16} aria-hidden="true" />, onSelect: () => { updateStatus(cita.id, 'no_show'); notifyStatusChange(cita, 'no_show'); } };
       case 'guardar_clienta': return { id: accion, etiqueta: 'Guardar clienta', icono: <Save size={16} aria-hidden="true" />, onSelect: () => guardarClienta(cita) };
