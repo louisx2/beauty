@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  conEspecialista, conHoraPedida, elegidosDelPaquete, estadoAlGuardar, planALas, sesionDelPaquete, sinLaCita,
+  buscarServicios, conEspecialista, conHoraPedida, elegidosDelPaquete, estadoAlGuardar, planALas, sesionDelPaquete, sinLaCita,
 } from '../src/pages/admin/agendar/agendar.ts';
 import { elegidosDeCita, especialistasDeAgenda, horasDelDia } from '../src/pages/admin/citas/proximaCita.ts';
 import type { Appointment } from '../src/store/appointmentStore.ts';
@@ -111,4 +111,25 @@ test('la hora pedida que no cae en la media hora entra en su lugar', () => {
   assert.deepEqual(conHoraPedida(horas, '10:45', []).map((h) => h.hora), ['10:30', '10:45', '11:00']);
   assert.equal(conHoraPedida(horas, '11:00', []), horas);
   assert.equal(conHoraPedida(horas, '', []), horas);
+});
+
+test('buscar servicio: sin tildes, por palabras, por categoría; primero los que empiezan así', () => {
+  const lista = [
+    { name: 'Depilación Láser - Axilas', category: 'laser' as const },
+    { name: 'Depilación Láser - Piernas', category: 'laser' as const },
+    { name: 'Diseño de cejas', category: 'belleza' as const },
+    { name: 'Laminado de cejas', category: 'belleza' as const },
+    { name: 'Cejas en henna', category: 'belleza' as const },
+    { name: 'Lifting de pestañas', category: 'belleza' as const },
+    { name: 'Toxina Botulínica', category: 'medicina' as const },
+  ];
+  const nombres = (q: string) => buscarServicios(lista, q).map((s) => s.name);
+  assert.deepEqual(nombres('cejas'), ['Cejas en henna', 'Diseño de cejas', 'Laminado de cejas']);
+  assert.deepEqual(nombres('laser axilas'), ['Depilación Láser - Axilas']);
+  assert.deepEqual(nombres('PESTANAS'), ['Lifting de pestañas']);
+  assert.deepEqual(nombres('medicina'), ['Toxina Botulínica']);
+  assert.deepEqual(nombres('masaje'), []);
+  // sin texto: todos, por categoría y nombre
+  assert.deepEqual(nombres('  ').slice(0, 3), ['Cejas en henna', 'Diseño de cejas', 'Laminado de cejas']);
+  assert.equal(nombres('').length, lista.length);
 });
