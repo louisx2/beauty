@@ -558,9 +558,6 @@
 [data-theme="light"] .admin__nav-link--ahora { color: #92400e; background: #fef3c7; }
 [data-theme="light"] .admin__nav-link--ahora:hover { color: #78350f; background: #fde68a; }
 
-.walkin__nota { margin: 0 0 20px; font-size: 0.9rem; color: rgba(255, 255, 255, 0.65); }
-[data-theme="light"] .walkin__nota { color: var(--muted); }
-
 /* ── Barra inferior: en el teléfono y la tableta vertical, donde el menú lateral se esconde ── */
 .admin__barra { display: none; }
 

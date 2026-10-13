@@ -27,26 +27,16 @@ import {
   CreditCard
 } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
-import ProximaCita from '../components/ProximaCita';
-import ClientAutocomplete from '../components/ClientAutocomplete';
+import Agendar from './admin/agendar/Agendar';
+import AtenderAhora from './admin/atender/AtenderAhora';
 import AvisoSuscripcion from '../components/AvisoSuscripcion';
 import { useServiceStore } from '../store/serviceStore';
 import { useStaffStore } from '../store/staffStore';
-import { useClientStore } from '../store/clientStore';
 import toast, { Toaster, resolveValue } from 'react-hot-toast';
 import { useNotificationStore } from '../store/notificationStore';
 import { playNotificationSound } from '../lib/sound';
 import './AdminLayout.css';
-import { fechaLocal } from '../lib/fechas';
-import { atiendeClientas } from '../lib/quienAtiende';
 import { EVENTO_ATENDER_AHORA } from '../lib/eventosPanel';
-
-function formatPhone(raw: string): string {
-  const digits = raw.replace(/\D/g, '').slice(0, 10);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
 
 interface ItemNav {
   /** ruta, o 'ahora' para el botón de Atender ahora (abre el formulario de clienta sin cita) */
@@ -118,25 +108,10 @@ export default function AdminLayout() {
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  // Walk-in modal state
+  // Atender ahora (clienta sin cita): lo abre el menú o "Atender sin cita" en Hoy
   const [showWalkin, setShowWalkin] = useState(false);
-  const { staff, fetchStaff } = useStaffStore();
-  const { services, clientPackages, fetchAll: fetchServices } = useServiceStore();
-  const { clients, addClient } = useClientStore();
-  const [walkinForm, setWalkinForm] = useState({
-    clientId: null as string | null,
-    clientName: '',
-    clientPhone: '',
-    service: '',
-    employee: ''
-  });
-  const [walkinError, setWalkinError] = useState('');
-
-  // Packages of selected client
-  const activePackages = useMemo(() => {
-    if (!walkinForm.clientId) return [];
-    return clientPackages.filter(p => p.clientId === walkinForm.clientId && p.status === 'active' && p.totalSessions > p.usedSessions);
-  }, [walkinForm.clientId, clientPackages]);
+  const { fetchStaff } = useStaffStore();
+  const { fetchAll: fetchServices } = useServiceStore();
 
   useEffect(() => {
     fetchAppointments();
@@ -215,7 +190,6 @@ export default function AdminLayout() {
 
   const { notifications, markAsRead, markAllAsRead, clearAll, soundProfile, setSoundProfile } = useNotificationStore();
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
-  const today = fechaLocal();
 
   const handleLogout = async () => {
     try {
@@ -223,55 +197,6 @@ export default function AdminLayout() {
       navigate('/admin/login', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
-    }
-  };
-
-  const handleWalkinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!walkinForm.clientName.trim() || !walkinForm.service || !walkinForm.employee) {
-      setWalkinError('Todos los campos son obligatorios');
-      return;
-    }
-    try {
-      let finalClientId = walkinForm.clientId;
-      let finalPhone = walkinForm.clientPhone || '0000000000';
-
-      // If it's a new client, create them automatically
-      if (!finalClientId) {
-        const newClient = await addClient({
-          name: walkinForm.clientName.trim(),
-          phone: walkinForm.clientPhone.trim() || '0000000000',
-          email: null,
-          cedula: null,
-          skin_type: null,
-          allergies: null,
-          notes: 'Registrada por Walk-in',
-          source: 'manual'
-        });
-        if (newClient) {
-          finalClientId = newClient.id;
-        }
-      }
-
-      const now = new Date();
-      await useAppointmentStore.getState().addAppointment({
-        client_id: finalClientId,
-        clientName: walkinForm.clientName.trim(),
-        clientPhone: finalPhone,
-        service: walkinForm.service,
-        employee: walkinForm.employee,
-        date: today,
-        time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
-        duration: 45,
-        status: 'in_progress',
-        notes: walkinForm.service.startsWith('Paquete:') ? 'Consumo de sesión por Walk-in' : 'Walk-in (Sin cita)',
-        source: 'manual'
-      });
-      toast.success('Cliente atendido inmediatamente');
-      setShowWalkin(false);
-      setWalkinForm({ clientId: null, clientName: '', clientPhone: '', service: '', employee: '' });
-    } catch (error) {
-      toast.error('Error al registrar');
     }
   };
 
@@ -559,82 +484,10 @@ export default function AdminLayout() {
         </button>
       </nav>
 
-      <ProximaCita />
+      <Agendar />
 
       {/* Walk-in Modal */}
-      {showWalkin && (
-        <div className="modal-overlay" onClick={() => setShowWalkin(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal__header">
-              <h2>Atender ahora</h2>
-              <button className="modal__close" onClick={() => setShowWalkin(false)}>✕</button>
-            </div>
-            <form onSubmit={handleWalkinSubmit} className="modal__form" style={{ padding: 24 }}>
-              <p className="walkin__nota">
-                Para una clienta que llegó sin cita: queda registrada y su servicio empieza de una vez.
-              </p>
-
-              <div className="modal__field">
-                <label>Clienta</label>
-                <ClientAutocomplete
-                  clients={clients}
-                  value={walkinForm.clientName}
-                  onChange={(text) => setWalkinForm({...walkinForm, clientName: text, clientId: null})}
-                  onSelect={(c) => setWalkinForm({...walkinForm, clientName: c.name, clientId: c.id, clientPhone: c.phone})}
-                  placeholder="Buscar o escribir nueva clienta..."
-                />
-              </div>
-
-              {!walkinForm.clientId && walkinForm.clientName && (
-                <div className="modal__field">
-                  <label>Teléfono (clienta nueva)</label>
-                  <input
-                    placeholder="Teléfono de la clienta nueva"
-                    value={walkinForm.clientPhone}
-                    onChange={e => setWalkinForm({...walkinForm, clientPhone: formatPhone(e.target.value)})}
-                    maxLength={12}
-                  />
-                </div>
-              )}
-
-              <div className="modal__field">
-                <label>Servicio o paquete</label>
-                <select value={walkinForm.service} onChange={e => setWalkinForm({...walkinForm, service: e.target.value})}>
-                  <option value="">Selecciona qué le harás...</option>
-                  <optgroup label="Servicios">
-                    {services.filter(s => s.active).map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                  </optgroup>
-                  {activePackages.length > 0 && (
-                    <optgroup label="Paquetes de la clienta">
-                      {activePackages.map(p => (
-                        <option key={p.id} value={`Paquete: ${p.packageName}`}>
-                          Consumir {p.packageName} ({p.totalSessions - p.usedSessions} disp.)
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
-              </div>
-
-              <div className="modal__field">
-                <label>Especialista</label>
-                <select value={walkinForm.employee} onChange={e => setWalkinForm({...walkinForm, employee: e.target.value})}>
-                  <option value="">Selecciona la especialista...</option>
-                  {staff.filter(s => s.active && atiendeClientas(s)).map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                </select>
-              </div>
-
-              {walkinError && <p style={{ color: '#f87171', fontSize: '0.85rem' }}>{walkinError}</p>}
-
-              <div className="modal__actions" style={{ marginTop: 24 }}>
-                <div style={{ flex: 1 }} />
-                <button type="button" className="modal__cancel-btn" onClick={() => setShowWalkin(false)}>Cancelar</button>
-                <button type="submit" className="modal__submit-btn">Empezar servicio</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {showWalkin && <AtenderAhora onClose={() => setShowWalkin(false)} />}
     </div>
   );
 }

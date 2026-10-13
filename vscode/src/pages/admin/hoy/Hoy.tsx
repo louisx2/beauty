@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarPlus, ChevronRight, MessageCircle, Phone, Plus, UserRound, X } from 'lucide-react';
+import { useAgendarStore } from '../../../store/agendarStore';
 import { useAppointmentStore, type Appointment } from '../../../store/appointmentStore';
 import { useBlockStore } from '../../../store/blockStore';
 import { useStaffStore } from '../../../store/staffStore';
@@ -58,6 +59,7 @@ function useAhora() {
 export default function Hoy() {
   const navigate = useNavigate();
   const { appointments, promptNextSession } = useAppointmentStore();
+  const abrirAgendar = useAgendarStore((s) => s.abrir);
   const { staff } = useStaffStore();
   const { blocks, fetchBlocks } = useBlockStore();
   const ahora = useAhora();
@@ -81,18 +83,15 @@ export default function Hoy() {
     .sort((a, b) => a.time.localeCompare(b.time))[0];
 
   const acciones = useAccionesCita({
-    editar: (c) => navigate(`/admin/citas?highlight=${c.id}`),
-    reprogramar: (c) => navigate(`/admin/citas?highlight=${c.id}`),
+    editar: (c) => abrirAgendar({ modo: 'editar', cita: c }),
+    reprogramar: (c) => abrirAgendar({ modo: 'reprogramar', cita: c }),
     guardarClienta: setGuardandoClienta,
   });
   const cita = abierta ? appointments.find((c) => c.id === abierta) ?? null : null;
 
-  const agendarEn = (col: Columna | null, t: Tramo | null) => {
-    const q = new URLSearchParams({ nueva: '1', fecha: hoy });
-    if (t) q.set('hora', aHora(t.inicio));
-    if (col) q.set('empleada', col.nombre);
-    navigate(`/admin/citas?${q}`);
-  };
+  // un hueco libre agenda ahí: ese día, a esa hora y con ella
+  const agendarEn = (col: Columna | null, t: Tramo | null) =>
+    abrirAgendar({ modo: 'nueva', fecha: hoy, hora: t ? aHora(t.inicio) : undefined, empleada: col?.nombre });
   const pasoSiguiente = (c: Appointment) => {
     const paso = accionPrincipal(c.status);
     if (paso) acciones.avanzar(c, paso);

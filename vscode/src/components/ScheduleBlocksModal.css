@@ -122,20 +122,6 @@
   background: rgba(192, 104, 79, 0.14);
 }
 
-/* Aviso dentro del formulario de cita cuando la hora elegida esta bloqueada */
-.appts__block-warning {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 4px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(201, 169, 110, 0.16);
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.85rem;
-  line-height: 1.4;
-}
-
 @media (max-width: 640px) {
   .blocks__hint,
   .blocks__list {
@@ -146,14 +132,6 @@
     margin-left: 0;
     margin-right: 0;
   }
-}
-
-/* Choque con otra cita: la base lo rechaza, asi que se avisa mas fuerte
-   que un simple bloqueo de horario. */
-.appts__block-warning--clash {
-  background: rgba(192, 104, 79, 0.16);
-  color: #a8503a;
-  font-weight: 500;
 }
 
 /* El icono del titulo iba en su propia linea */
@@ -171,9 +149,6 @@
 [data-theme="light"] .blocks__reason { color: var(--muted); }
 
 [data-theme="light"] .blocks__checkbox,
-[data-theme="light"] .blocks__item strong,
-[data-theme="light"] .appts__block-warning { color: var(--espresso); }
+[data-theme="light"] .blocks__item strong { color: var(--espresso); }
 
 [data-theme="light"] .blocks__item { background: rgba(74, 52, 42, 0.05); }
-
-[data-theme="light"] .appts__block-warning--clash { color: #a8503a; }

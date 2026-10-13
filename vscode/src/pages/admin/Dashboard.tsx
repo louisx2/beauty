@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useAgendarStore } from '../../store/agendarStore';
 import { useAppointmentStore, type Appointment } from '../../store/appointmentStore';
 import { useClientStore } from '../../store/clientStore';
 import { useServiceStore } from '../../store/serviceStore';
@@ -29,8 +30,10 @@ export default function Dashboard() {
   const [savingClientFor, setSavingClientFor] = useState<Appointment | null>(null);
 
   // las mismas acciones que en Citas (cancelar pide confirmación y ofrece avisarle a la clienta)
+  const abrirAgendar = useAgendarStore((s) => s.abrir);
   const acciones = useAccionesCita({
-    editar: (a) => navigate(`/admin/citas?highlight=${a.id}`),
+    editar: (a) => abrirAgendar({ modo: 'editar', cita: a }),
+    reprogramar: (a) => abrirAgendar({ modo: 'reprogramar', cita: a }),
     guardarClienta: setSavingClientFor,
   });
 

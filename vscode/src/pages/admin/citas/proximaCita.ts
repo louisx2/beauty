@@ -59,8 +59,11 @@ export function agendaDelDia(
   };
 }
 
-/** Lo mismo que se acaba de hacer, con la misma especialista si todavía puede hacerlo (si no, "cualquiera"). */
-export function elegidosDeCita(cita: Appointment, servicios: Service[], especialistas: Especialista[]): Elegido[] {
+/** Lo mismo que se acaba de hacer, con la misma especialista si todavía puede hacerlo (si no, "cualquiera").
+ *  Dura lo que dice el catálogo; con `duracionDeLaCita`, lo que duraba en la cita (para cambiarla o moverla). */
+export function elegidosDeCita(
+  cita: Appointment, servicios: Service[], especialistas: Especialista[], duracionDeLaCita = false,
+): Elegido[] {
   const lineas = cita.services.length > 0
     ? cita.services
     : [{ serviceId: null, serviceName: cita.service, employee: cita.employee, duration: cita.duration }];
@@ -70,7 +73,8 @@ export function elegidosDeCita(cita: Appointment, servicios: Service[], especial
     if (!s) return [];
     const m = especialistas.find((x) => clave(x.name) === clave(l.employee));
     const sigue = m && puedeHacer({ role: m.role ?? 'specialist', serviceIds: m.service_ids }, s.id);
-    return [{ serviceId: s.id, staffId: sigue ? m.id : '', nombre: s.name, duracion: s.duration || l.duration || 45 }];
+    const duracion = duracionDeLaCita ? l.duration || s.duration : s.duration || l.duration;
+    return [{ serviceId: s.id, staffId: sigue ? m.id : '', nombre: s.name, duracion: duracion || 45 }];
   });
 }
 

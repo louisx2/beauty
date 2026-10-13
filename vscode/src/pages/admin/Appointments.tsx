@@ -3,14 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   useAppointmentStore,
   type Appointment,
-  type AppointmentLine,
   type AppointmentStatus,
 } from '../../store/appointmentStore';
 import { useStaffStore } from '../../store/staffStore';
 import { useServiceStore } from '../../store/serviceStore';
 import { useAuthStore } from '../../store/authStore';
-import { useClientStore } from '../../store/clientStore';
-import ClientAutocomplete from '../../components/ClientAutocomplete';
+import { useAgendarStore } from '../../store/agendarStore';
 import {
   Plus,
   Search,
@@ -19,7 +17,6 @@ import {
   Clock,
   Phone,
   MessageCircle,
-  X,
   Filter,
   User,
   Calendar,
@@ -32,56 +29,15 @@ import {
   Ban,
   CalendarOff,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
-import { horasParaAgendar, textoSinHora, tramoDelSalon } from '../../lib/horarioSalon';
-import { atiendeClientas, puedeHacer } from '../../lib/quienAtiende';
-import { capitalizarNombre } from '../../lib/nombres';
+import { atiendeClientas } from '../../lib/quienAtiende';
 import SaveClientModal from '../../components/SaveClientModal';
 import ScheduleBlocksModal from '../../components/ScheduleBlocksModal';
 import MenuAcciones from '../../components/MenuAcciones';
 import { ETIQUETA_ESTADO } from '../../lib/estadosCita';
 import { accionPrincipal } from './citas/acciones';
 import { useAccionesCita, ICONO_PRINCIPAL } from './citas/useAccionesCita';
-import { useBlockStore, isBlocked, timeToMinutes, minutesToTime } from '../../store/blockStore';
 import './Appointments.css';
-
-//  Formatters & validators 
-function formatPhone(raw: string): string {
-  let digits = raw.replace(/\D/g, '');
-  // con más de 10 dígitos que empiezan con 1 (+1 …), se quita el 1 del país
-  if (digits.length > 10 && digits[0] === '1') digits = digits.slice(1);
-  digits = digits.slice(0, 10);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
-interface ApptErrors {
-  clientName?: string;
-  clientPhone?: string;
-  service?: string;
-  employee?: string;
-  date?: string;
-  time?: string;
-}
-function validateAppt(form: typeof emptyForm, isEditing: boolean): ApptErrors {
-  const e: ApptErrors = {};
-  if (!form.clientName.trim()) e.clientName = 'El nombre es requerido';
-  if (!form.clientPhone.trim()) {
-    e.clientPhone = 'El teléfono es requerido';
-  } else if (form.clientPhone.replace(/\D/g, '').length < 10) {
-    e.clientPhone = 'Teléfono inválido (10 dígitos)';
-  }
-  if (form.services.some((l) => !l.serviceName)) e.service = 'Cada servicio debe estar seleccionado';
-  if (form.services.some((l) => !l.employee)) e.employee = 'Cada servicio necesita una empleada';
-  if (!form.date) {
-    e.date = 'La fecha es requerida';
-  } else if (!isEditing && form.date < getToday()) {
-    e.date = 'No puedes agendar citas en fechas pasadas';
-  }
-  if (!form.time) e.time = form.date && !tramoDelSalon(form.date) ? 'El salón no abre ese día' : 'Elige la hora';
-  return e;
-}
 
 const STATUS_CONFIG: Record<AppointmentStatus, { label: string; class: string; icon: React.ReactNode }> = {
   pending: { label: ETIQUETA_ESTADO.pending, class: 'badge--amber', icon: <AlertCircle size={14} /> },
@@ -123,189 +79,30 @@ function getWeekDates(dateStr: string): string[] {
   });
 }
 
-const lineaVacia = (): AppointmentLine => ({
-  serviceId: null,
-  serviceName: '',
-  employee: '',
-  startTime: '',
-  duration: 45,
-  price: 0,
-});
-
-const emptyForm: Omit<Appointment, 'id' | 'createdAt'> = {
-  client_id: null,
-  clientName: '',
-  clientPhone: '',
-  service: '',
-  employee: '',
-  date: getToday(),
-  time: '09:00',
-  duration: 45,
-  status: 'pending',
-  notes: '',
-  source: 'manual',
-  startedAt: null,
-  services: [lineaVacia()],
-};
-
-/** Reparte las horas de inicio en cadena: cada servicio empieza cuando
- *  termina el anterior. */
-function conHorarios(services: AppointmentLine[], inicio: string): AppointmentLine[] {
-  // sin hora elegida todavía, los servicios tampoco tienen la suya
-  if (!inicio) return services.map((l) => ({ ...l, startTime: '' }));
-  let cursor = timeToMinutes(inicio);
-  return services.map((l) => {
-    const h = Math.floor(cursor / 60), m = cursor % 60;
-    const startTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    cursor += l.duration || 45;
-    return { ...l, startTime };
-  });
-}
-
 export default function Appointments() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { 
-    appointments, 
-    fetchAppointments,
-    addAppointment, 
-    updateAppointment, 
-    deleteAppointment,
-    autoMarkNoShow 
-  } = useAppointmentStore();
+  const { appointments, fetchAppointments, autoMarkNoShow } = useAppointmentStore();
   const { staff, fetchStaff } = useStaffStore();
-  const { services, fetchAll: fetchServices } = useServiceStore();
-  const { clients, fetchClients } = useClientStore();
+  const { fetchAll: fetchServices } = useServiceStore();
   const { user } = useAuthStore();
+  const abrirAgendar = useAgendarStore((s) => s.abrir);
 
   useEffect(() => {
     fetchAppointments().then(() => autoMarkNoShow());
     fetchStaff();
     fetchServices();
-    fetchClients();
-  }, [fetchAppointments, autoMarkNoShow, fetchStaff, fetchServices, fetchClients]);
+  }, [fetchAppointments, autoMarkNoShow, fetchStaff, fetchServices]);
 
   const activeEmployees = useMemo(() => staff.filter((m) => m.active && atiendeClientas(m)).map((m) => m.name), [staff]);
-  const activeServices = useMemo(() => services.filter((s) => s.active).map((s) => s.name), [services]);
 
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [view, setView] = useState<'day' | 'week' | 'all'>('day');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterEmployee, setFilterEmployee] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm);
-  const [apptErrors, setApptErrors] = useState<ApptErrors>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [reprogramando, setReprogramando] = useState(false); // el formulario se abrió desde "Reprogramar"
   const [savingClientFor, setSavingClientFor] = useState<Appointment | null>(null);
   const [showBlocksModal, setShowBlocksModal] = useState(false);
-
-  // Bloqueos de horario (vacaciones, dia libre, almuerzo, feriados)
-  const { blocks, fetchBlocks } = useBlockStore();
-  useEffect(() => { fetchBlocks().catch(() => {}); }, [fetchBlocks]);
-
-  // ── Servicios de la cita ──────────────────────────────────────────────
-  // Cada servicio arranca cuando termina el anterior, contando desde la hora
-  // de la cita. El total y la hora de fin se recalculan solos.
-  const lineasConHora = useMemo(
-    () => conHorarios(form.services, form.time),
-    [form.services, form.time],
-  );
-  const duracionTotal = useMemo(
-    () => form.services.reduce((t, l) => t + (l.duration || 0), 0),
-    [form.services],
-  );
-  const precioTotal = useMemo(
-    () => form.services.reduce((t, l) => t + (l.price || 0), 0),
-    [form.services],
-  );
-  const horaFin = useMemo(
-    () => (form.time ? minutesToTime(timeToMinutes(form.time) + duracionTotal) : ''),
-    [form.time, duracionTotal],
-  );
-
-  const actualizarLinea = (i: number, cambios: Partial<AppointmentLine>) => {
-    setForm((f) => ({
-      ...f,
-      services: f.services.map((l, idx) => (idx === i ? { ...l, ...cambios } : l)),
-    }));
-    setApptErrors((e) => ({ ...e, service: undefined, employee: undefined }));
-  };
-
-  // Al elegir el servicio se traen su duracion y su precio del catalogo, y se
-  // propone la primera empleada que lo sepa hacer.
-  const cambiarLinea = (i: number, nombreServicio: string) => {
-    const cat = services.find((sv) => sv.name === nombreServicio);
-    const yaTiene = form.services[i]?.employee;
-    const quienPuede = cat
-      ? staff.filter((m) => m.active && puedeHacer(m, cat.id))
-      : [];
-    actualizarLinea(i, {
-      serviceName: nombreServicio,
-      serviceId: cat?.id ?? null,
-      duration: cat?.duration ?? 45,
-      price: cat?.price ?? 0,
-      employee: yaTiene || (quienPuede.length === 1 ? quienPuede[0].name : yaTiene || ''),
-    });
-  };
-
-  const agregarLinea = () => {
-    setForm((f) => ({ ...f, services: [...f.services, lineaVacia()] }));
-  };
-
-  const quitarLinea = (i: number) => {
-    setForm((f) => ({ ...f, services: f.services.filter((_, idx) => idx !== i) }));
-  };
-
-  // Aviso cuando la hora elegida ya la tiene ocupada esa empleada.
-  // La base lo impide igual, pero es mejor verlo antes de guardar.
-  const overlapWarning = useMemo(() => {
-    if (!form.date) return null;
-    // Cada servicio ocupa a SU empleada en SU tramo, asi que se revisan todos.
-    for (const linea of lineasConHora) {
-      if (!linea.employee) continue;
-      const start = timeToMinutes(linea.startTime);
-      const end = start + (linea.duration || 45);
-      const clash = appointments.find((a) => {
-        if (a.id === editingId) return false;
-        if (a.date !== form.date) return false;
-        if (a.status === 'cancelled' || a.status === 'no_show') return false;
-        // Se compara contra cada servicio de la otra cita, no contra el bloque entero
-        const otras = a.services.length > 0
-          ? a.services
-          : [{ employee: a.employee, startTime: a.time, duration: a.duration } as AppointmentLine];
-        return otras.some((o) => {
-          if (o.employee.toLowerCase() !== linea.employee.toLowerCase()) return false;
-          const oStart = timeToMinutes(o.startTime);
-          return start < oStart + (o.duration || 45) && end > oStart;
-        });
-      });
-      if (clash) {
-        return `${linea.employee} ya tiene a ${clash.clientName} a las ${format12h(clash.time)} (${clash.service}).`;
-      }
-    }
-    return null;
-  }, [appointments, editingId, form.date, lineasConHora]);
-
-  // Aviso cuando algun servicio cae en un horario bloqueado.
-  // Es solo una advertencia: la recepcionista puede tener una razon para agendar igual.
-  const blockedWarning = useMemo(() => {
-    if (!form.date) return null;
-    for (const linea of lineasConHora) {
-      if (!linea.employee) continue;
-      const member = staff.find((m) => m.name === linea.employee);
-      const hit = isBlocked(blocks, member?.id ?? null, form.date, timeToMinutes(linea.startTime), linea.duration || 45);
-      if (!hit) continue;
-      const quien = hit.staffId ? linea.employee : 'el salón';
-      const cuando = hit.startTime && hit.endTime
-        ? `de ${format12h(hit.startTime)} a ${format12h(hit.endTime)}`
-        : 'todo el día';
-      return `Ojo: ${quien} tiene bloqueado ese horario (${cuando})${hit.reason ? ` — ${hit.reason}` : ''}.`;
-    }
-    return null;
-  }, [blocks, form.date, lineasConHora, staff]);
 
   // Filtered appointments
   const filteredAppointments = useMemo(() => {
@@ -362,146 +159,32 @@ export default function Appointments() {
     };
   }, [appointments, selectedDate]);
 
-  const openCreate = () => {
-    setEditingId(null);
-    setReprogramando(false);
-    // las 9:00 si ese día se puede; si no, la primera hora libre del salón
-    const horas = horasParaAgendar(selectedDate);
-    setForm({ ...emptyForm, date: selectedDate, time: horas.includes('09:00') ? '09:00' : horas[0] ?? '' });
-    setApptErrors({});
-    setShowModal(true);
-  };
+  // Nueva cita, Editar y Reprogramar abren Agendar: la misma ventana en todo el panel, con las horas libres de verdad.
+  const openCreate = () => abrirAgendar({ modo: 'nueva', fecha: selectedDate });
+  const openEdit = (appt: Appointment) => abrirAgendar({ modo: 'editar', cita: appt });
 
-  /** Abre la cita en el formulario; desde "Reprogramar" el foco va directo a la fecha. */
-  const openEdit = (appt: Appointment, reprogramar = false) => {
-    setEditingId(appt.id);
-    setReprogramando(reprogramar);
-    setForm({
-      client_id: appt.client_id || null,
-      clientName: appt.clientName,
-      clientPhone: appt.clientPhone,
-      service: appt.service,
-      employee: appt.employee,
-      date: appt.date,
-      time: appt.time,
-      duration: appt.duration,
-      status: appt.status,
-      notes: appt.notes,
-      source: appt.source,
-      startedAt: appt.startedAt,
-      services: appt.services.length > 0
-        ? appt.services.map((l) => ({ ...l }))
-        : [{
-            serviceId: null,
-            serviceName: appt.service,
-            employee: appt.employee,
-            startTime: appt.time,
-            duration: appt.duration,
-            price: 0,
-          }],
-    });
-    setApptErrors({});
-    setShowModal(true);
-  };
-
-  // Highlight and open appointment from notification query parameter
+  // Lo que pide la dirección: "Mañana" en Hoy abre ese día (?fecha=); una notificación, su cita en Agendar (?highlight=).
+  const pide = new URLSearchParams(location.search);
+  const idPedido = pide.get('highlight');
+  const diaPedido = pide.get('fecha') ?? (idPedido ? appointments.find((a) => a.id === idPedido)?.date : undefined);
+  const [visto, setVisto] = useState<string | null>(null);
+  if (diaPedido && location.search !== visto) {
+    setVisto(location.search);
+    setView('day');
+    setSelectedDate(diaPedido);
+  } else if (!location.search && visto) {
+    setVisto(null);
+  }
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const highlightId = params.get('highlight');
-    if (highlightId && appointments.length > 0) {
-      const appt = appointments.find((a) => a.id === highlightId);
-      if (appt) {
-        setView('day');
-        setSelectedDate(appt.date);
-        openEdit(appt);
-        navigate('/admin/citas', { replace: true });
-      }
+    const id = params.get('highlight');
+    if (id) {
+      const appt = appointments.find((a) => a.id === id);
+      if (!appt && appointments.length === 0) return; // todavía no llegan las citas
+      if (appt) abrirAgendar({ modo: 'editar', cita: appt });
     }
-  }, [location.search, appointments, navigate]);
-
-  // Desde Hoy: "Agendar cita" (o un hueco libre) abre Nueva cita con el día, la hora y la especialista ya puestos;
-  // "Mañana" abre la agenda de ese día.
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const fecha = params.get('fecha');
-    if (!params.has('nueva') && !fecha) return;
-    if (fecha) {
-      setView('day');
-      setSelectedDate(fecha);
-    }
-    if (params.has('nueva')) {
-      const dia = fecha || getToday();
-      const hora = params.get('hora') ?? '';
-      const horas = horasParaAgendar(dia, hora);
-      setEditingId(null);
-      setReprogramando(false);
-      setForm({
-        ...emptyForm,
-        date: dia,
-        time: hora || (horas.includes('09:00') ? '09:00' : horas[0] ?? ''),
-        services: [{ ...lineaVacia(), employee: params.get('empleada') ?? '' }],
-      });
-      setApptErrors({});
-      setShowModal(true);
-    }
-    navigate('/admin/citas', { replace: true });
-  }, [location.search, navigate]);
-
-  // La base rechaza dos citas encimadas para la misma empleada; el mensaje
-  // tecnico no le dice nada a la recepcionista, asi que se traduce.
-  const conflictMessage = () =>
-    useAppointmentStore.getState().lastError === 'conflict'
-      ? 'Esa empleada ya tiene una cita a esa hora. Elige otra hora u otra empleada.'
-      : '';
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const errs = validateAppt(form, !!editingId);
-    if (Object.keys(errs).length > 0) { setApptErrors(errs); return; }
-    setSubmitting(true);
-    try {
-      // El resumen (servicio, empleada, duracion) lo recalcula la base a partir
-      // de las lineas; aqui se manda coherente para la vista optimista.
-      const payload = {
-        ...form,
-        clientName: form.clientName.trim(),
-        clientPhone: form.clientPhone.trim(),
-        services: lineasConHora,
-        service: form.services.map((l) => l.serviceName).join(' + '),
-        employee: form.services[0]?.employee ?? '',
-        duration: duracionTotal,
-      };
-      if (editingId) {
-        const original = appointments.find((a) => a.id === editingId);
-        if (original && (original.date !== payload.date || original.time !== payload.time)) {
-          if (!window.confirm(`¿Estás segura de que deseas mover la cita a la nueva fecha y hora (${formatDate(payload.date)} a las ${format12h(payload.time)})?`)) {
-            setSubmitting(false);
-            return;
-          }
-        }
-        const ok = await updateAppointment(editingId, payload);
-        if (ok) {
-          toast.success('Cita actualizada correctamente');
-          setShowModal(false);
-        } else {
-          toast.error(conflictMessage() || 'No se pudo actualizar la cita. Intenta de nuevo.');
-        }
-      } else {
-        const created = await addAppointment(payload);
-        if (created) {
-          toast.success('Cita creada correctamente');
-          setShowModal(false);
-        } else {
-          toast.error(conflictMessage() || 'No se pudo crear la cita. Intenta de nuevo.');
-        }
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('Ocurrio un error inesperado');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    if (id || params.has('fecha')) navigate('/admin/citas', { replace: true });
+  }, [location.search, appointments, navigate, abrirAgendar]);
 
   const handleWhatsApp = (appt: Appointment) => {
     const phone = appt.clientPhone.replace(/[^0-9]/g, '');
@@ -510,10 +193,9 @@ export default function Appointments() {
   };
 
   // Confirmar / Llegó / Completar, el menú "⋯" y cancelar: lo mismo que en el Dashboard.
-  // Reprogramar abre el mismo formulario con el foco en la fecha; mover la cita se confirma al guardar.
   const acciones = useAccionesCita({
-    editar: (appt) => openEdit(appt),
-    reprogramar: (appt) => openEdit(appt, true),
+    editar: openEdit,
+    reprogramar: (appt) => abrirAgendar({ modo: 'reprogramar', cita: appt }),
     guardarClienta: setSavingClientFor,
   });
 
@@ -742,201 +424,6 @@ export default function Appointments() {
           })
         )}
       </div>
-
-      {/* Modal: Create/Edit */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => { setShowModal(false); setApptErrors({}); }}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h2>{!editingId ? 'Nueva cita' : reprogramando ? 'Reprogramar cita' : 'Editar cita'}</h2>
-              <button className="modal__close" onClick={() => { setShowModal(false); setApptErrors({}); }}><X size={20} /></button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="modal__form" id="appointment-form" noValidate>
-              <div className="modal__row">
-                <div className="modal__field">
-                  <label><User size={14} /> Nombre de la clienta *</label>
-                  <ClientAutocomplete
-                    clients={clients}
-                    value={form.clientName}
-                    onChange={(text) => {
-                      setForm({ ...form, clientName: capitalizarNombre(text), client_id: null });
-                      setApptErrors({ ...apptErrors, clientName: undefined });
-                    }}
-                    onSelect={(c) => {
-                      setForm({ ...form, clientName: c.name, clientPhone: c.phone, client_id: c.id });
-                      setApptErrors({ ...apptErrors, clientName: undefined, clientPhone: undefined });
-                    }}
-                    required
-                  />
-                  {apptErrors.clientName && <span className="field-error"><AlertCircle size={12} /> {apptErrors.clientName}</span>}
-                </div>
-                <div className="modal__field">
-                  <label><Phone size={14} /> Teléfono *</label>
-                  <input
-                    type="tel"
-                    placeholder="829-000-0000"
-                    value={form.clientPhone}
-                    maxLength={12}
-                    className={apptErrors.clientPhone ? 'input--error' : ''}
-                    onChange={(e) => { setForm({ ...form, clientPhone: formatPhone(e.target.value) }); setApptErrors({ ...apptErrors, clientPhone: undefined }); }}
-                  />
-                  {apptErrors.clientPhone && <span className="field-error"><AlertCircle size={12} /> {apptErrors.clientPhone}</span>}
-                </div>
-              </div>
-
-              <div className="modal__field">
-                <label><Sparkles size={14} /> Servicios *</label>
-
-                <div className="appt-lines">
-                  {lineasConHora.map((linea, i) => (
-                    <div className="appt-line" key={i}>
-                      <span className="appt-line__time">{format12h(linea.startTime)}</span>
-
-                      <select
-                        className={`appt-line__service ${apptErrors.service && !linea.serviceName ? 'input--error' : ''}`}
-                        value={linea.serviceName}
-                        onChange={(e) => cambiarLinea(i, e.target.value)}
-                      >
-                        <option value="">Seleccionar servicio</option>
-                        {activeServices.map((s) => <option key={s} value={s}>{s}</option>)}
-                      </select>
-
-                      <select
-                        className={`appt-line__staff ${apptErrors.employee && !linea.employee ? 'input--error' : ''}`}
-                        value={linea.employee}
-                        onChange={(e) => actualizarLinea(i, { employee: e.target.value })}
-                      >
-                        <option value="">¿Quién lo hace?</option>
-                        {activeEmployees.map((e) => <option key={e} value={e}>{e}</option>)}
-                        {linea.employee && !activeEmployees.includes(linea.employee) && (
-                          <option value={linea.employee}>{linea.employee}</option>
-                        )}
-                      </select>
-
-                      <select
-                        className="appt-line__dur"
-                        value={linea.duration}
-                        onChange={(e) => actualizarLinea(i, { duration: Number(e.target.value) })}
-                      >
-                        {[15, 20, 25, 30, 45, 60, 75, 90, 120, 150].map((d) => (
-                          <option key={d} value={d}>{d} min</option>
-                        ))}
-                      </select>
-
-                      {form.services.length > 1 && (
-                        <button
-                          type="button"
-                          className="appt-line__remove"
-                          onClick={() => quitarLinea(i)}
-                          aria-label="Quitar servicio"
-                          title="Quitar servicio"
-                        >
-                          <X size={15} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="appt-lines__footer">
-                  <button type="button" className="appt-lines__add" onClick={agregarLinea}>
-                    <Plus size={14} /> Agregar servicio
-                  </button>
-                  <span className="appt-lines__total">
-                    {duracionTotal} min{horaFin && ` · termina ${format12h(horaFin)}`}
-                    {precioTotal > 0 && ` · RD$ ${precioTotal.toLocaleString('es-DO')}`}
-                  </span>
-                </div>
-
-                {apptErrors.service && <span className="field-error"><AlertCircle size={12} /> {apptErrors.service}</span>}
-                {apptErrors.employee && <span className="field-error"><AlertCircle size={12} /> {apptErrors.employee}</span>}
-              </div>
-
-              <div className="modal__row">
-                <div className="modal__field">
-                  <label><Calendar size={14} /> Fecha *</label>
-                  <input
-                    type="date"
-                    autoFocus={reprogramando}
-                    value={form.date}
-                    min={editingId ? undefined : getToday()}
-                    className={apptErrors.date ? 'input--error' : ''}
-                    onChange={(e) => {
-                      // si la hora elegida no está en el horario de ese día, se vuelve a elegir
-                      const date = e.target.value;
-                      const time = horasParaAgendar(date).includes(form.time) ? form.time : '';
-                      setForm({ ...form, date, time });
-                      setApptErrors({ ...apptErrors, date: undefined, time: undefined });
-                    }}
-                  />
-                  {apptErrors.date && <span className="field-error"><AlertCircle size={12} /> {apptErrors.date}</span>}
-                </div>
-                <div className="modal__field">
-                  <label><Clock size={14} /> Hora</label>
-                  <select
-                    value={form.time}
-                    className={apptErrors.time ? 'input--error' : ''}
-                    onChange={(e) => { setForm({ ...form, time: e.target.value }); setApptErrors({ ...apptErrors, time: undefined }); }}
-                  >
-                    <option value="">{textoSinHora(form.date)}</option>
-                    {horasParaAgendar(form.date, form.time).map((h) => <option key={h} value={h}>{format12h(h)}</option>)}
-                  </select>
-                  {apptErrors.time && <span className="field-error"><AlertCircle size={12} /> {apptErrors.time}</span>}
-                </div>
-              </div>
-
-              <div className="modal__field">
-                <label><FileText size={14} /> Notas</label>
-                <textarea
-                  placeholder="Observaciones, alergias, sesión #..."
-                  rows={3}
-                  value={form.notes || ''}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                />
-              </div>
-
-              {overlapWarning && (
-                <p className="appts__block-warning appts__block-warning--clash">
-                  <AlertCircle size={16} /> {overlapWarning} No se puede guardar encima.
-                </p>
-              )}
-
-              {blockedWarning && (
-                <p className="appts__block-warning">
-                  <CalendarOff size={16} /> {blockedWarning}
-                </p>
-              )}
-
-              <div className="modal__actions">
-                {editingId && (
-                  <button
-                    type="button"
-                    className="modal__delete-btn"
-                    onClick={async () => {
-                      if (!window.confirm('Eliminar esta cita permanentemente?')) return;
-                      const ok = await deleteAppointment(editingId);
-                      if (ok) {
-                        toast.success('Cita eliminada');
-                        setShowModal(false);
-                      } else {
-                        toast.error('No se pudo eliminar. Intenta de nuevo.');
-                      }
-                    }}
-                  >
-                    Eliminar cita
-                  </button>
-                )}
-                <div style={{ flex: 1 }} />
-                <button type="button" className="modal__cancel-btn" onClick={() => { setShowModal(false); setApptErrors({}); }}>Cancelar</button>
-                <button type="submit" className="modal__submit-btn" id="appointment-submit" disabled={submitting}>
-                  {submitting ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear cita'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {savingClientFor && (
         <SaveClientModal appointment={savingClientFor} onClose={() => setSavingClientFor(null)} />

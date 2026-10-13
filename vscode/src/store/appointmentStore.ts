@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { playNotificationSound } from '../lib/sound';
 import { useNotificationStore } from './notificationStore';
 import { useServiceStore } from './serviceStore';
+import { useAgendarStore } from './agendarStore';
 import { sesionesADescontar } from '../lib/packageMatch';
 import type { SaldoPaquete } from '../lib/packageMatch';
 
@@ -179,9 +180,8 @@ interface AppointmentState {
   cleanupRealtime: () => void;
   _channel: any | null;
 
-  completedApptForNextSession: Appointment | null;
+  /** Abre Agendar con lo mismo que se hizo, para darle la próxima cita ahí mismo. */
   promptNextSession: (appt: Appointment) => void;
-  clearNextSessionPrompt: () => void;
 }
 
 export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
@@ -189,10 +189,8 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
   loading: false,
   lastError: null,
   _channel: null,
-  completedApptForNextSession: null,
 
-  promptNextSession: (appt) => set({ completedApptForNextSession: appt }),
-  clearNextSessionPrompt: () => set({ completedApptForNextSession: null }),
+  promptNextSession: (appt) => useAgendarStore.getState().abrir({ modo: 'proxima', cita: appt }),
 
   fetchAppointments: async () => {
     set({ loading: true });
@@ -402,7 +400,7 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
           }
         }
 
-        // Al terminar, se ofrece agendar la próxima cita ahí mismo (con o sin paquete): ver ProximaCita
+        // Al terminar, se ofrece agendar la próxima cita ahí mismo (con o sin paquete): ver Agendar
         if (appt && appt.clientName.trim()) {
           get().promptNextSession(appt);
         }

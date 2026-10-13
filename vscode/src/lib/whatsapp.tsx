@@ -39,6 +39,16 @@ export function notifyStatusChange(appt: Appointment, status: AppointmentStatus)
       return; // Do not show toast for pending or in_progress automatically
   }
 
+  avisoWhatsApp(phone, title, msg, color);
+}
+
+/** Al mover una cita: el mensaje con el nuevo día y la nueva hora, listo para mandarle. */
+export function notifyRescheduled(appt: Appointment) {
+  const msg = `Hola ${appt.clientName}\n\nTu cita se *movió* a:\n\nFecha: ${formatDate(appt.date)}\nHora: ${format12h(appt.time)}\nServicio: ${appt.service}\nEspecialista: ${appt.employee}\n\nTe esperamos en Anadsll Beauty Esthetic. Gracias!`;
+  avisoWhatsApp(appt.clientPhone.replace(/[^0-9]/g, ''), 'Cita movida', msg, '#25D366');
+}
+
+function avisoWhatsApp(phone: string, title: string, msg: string, color: string) {
   const waUrl = `https://wa.me/1${phone}?text=${encodeURIComponent(msg)}`;
 
   toast(
