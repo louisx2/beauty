@@ -10,7 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Lazy load admin pages to prevent import-time errors from blocking the landing page
 const Hoy = lazy(() => import('./pages/admin/hoy/Hoy'));
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
-const Appointments = lazy(() => import('./pages/admin/Appointments'));
+const Agenda = lazy(() => import('./pages/admin/agenda/Agenda'));
 const Clients = lazy(() => import('./pages/admin/Clients'));
 const Services = lazy(() => import('./pages/admin/Services'));
 const SessionPackages = lazy(() => import('./pages/admin/SessionPackages'));
@@ -79,7 +79,7 @@ export default function App() {
           <Route index element={<Navigate to="hoy" replace />} />
           <Route path="hoy" element={<Suspense fallback={<AdminFallback />}><Hoy /></Suspense>} />
           <Route path="dashboard" element={<Suspense fallback={<AdminFallback />}><Dashboard /></Suspense>} />
-          <Route path="citas" element={<Suspense fallback={<AdminFallback />}><Appointments /></Suspense>} />
+          <Route path="citas" element={<Suspense fallback={<AdminFallback />}><Agenda /></Suspense>} />
           <Route path="clientes/:id?" element={<Suspense fallback={<AdminFallback />}><Clients /></Suspense>} />
           <Route path="servicios" element={<Suspense fallback={<AdminFallback />}><Services /></Suspense>} />
           <Route path="paquetes" element={<Suspense fallback={<AdminFallback />}><SessionPackages /></Suspense>} />

@@ -1,0 +1,149 @@
+/* La hoja de una cita (Hoy y la Agenda) y el color de cada estado, el mismo en todo el panel. */
+
+.modal.hoja {
+  max-width: 480px;
+}
+
+.estado {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.estado--pending { background: rgba(251, 191, 36, 0.14); color: #fbbf24; }
+.estado--confirmed { background: rgba(96, 165, 250, 0.14); color: #93c5fd; }
+.estado--in_progress { background: rgba(178, 150, 125, 0.22); color: var(--camel-light); }
+.estado--completed { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
+.estado--cancelled,
+.estado--no_show { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.6); }
+
+.hoja__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 28px 8px;
+  font-family: 'Outfit', sans-serif;
+  color: #fff;
+}
+
+.hoja__dia {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.hoja__servicios {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hoja__servicios li {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.hoja__servicios b {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.hoja__servicios span {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.hoja__nota {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 2px solid var(--camel);
+  font-size: 0.86rem;
+  white-space: pre-wrap;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.hoja__contacto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hoja__pie {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 28px 22px;
+}
+
+/* Botones: ninguno más bajo que 44 px */
+.hoja__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.hoja__btn:hover { border-color: var(--camel); }
+
+.hoja__btn--principal {
+  flex: 1;
+  max-width: 260px;
+  border-color: var(--cocoa);
+  background: var(--cocoa);
+}
+
+.hoja__btn--principal:hover {
+  border-color: var(--cocoa-dark);
+  background: var(--cocoa-dark);
+}
+
+/* Tema claro */
+[data-theme="light"] .estado--pending { background: #FBEFD5; color: #7A4F00; }
+[data-theme="light"] .estado--confirmed { background: #E4EDF6; color: #2D5B86; }
+[data-theme="light"] .estado--in_progress { background: #F1E4D8; color: #6B4630; }
+[data-theme="light"] .estado--completed { background: #E3F0E7; color: #2F6B45; }
+[data-theme="light"] .estado--cancelled,
+[data-theme="light"] .estado--no_show { background: #EEEAE6; color: #5E5651; }
+
+[data-theme="light"] .hoja__cuerpo { color: var(--espresso); }
+[data-theme="light"] .hoja__servicios li { background: #F9F6F1; }
+[data-theme="light"] .hoja__servicios span { color: var(--muted); }
+[data-theme="light"] .hoja__nota { color: var(--espresso); }
+
+[data-theme="light"] .hoja__btn {
+  background: #fff;
+  border-color: rgba(74, 52, 42, 0.16);
+  color: var(--espresso);
+}
+
+[data-theme="light"] .hoja__btn--principal {
+  background: var(--cocoa);
+  border-color: var(--cocoa);
+  color: #fff;
+}
+
+[data-theme="light"] .hoja__btn--principal:hover {
+  background: var(--cocoa-dark);
+  border-color: var(--cocoa-dark);
+}

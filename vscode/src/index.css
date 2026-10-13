@@ -820,3 +820,109 @@ body:has(.modal-overlay, .rec__modal-overlay) {
 
 /* quien pide menos movimiento no recibe desplazamientos suaves */
 @media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto } }
+
+/* ── Piezas que comparten varias pantallas (Facturación, Servicios, Inventario, Paquetes): el botón de agregar, la
+   búsqueda, el "no hay nada" y los botones redondos de acción. Vivían en los estilos de Citas y solo se veían si
+   Citas se había abierto antes. ── */
+.appts__add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, var(--rose-dark), var(--lavender-dark));
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(178, 150, 125, 0.3);
+}
+
+.appts__add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(178, 150, 125, 0.45);
+}
+
+.appts__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.appts__search svg {
+  color: rgba(255,255,255,0.3);
+  flex-shrink: 0;
+}
+
+.appts__search input {
+  flex: 1;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: white;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+}
+
+.appts__search input::placeholder {
+  color: rgba(255,255,255,0.25);
+}
+
+.appts__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: rgba(255,255,255,0.25);
+  gap: 12px;
+}
+
+.appts__empty p {
+  font-size: 0.92rem;
+}
+
+.appt-card__action-btn {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.appt-card__action-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+
+.appt-card__action-btn--wa:hover {
+  background: rgba(37,211,102,0.12);
+  color: #25d366;
+  border-color: rgba(37,211,102,0.25);
+}
+
+.appt-card__action-btn:focus-visible { outline: 2px solid var(--camel); outline-offset: 2px; }
+
+/* En el celular, los diálogos ocupan el ancho y sus campos van uno debajo del otro */
+@media (max-width: 768px) {
+  .modal { max-width: 100%; border-radius: 20px; }
+  .modal__row { grid-template-columns: 1fr; }
+}

@@ -52,11 +52,11 @@ const AHORA = 'ahora';
 // Hoy reemplaza a Inicio y a Recepción: es lo primero que se ve al entrar (Inicio y Recepción siguen en su dirección)
 const hoy: ItemNav = { to: '/admin/hoy', icono: <Sun size={20} />, etiqueta: 'Hoy' };
 const ahora: ItemNav = { to: AHORA, icono: <Zap size={20} />, etiqueta: 'Atender ahora', corto: 'Atender' };
-const citas: ItemNav = { to: '/admin/citas', icono: <CalendarDays size={20} />, etiqueta: 'Citas' };
+const citas: ItemNav = { to: '/admin/citas', icono: <CalendarDays size={20} />, etiqueta: 'Agenda' };
 const clientas: ItemNav = { to: '/admin/clientes', icono: <Users size={20} />, etiqueta: 'Clientas' };
 const paquetes: ItemNav = { to: '/admin/paquetes', icono: <Package size={20} />, etiqueta: 'Paquetes' };
 const miTurno: ItemNav = { to: '/admin/mi-turno', icono: <Scissors size={20} />, etiqueta: 'Mi turno' };
-const misCitas: ItemNav = { to: '/admin/citas', icono: <CalendarDays size={20} />, etiqueta: 'Mis citas' };
+const misCitas: ItemNav = { to: '/admin/citas', icono: <CalendarDays size={20} />, etiqueta: 'Mi agenda' };
 const misReportes: ItemNav = { to: '/admin/reportes', icono: <BarChart3 size={20} />, etiqueta: 'Mis reportes', corto: 'Reportes' };
 
 // Cada rol ve solo lo suyo. Los nombres del menú son los mismos títulos de cada pantalla.
