@@ -1,5 +1,5 @@
-/* Agendar la próxima cita. La cabecera y los botones son los de .modal (index.css); aquí va lo propio:
-   la lista de servicios, el calendario con las horas libres de cada día y el pie fijo con el resumen. */
+/* La ventana de Agendar (y de Atender ahora). La cabecera y los botones son los de .modal (index.css); aquí va lo
+   propio: la lista de servicios, el calendario con las horas libres de cada día y el pie fijo con el resumen. */
 
 .modal.prox {
   max-width: 640px;

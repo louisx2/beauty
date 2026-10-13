@@ -27,7 +27,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
-import ProximaCita from '../components/ProximaCita';
+import Agendar from './admin/agendar/Agendar';
 import AtenderAhora from './admin/atender/AtenderAhora';
 import AvisoSuscripcion from '../components/AvisoSuscripcion';
 import { useServiceStore } from '../store/serviceStore';
@@ -484,7 +484,7 @@ export default function AdminLayout() {
         </button>
       </nav>
 
-      <ProximaCita />
+      <Agendar />
 
       {/* Walk-in Modal */}
       {showWalkin && <AtenderAhora onClose={() => setShowWalkin(false)} />}

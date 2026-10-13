@@ -2,8 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useServiceStore, type SessionPackage, type ClientPackage } from '../../store/serviceStore';
 import { useAuthStore } from '../../store/authStore';
 import { useClientStore } from '../../store/clientStore';
-import { useAppointmentStore } from '../../store/appointmentStore';
-import { useStaffStore } from '../../store/staffStore';
+import { useAgendarStore } from '../../store/agendarStore';
 import {
   Plus, X, Package, Users, CheckCircle2, AlertTriangle,
   DollarSign, Search, Edit2, AlertCircle, CalendarPlus, FileText,
@@ -11,11 +10,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ClientAutocomplete from '../../components/ClientAutocomplete';
-import { format12h } from '../../lib/timeFormat';
 import './SessionPackages.css';
 import { fechaLocal } from '../../lib/fechas';
-import { horasParaAgendar, textoSinHora } from '../../lib/horarioSalon';
-import { atiendeClientas } from '../../lib/quienAtiende';
 
 function fmtPrice(p: number) { return `RD$ ${p.toLocaleString('es-DO')}`; }
 function todayStr() { return fechaLocal(); }
@@ -23,22 +19,20 @@ function todayStr() { return fechaLocal(); }
 export default function SessionPackages() {
   const {
     packages, clientPackages, fetchAll, addPackage, updatePackage, deletePackage,
-    sellPackage, useSession, updateClientPackage, deleteClientPackage,
+    sellPackage, useSession: descontarSesion, updateClientPackage, deleteClientPackage,
     addPayment, fetchPayments, payments,
   } = useServiceStore();
   const { services } = useServiceStore();
   const { clients, fetchClients } = useClientStore();
   const { user } = useAuthStore();
-  const { addAppointment } = useAppointmentStore();
-  const { staff, fetchStaff } = useStaffStore();
+  const abrirAgendar = useAgendarStore((s) => s.abrir);
 
-  useEffect(() => { fetchAll(); fetchClients(); fetchStaff(); }, [fetchAll, fetchClients, fetchStaff]);
+  useEffect(() => { fetchAll(); fetchClients(); }, [fetchAll, fetchClients]);
 
   const [activeTab, setActiveTab] = useState<'packages' | 'sold'>('sold');
   const [showModalPkg, setShowModalPkg] = useState(false);
   const [showModalSell, setShowModalSell] = useState(false);
   const [showModalEdit, setShowModalEdit] = useState(false);
-  const [showModalSchedule, setShowModalSchedule] = useState(false);
   const [search, setSearch] = useState('');
   
   // Menu Dropdown
@@ -66,17 +60,10 @@ export default function SessionPackages() {
   const [editCpSessions, setEditCpSessions] = useState('0');
   const [editCpNotes, setEditCpNotes] = useState('');
 
-  // Schedule session form
-  const [scheduleCp, setScheduleCp] = useState<ClientPackage | null>(null);
-  const [schedForm, setSchedForm] = useState({ staffId: '', date: todayStr(), time: '', notes: '' });
-  const [schedSubmitting, setSchedSubmitting] = useState(false);
-
   // Payments form
   const [paymentCp, setPaymentCp] = useState<ClientPackage | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: 0, paymentMethod: 'cash' as 'cash'|'card'|'transfer', notes: '' });
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
-
-  const activeStaff = useMemo(() => staff.filter((s) => s.active && atiendeClientas(s)), [staff]);
 
   const filteredClientPkgs = useMemo(() => {
     if (!search) return clientPackages;
@@ -187,47 +174,16 @@ export default function SessionPackages() {
     setEditingCp(null);
   };
 
-  // ── Schedule next session ──────────────────────────────────────
-  const openSchedule = (cp: ClientPackage) => {
-    setScheduleCp(cp);
-    setSchedForm({ staffId: '', date: todayStr(), time: '', notes: '' });
-    setShowModalSchedule(true);
-  };
-
-  const handleScheduleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!scheduleCp || !schedForm.staffId || !schedForm.date || !schedForm.time) return;
-    const staffMember = activeStaff.find((s) => s.id === schedForm.staffId);
-    if (!staffMember) return;
-
-    setSchedSubmitting(true);
-    try {
-      const client = clients.find((c) => c.id === scheduleCp.clientId);
-      const created = await addAppointment({
-        client_id: scheduleCp.clientId,
-        clientName: scheduleCp.clientName,
-        clientPhone: client?.phone || '',
-        service: scheduleCp.serviceName,
-        employee: staffMember.name,
-        date: schedForm.date,
-        time: schedForm.time,
-        duration: 45,
-        status: 'pending',
-        notes: schedForm.notes || `Sesión de paquete: ${scheduleCp.packageName}`,
-        source: 'manual',
-      });
-      if (created) {
-        toast.success(`Sesión agendada para ${scheduleCp.clientName}`);
-        setShowModalSchedule(false);
-        setScheduleCp(null);
-      } else {
-        toast.error('No se pudo crear la cita. Intenta de nuevo.');
-      }
-    } catch {
-      toast.error('Error al agendar la sesión');
-    } finally {
-      setSchedSubmitting(false);
-    }
+  // ── Descontar una sesión a mano ────────────────────────────────
+  // Al completar la cita la sesión se descuenta sola; esto es solo para una sesión que no quedó como cita en el panel.
+  const descontarAMano = (cp: ClientPackage) => {
+    const quedan = cp.totalSessions - cp.usedSessions;
+    if (!window.confirm(
+      `Las sesiones se descuentan solas al completar la cita de ${cp.clientName}.\n\n` +
+      `Descuenta a mano solo una sesión que NO quedó como cita en el panel. ¿Descontar 1 sesión de ${cp.packageName}? ` +
+      `(le quedarían ${quedan - 1} de ${cp.totalSessions})`,
+    )) return;
+    descontarSesion(cp.id);
   };
 
   // ── Payments ───────────────────────────────────────────────────
@@ -386,6 +342,11 @@ export default function SessionPackages() {
                           <button className="client-pkg__menu-item" onClick={() => { setOpenMenu(null); openEditCp(cp); }}>
                             <Edit2 size={15} /> Editar
                           </button>
+                          {!done && (
+                            <button className="client-pkg__menu-item" onClick={() => { setOpenMenu(null); descontarAMano(cp); }}>
+                              <CheckCircle2 size={15} /> Descontar sesión a mano
+                            </button>
+                          )}
                           {user?.role === 'admin' && (
                              <button className="client-pkg__menu-item client-pkg__menu-item--danger" onClick={() => { if (window.confirm(`¿Estás seguro de eliminar el paquete activo "${cp.packageName}" de "${cp.clientName}"?`)) { setOpenMenu(null); deleteClientPackage(cp.id); } }}>
                                <Trash2 size={15} /> Eliminar
@@ -423,23 +384,13 @@ export default function SessionPackages() {
                     <span className="client-pkg__date">{new Date(cp.purchasedAt + 'T12:00:00').toLocaleDateString('es-DO')}</span>
                     <div className="client-pkg__primary-actions">
                       {!done && (
-                        <>
-                          <button
-                            className="client-pkg__btn client-pkg__btn--use"
-                            onClick={() => useSession(cp.id)}
-                            id={`use-session-${cp.id}`}
-                            title="Descontar una sesión"
-                          >
-                            ✓ Usar
-                          </button>
-                          <button
-                            className="client-pkg__btn client-pkg__btn--schedule"
-                            onClick={() => openSchedule(cp)}
-                            title="Agendar sesión en el calendario"
-                          >
-                            <CalendarPlus size={14} /> Agendar
-                          </button>
-                        </>
+                        <button
+                          className="client-pkg__btn client-pkg__btn--schedule"
+                          onClick={() => abrirAgendar({ modo: 'paquete', paquete: cp })}
+                          title="Agendar la próxima sesión con las horas libres"
+                        >
+                          <CalendarPlus size={14} /> Agendar sesión
+                        </button>
                       )}
                       {done && (
                         <span style={{ color: '#4ade80', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -685,66 +636,6 @@ export default function SessionPackages() {
                 <div style={{ flex: 1 }} />
                 <button type="button" className="modal__cancel-btn" onClick={() => setShowModalEdit(false)}>Cancelar</button>
                 <button type="submit" className="modal__submit-btn">Guardar cambios</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── Modal: Schedule Session ── */}
-      {showModalSchedule && scheduleCp && (
-        <div className="modal-overlay" onClick={() => setShowModalSchedule(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h2>Agendar sesión — {scheduleCp.clientName}</h2>
-              <button className="modal__close" onClick={() => setShowModalSchedule(false)}><X size={20} /></button>
-            </div>
-            <div style={{ padding: '0 0 16px', margin: '0 0 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.85rem', color: 'var(--text-muted, rgba(255,255,255,0.5))' }}>
-              Sesión {scheduleCp.usedSessions + 1} de {scheduleCp.totalSessions} · {scheduleCp.serviceName}
-            </div>
-            <form onSubmit={handleScheduleSubmit} className="modal__form">
-              <div className="modal__field">
-                <label>Especialista *</label>
-                <select required value={schedForm.staffId} onChange={(e) => setSchedForm({ ...schedForm, staffId: e.target.value })}>
-                  <option value="">Seleccionar especialista</option>
-                  {activeStaff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-              </div>
-              <div className="modal__row">
-                <div className="modal__field">
-                  <label>Fecha *</label>
-                  <input
-                    type="date"
-                    required
-                    min={todayStr()}
-                    value={schedForm.date}
-                    onChange={(e) => setSchedForm({ ...schedForm, date: e.target.value, time: '' })}
-                  />
-                </div>
-                <div className="modal__field">
-                  <label>Hora *</label>
-                  <select
-                    required
-                    value={schedForm.time}
-                    onChange={(e) => setSchedForm({ ...schedForm, time: e.target.value })}
-                  >
-                    <option value="">{textoSinHora(schedForm.date)}</option>
-                    {horasParaAgendar(schedForm.date, schedForm.time).map((h) => (
-                      <option key={h} value={h}>{format12h(h)}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="modal__field">
-                <label>Notas</label>
-                <textarea rows={2} placeholder="Observaciones para esta sesión..." value={schedForm.notes} onChange={(e) => setSchedForm({ ...schedForm, notes: e.target.value })} />
-              </div>
-              <div className="modal__actions">
-                <div style={{ flex: 1 }} />
-                <button type="button" className="modal__cancel-btn" onClick={() => setShowModalSchedule(false)}>Cancelar</button>
-                <button type="submit" className="modal__submit-btn" disabled={schedSubmitting}>
-                  {schedSubmitting ? 'Agendando...' : 'Crear cita'}
-                </button>
               </div>
             </form>
           </div>

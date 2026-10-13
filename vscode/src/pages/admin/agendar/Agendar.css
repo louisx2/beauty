@@ -1,0 +1,180 @@
+/* Agendar. La ventana, los pasos, los servicios, el calendario y el pie son los de Ventana.css; la clienta, la
+   de AtenderAhora.css. Aquí va lo propio: en la tableta acostada (lo principal) dos columnas, la clienta y lo que
+   se va a hacer a la izquierda y el calendario a la derecha, sin tener que bajar para ver las horas. */
+
+.modal.prox.ag {
+  max-width: 1040px;
+  container-type: inline-size;
+}
+
+.ag__cols,
+.ag__col {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+@container (min-width: 780px) {
+  .ag__cols {
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    align-items: start;
+    gap: 32px;
+  }
+
+  /* el calendario arriba a la derecha mientras se llena lo de la izquierda */
+  .ag__col + .ag__col {
+    position: sticky;
+    top: 0;
+  }
+}
+
+/* "Cuándo" antes de elegir el servicio: se ve dónde va a salir el calendario */
+.ag__espera {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 120px;
+  padding: 20px;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  text-align: center;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.ag__espera svg {
+  color: var(--camel);
+}
+
+@container (min-width: 780px) {
+  .ag__espera {
+    min-height: 300px;
+  }
+}
+
+.ag__sesion {
+  align-items: flex-start;
+}
+
+.ag__sesion svg {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.ag__sesion span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ag__sesion small {
+  font-size: 0.78rem;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.ag__fija {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ag__fija b {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.ag__fija span {
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* La hora que ya tenía la cita, marcada para no perderla de vista */
+.prox__hora.is-suya:not(.is-on) {
+  border-style: dashed;
+  border-color: var(--camel);
+}
+
+.ag__volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
+
+.ag__antes {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.ag__no-cabe {
+  color: #fbbf24;
+}
+
+.ag__eliminar {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: #f87171;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ag__eliminar:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Tema claro */
+[data-theme="light"] .ag__fija {
+  background: #F9F6F1;
+  border-color: rgba(74, 52, 42, 0.1);
+}
+
+[data-theme="light"] .ag__fija b {
+  color: var(--espresso);
+}
+
+[data-theme="light"] .ag__fija span,
+[data-theme="light"] .ag__antes,
+[data-theme="light"] .ag__espera {
+  color: var(--muted);
+}
+
+[data-theme="light"] .ag__espera {
+  border-color: rgba(74, 52, 42, 0.18);
+}
+
+[data-theme="light"] .ag__espera svg {
+  color: var(--cocoa);
+}
+
+[data-theme="light"] .ag__no-cabe {
+  color: #b45309;
+}
+
+[data-theme="light"] .ag__eliminar {
+  color: #b91c1c;
+}
+
+[data-theme="light"] .prox__hora.is-suya:not(.is-on) {
+  border-color: var(--cocoa);
+}

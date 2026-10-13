@@ -1,5 +1,5 @@
-/* Atender ahora. La ventana, los pasos, los servicios y el pie son los de "Agendar la próxima cita"
-   (ProximaCita.css); aquí va lo propio: buscar la clienta, su ficha y quién está libre ahora. */
+/* Atender ahora. La ventana, los pasos, los servicios y el pie son los de Agendar
+   (agendar/Ventana.css); aquí va lo propio: buscar la clienta, su ficha y quién está libre ahora. */
 
 .at__oculto {
   position: absolute;

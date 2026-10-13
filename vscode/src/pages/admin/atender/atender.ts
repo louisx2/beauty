@@ -64,6 +64,11 @@ export function validarNueva(nombre: string, telefono: string): { nombre?: strin
   return errores;
 }
 
+/** La clienta nueva se puede guardar: nombre, teléfono de 10 dígitos y que ese teléfono no sea de otra ficha. */
+export function nuevaLista(nueva: { nombre: string; telefono: string }, clientas: Client[]): boolean {
+  return Object.keys(validarNueva(nueva.nombre, nueva.telefono)).length === 0 && !clientaConTelefono(clientas, nueva.telefono);
+}
+
 export type Disponibilidad =
   | { tipo: 'libre'; hasta: number }
   /** `hasta` puede haber pasado: la cita sigue en curso aunque ya debía terminar */

@@ -258,13 +258,6 @@
 }
 .client-pkg__btn--schedule:hover { background: rgba(74,222,128,0.2); transform: translateY(-1px); }
 
-.client-pkg__btn--use {
-  background: linear-gradient(135deg, rgba(178, 150, 125, 0.15), rgba(160, 122, 98, 0.1));
-  color: var(--rose-light);
-  border: 1px solid rgba(232,165,184,0.2);
-}
-.client-pkg__btn--use:hover { background: rgba(178, 150, 125, 0.25); transform: translateY(-1px); }
-
 .client-pkg__btn--icon {
   width: 36px;
   padding: 0;
