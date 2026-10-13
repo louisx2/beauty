@@ -309,7 +309,7 @@ export default function Hoy() {
                 </a>
                 <a className="hoy__btn" href={`tel:${cita.clientPhone.replace(/\D/g, '')}`}><Phone size={17} aria-hidden="true" /> Llamar</a>
                 {cita.client_id && (
-                  <button type="button" className="hoy__btn" onClick={() => navigate('/admin/clientes', { state: { searchName: cita.clientName } })}>
+                  <button type="button" className="hoy__btn" onClick={() => (cita.client_id ? navigate(`/admin/clientes/${cita.client_id}`) : navigate('/admin/clientes', { state: { searchName: cita.clientName } }))}>
                     <UserRound size={17} aria-hidden="true" /> Ficha
                   </button>
                 )}

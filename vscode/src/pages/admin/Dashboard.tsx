@@ -182,7 +182,7 @@ export default function Dashboard() {
                       <MenuAcciones
                         etiqueta={`Más acciones para la cita de ${a.clientName}`}
                         items={[
-                          { id: 'ver', etiqueta: 'Ver clienta', icono: <Users size={16} aria-hidden="true" />, onSelect: () => navigate('/admin/clientes', { state: { searchName: a.clientName } }) },
+                          { id: 'ver', etiqueta: 'Ver clienta', icono: <Users size={16} aria-hidden="true" />, onSelect: () => (a.client_id ? navigate(`/admin/clientes/${a.client_id}`) : navigate('/admin/clientes', { state: { searchName: a.clientName } })) },
                           { id: 'cancelar', etiqueta: 'Cancelar cita', icono: <XCircle size={16} aria-hidden="true" />, peligro: true, onSelect: () => acciones.cancelar(a) },
                         ]}
                       />
@@ -201,7 +201,7 @@ export default function Dashboard() {
                     </p>
                       <button
                         className="action-btn action-btn--secondary"
-                        onClick={() => navigate('/admin/clientes', { state: { searchName: p.clientName } })}
+                        onClick={() => navigate(`/admin/clientes/${p.clientId}`)}
                       >
                         Ver clienta
                       </button>

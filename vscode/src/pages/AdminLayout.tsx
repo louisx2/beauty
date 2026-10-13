@@ -130,13 +130,16 @@ export default function AdminLayout() {
 
   // Redirect non-admin roles to their home pages
   useEffect(() => {
+    // la ruta o algo dentro de ella (/admin/clientes/123 es de /admin/clientes); /admin solo cuenta exacta
+    const dentroDe = (rutas: string[]) =>
+      rutas.some((r) => location.pathname === r || (r !== '/admin' && location.pathname.startsWith(`${r}/`)));
     if (user?.role === 'specialist') {
       const adminOnly = ['/admin', '/admin/hoy', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/equipo', '/admin/ajustes', '/admin/suscripcion'];
-      if (adminOnly.includes(location.pathname)) navigate('/admin/mi-turno', { replace: true });
+      if (dentroDe(adminOnly)) navigate('/admin/mi-turno', { replace: true });
     }
     if (user?.role === 'receptionist') {
       const receptionistForbidden = ['/admin', '/admin/dashboard', '/admin/reportes', '/admin/ajustes', '/admin/equipo', '/admin/suscripcion'];
-      if (receptionistForbidden.includes(location.pathname)) navigate('/admin/hoy', { replace: true });
+      if (dentroDe(receptionistForbidden)) navigate('/admin/hoy', { replace: true });
     }
   }, [user?.role, location.pathname, navigate]);
 

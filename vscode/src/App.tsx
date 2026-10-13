@@ -80,7 +80,7 @@ export default function App() {
           <Route path="hoy" element={<Suspense fallback={<AdminFallback />}><Hoy /></Suspense>} />
           <Route path="dashboard" element={<Suspense fallback={<AdminFallback />}><Dashboard /></Suspense>} />
           <Route path="citas" element={<Suspense fallback={<AdminFallback />}><Appointments /></Suspense>} />
-          <Route path="clientes" element={<Suspense fallback={<AdminFallback />}><Clients /></Suspense>} />
+          <Route path="clientes/:id?" element={<Suspense fallback={<AdminFallback />}><Clients /></Suspense>} />
           <Route path="servicios" element={<Suspense fallback={<AdminFallback />}><Services /></Suspense>} />
           <Route path="paquetes" element={<Suspense fallback={<AdminFallback />}><SessionPackages /></Suspense>} />
           <Route path="equipo" element={<Suspense fallback={<AdminFallback />}><Staff /></Suspense>} />

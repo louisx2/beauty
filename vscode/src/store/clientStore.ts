@@ -21,11 +21,12 @@ interface ClientState {
   error: string | null;
   fetchClients: () => Promise<void>;
   addClient: (c: Omit<Client, 'id' | 'created_at'>) => Promise<Client | null>;
-  updateClient: (id: string, data: Partial<Client>) => Promise<void>;
-  deleteClient: (id: string) => Promise<void>;
+  /** true si se guardó (el error ya se avisó) */
+  updateClient: (id: string, data: Partial<Client>) => Promise<boolean>;
+  deleteClient: (id: string) => Promise<boolean>;
 }
 
-export const useClientStore = create<ClientState>()((set, get) => ({
+export const useClientStore = create<ClientState>()((set) => ({
   clients: [],
   loading: false,
   error: null,
@@ -72,12 +73,15 @@ export const useClientStore = create<ClientState>()((set, get) => ({
     if (error) {
       console.error("Error al actualizar clienta:", error);
       toast.error('Error al actualizar clienta');
-    } else if (data) {
+      return false;
+    }
+    if (data) {
       set((s) => ({
         clients: s.clients.map((c) => (c.id === id ? data : c)),
       }));
       toast.success('Clienta actualizada');
     }
+    return true;
   },
 
   deleteClient: async (id) => {
@@ -85,9 +89,10 @@ export const useClientStore = create<ClientState>()((set, get) => ({
     if (error) {
       toast.error('Error al eliminar clienta');
       console.error(error);
-    } else {
-      set((s) => ({ clients: s.clients.filter((c) => c.id !== id) }));
-      toast.success('Clienta eliminada');
+      return false;
     }
+    set((s) => ({ clients: s.clients.filter((c) => c.id !== id) }));
+    toast.success('Clienta eliminada');
+    return true;
   },
 }));

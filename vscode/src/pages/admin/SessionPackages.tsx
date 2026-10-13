@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useServiceStore, type SessionPackage, type ClientPackage } from '../../store/serviceStore';
 import { useAuthStore } from '../../store/authStore';
 import { useClientStore } from '../../store/clientStore';
@@ -26,12 +27,14 @@ export default function SessionPackages() {
   const { clients, fetchClients } = useClientStore();
   const { user } = useAuthStore();
   const abrirAgendar = useAgendarStore((s) => s.abrir);
+  // desde la ficha de la clienta: "Vender paquete" (vender) o "Registrar abono" (pagos)
+  const pedido = useLocation().state as { vender?: string; pagos?: string } | null;
 
   useEffect(() => { fetchAll(); fetchClients(); }, [fetchAll, fetchClients]);
 
   const [activeTab, setActiveTab] = useState<'packages' | 'sold'>('sold');
   const [showModalPkg, setShowModalPkg] = useState(false);
-  const [showModalSell, setShowModalSell] = useState(false);
+  const [showModalSell, setShowModalSell] = useState(() => !!pedido?.vender);
   const [showModalEdit, setShowModalEdit] = useState(false);
   const [search, setSearch] = useState('');
   
@@ -53,7 +56,10 @@ export default function SessionPackages() {
   const [pkgErrors, setPkgErrors] = useState<{ name?: string; serviceId?: string; sessions?: string; price?: string }>({});
 
   // Sell form
-  const [sellForm, setSellForm] = useState({ clientId: '', clientName: '', packageId: '', notes: '', amountPaid: 0 });
+  const [sellForm, setSellForm] = useState(() => {
+    const clienta = pedido?.vender ? useClientStore.getState().clients.find((c) => c.id === pedido.vender) : undefined;
+    return { clientId: clienta?.id ?? '', clientName: clienta?.name ?? '', packageId: '', notes: '', amountPaid: 0 };
+  });
 
   // Edit client package form
   const [editingCp, setEditingCp] = useState<ClientPackage | null>(null);
@@ -61,7 +67,9 @@ export default function SessionPackages() {
   const [editCpNotes, setEditCpNotes] = useState('');
 
   // Payments form
-  const [paymentCp, setPaymentCp] = useState<ClientPackage | null>(null);
+  const [paymentCp, setPaymentCp] = useState<ClientPackage | null>(() =>
+    (pedido?.pagos ? useServiceStore.getState().clientPackages.find((cp) => cp.id === pedido.pagos) ?? null : null));
+  useEffect(() => { if (pedido?.pagos) fetchPayments(pedido.pagos); }, [pedido?.pagos, fetchPayments]);
   const [paymentForm, setPaymentForm] = useState({ amount: 0, paymentMethod: 'cash' as 'cash'|'card'|'transfer', notes: '' });
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
 
