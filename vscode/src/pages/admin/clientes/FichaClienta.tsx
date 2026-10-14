@@ -21,6 +21,7 @@ import HistorialAnterior from './HistorialAnterior';
 import {
   citasDeClienta, historialCompleto, iniciales, paquetesDeClienta, proximasCitas, resumenDeClienta, type Renglon,
 } from './ficha';
+import { destinoWhatsApp, enlaceWhatsApp } from '../../../lib/enlaces';
 import './Ficha.css';
 
 type Pestana = 'todo' | 'sistema' | 'antes';
@@ -86,7 +87,7 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
   });
 
   const telefono = clienta.phone.replace(/\D/g, '').slice(-10);
-  const whatsapp = `https://wa.me/1${telefono}?text=${encodeURIComponent(`Hola ${primerNombre(clienta.name)}, te escribimos de Anadsll Beauty Esthetic.`)}`;
+  const whatsapp = enlaceWhatsApp(telefono, `Hola ${primerNombre(clienta.name)}, te escribimos de Anadsll Beauty Esthetic.`);
   const agendar = () => abrirAgendar({ modo: 'nueva', clienta: clientaDe(clienta) });
 
   const eliminar = async () => {
@@ -187,7 +188,7 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
           </button>
           {telefono.length === 10 && (
             <>
-              <a className="ficha__btn" href={whatsapp} target="_blank" rel="noopener noreferrer">
+              <a className="ficha__btn" href={whatsapp} target={destinoWhatsApp()} rel="noopener noreferrer">
                 <MessageCircle size={18} aria-hidden="true" /> WhatsApp
               </a>
               <a className="ficha__btn ficha__btn--icono" href={`tel:${telefono}`} aria-label={`Llamar a ${clienta.name}`}>

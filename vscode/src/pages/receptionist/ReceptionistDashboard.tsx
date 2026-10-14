@@ -18,6 +18,7 @@ import './ReceptionistDashboard.css';
 import { fechaLocal } from '../../lib/fechas';
 import { horasParaAgendar, textoSinHora } from '../../lib/horarioSalon';
 import { atiendeClientas, puedeHacer } from '../../lib/quienAtiende';
+import { destinoWhatsApp, enlaceWhatsApp } from '../../lib/enlaces';
 
 /* ── helpers ── */
 const STATUS_LABELS: Record<string, string> = ETIQUETA_ESTADO;
@@ -48,13 +49,11 @@ function minutesUntil(dateStr: string, timeStr: string): number {
 }
 
 function waReminder(appt: Appointment): string {
-  const phone = appt.clientPhone.replace(/[^0-9]/g, '');
-  const norm  = phone.startsWith('1') ? phone : '1' + phone;
   const dateLabel = new Date(appt.date + 'T12:00:00').toLocaleDateString('es-DO', {
     weekday: 'long', day: 'numeric', month: 'long',
   });
-  const msg = `Hola ${appt.clientName} 👋\n\nLe recordamos su cita en *Anadsll Beauty Esthetic*.\n\n📅 *Fecha:* ${dateLabel}\n🕐 *Hora:* ${format12h(appt.time)}\n💆 *Servicio:* ${appt.service}\n\nPor favor confírmenos su asistencia respondiendo a este mensaje. ¡Gracias! 🌸`;
-  return `https://wa.me/${norm}?text=${encodeURIComponent(msg)}`;
+  const msg = `Hola ${appt.clientName}\n\nLe recordamos su cita en *Anadsll Beauty Esthetic*.\n\n*Fecha:* ${dateLabel}\n*Hora:* ${format12h(appt.time)}\n*Servicio:* ${appt.service}\n\nPor favor confírmenos su asistencia respondiendo a este mensaje. ¡Gracias!`;
+  return enlaceWhatsApp(appt.clientPhone, msg);
 }
 
 /* ── Quick booking modal state ── */
@@ -359,7 +358,7 @@ export default function ReceptionistDashboard() {
               <a
                 key={a.id}
                 href={waReminder(a)}
-                target="_blank"
+                target={destinoWhatsApp()}
                 rel="noreferrer"
                 className="rec__wa-chip"
               >
@@ -453,7 +452,7 @@ export default function ReceptionistDashboard() {
                           </button>
                           <a
                             href={waReminder(a)}
-                            target="_blank"
+                            target={destinoWhatsApp()}
                             rel="noreferrer"
                             className="rec__action-btn rec__action-btn--wa"
                           >
@@ -513,7 +512,7 @@ export default function ReceptionistDashboard() {
                         {a.clientPhone && (
                           <a
                             href={waReminder(a)}
-                            target="_blank"
+                            target={destinoWhatsApp()}
                             rel="noreferrer"
                             className="rec__appt-wa"
                             title="Enviar recordatorio por WhatsApp"

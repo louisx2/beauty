@@ -11,7 +11,7 @@ import { EVENTO_ATENDER_AHORA } from '../../../lib/eventosPanel';
 import { sumarDias } from '../../../site/reservar/calendario';
 import { fechaTitulo } from '../../../site/reservar/resumen';
 import SaveClientModal from '../../../components/SaveClientModal';
-import { enlaceWhatsApp } from '../../../lib/enlaces';
+import { destinoWhatsApp, enlaceWhatsApp } from '../../../lib/enlaces';
 import { useAhora } from '../../../lib/useAhora';
 import HojaCita from '../citas/HojaCita';
 import Recordatorios from './Recordatorios';
@@ -179,7 +179,7 @@ export default function Hoy() {
                       <b>{c.clientName}</b>
                       <span>{c.date === hoy ? '' : 'Mañana, '}{format12h(c.time)} · {c.service}</span>
                     </button>
-                    <a className="hoy__icono" href={enlaceWhatsApp(c.clientPhone, textoConfirmar(c, hoy))} target="_blank" rel="noopener noreferrer"
+                    <a className="hoy__icono" href={enlaceWhatsApp(c.clientPhone, textoConfirmar(c, hoy))} target={destinoWhatsApp()} rel="noopener noreferrer"
                       aria-label={`Escribirle a ${c.clientName} por WhatsApp`}>
                       <MessageCircle size={18} aria-hidden="true" />
                     </a>

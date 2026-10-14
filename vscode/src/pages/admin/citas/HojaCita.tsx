@@ -5,7 +5,7 @@ import { useAppointmentStore, type Appointment } from '../../../store/appointmen
 import { fechaLocal } from '../../../lib/fechas';
 import { format12h } from '../../../lib/timeFormat';
 import { ETIQUETA_ESTADO } from '../../../lib/estadosCita';
-import { enlaceLlamar, enlaceWhatsApp } from '../../../lib/enlaces';
+import { destinoWhatsApp, enlaceLlamar, enlaceWhatsApp } from '../../../lib/enlaces';
 import { fechaTitulo } from '../../../site/reservar/resumen';
 import MenuAcciones from '../../../components/MenuAcciones';
 import { accionPrincipal } from './acciones';
@@ -61,7 +61,7 @@ export default function HojaCita({ cita, onCerrar, onGuardarClienta = () => {} }
           </ul>
           {cita.notes && <p className="hoja__nota">{cita.notes}</p>}
           <div className="hoja__contacto">
-            <a className="hoja__btn" href={enlaceWhatsApp(cita.clientPhone, `Hola ${cita.clientName}, te escribimos de Anadsll Beauty Esthetic.`)} target="_blank" rel="noopener noreferrer">
+            <a className="hoja__btn" href={enlaceWhatsApp(cita.clientPhone, `Hola ${cita.clientName}, te escribimos de Anadsll Beauty Esthetic.`)} target={destinoWhatsApp()} rel="noopener noreferrer">
               <MessageCircle size={17} aria-hidden="true" /> WhatsApp
             </a>
             <a className="hoja__btn" href={enlaceLlamar(cita.clientPhone)}><Phone size={17} aria-hidden="true" /> Llamar</a>
