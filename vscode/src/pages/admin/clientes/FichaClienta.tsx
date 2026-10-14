@@ -16,7 +16,7 @@ import MenuAcciones from '../../../components/MenuAcciones';
 import { accionPrincipal } from '../citas/acciones';
 import { ICONO_PRINCIPAL, useAccionesCita } from '../citas/useAccionesCita';
 import { primerNombre } from '../citas/proximaCita';
-import { clientaDe } from '../agendar/agendar';
+import { clientaDe } from '../agendar/reglas';
 import HistorialAnterior from './HistorialAnterior';
 import {
   citasDeClienta, historialCompleto, iniciales, paquetesDeClienta, proximasCitas, resumenDeClienta, type Renglon,

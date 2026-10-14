@@ -22,7 +22,7 @@ import { clientaConTelefono, nuevaLista, paquetesQueUsa, validarNueva } from '..
 import {
   conEspecialista, conHoraPedida, elegidosDelPaquete, estadoAlGuardar, planALas, sesionDelPaquete, sinLaCita,
   type ClientaAgenda, type PedidoAgendar,
-} from './agendar';
+} from './reglas';
 import ElegirClienta, { type ErroresNueva, type NuevaClienta } from './ElegirClienta';
 import ServiciosElegidos from './ServiciosElegidos';
 import './Ventana.css';

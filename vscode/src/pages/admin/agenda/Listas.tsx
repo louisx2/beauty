@@ -5,7 +5,7 @@ import { ETIQUETA_ESTADO } from '../../../lib/estadosCita';
 import { fechaTitulo } from '../../../site/reservar/resumen';
 import { primerNombre } from '../citas/proximaCita';
 import { aHora, type Tramo } from '../hoy/dia';
-import { fechaCorta, type Ahora, type BloqueAgenda, type ColumnaAgenda } from './agenda';
+import { fechaCorta, type Ahora, type BloqueAgenda, type ColumnaAgenda } from './reglas';
 import type { Titulo } from './Cuadricula';
 
 const hora12 = (min: number) => format12h(aHora(min));

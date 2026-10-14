@@ -3,7 +3,7 @@ import { AlertTriangle, Search, UserPlus } from 'lucide-react';
 import { useClientStore, type Client } from '../../../store/clientStore';
 import { capitalizarNombre } from '../../../lib/nombres';
 import { buscarClientas, clientaConTelefono, formatoTelefono } from '../atender/atender';
-import { clientaDe, type ClientaAgenda } from './agendar';
+import { clientaDe, type ClientaAgenda } from './reglas';
 import '../atender/AtenderAhora.css';
 
 export interface NuevaClienta { nombre: string; telefono: string }

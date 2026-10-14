@@ -17,7 +17,7 @@ import { aHora, type Tramo } from '../hoy/dia';
 import {
   buscarCitas, citasPorDia, cuadriculaDeSemana, cuadriculaDelDia, diaCorto, diasDeSemana, horaDelToque, resumenDelMes,
   tituloDeRango, type ColumnaAgenda, type DiaDelMes, type Vista,
-} from './agenda';
+} from './reglas';
 import Cuadricula, { type Titulo } from './Cuadricula';
 import { ListaAgenda, ResultadosBusqueda } from './Listas';
 import Mes from './Mes';

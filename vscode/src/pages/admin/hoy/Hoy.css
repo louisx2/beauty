@@ -216,35 +216,21 @@
   font-weight: 600;
 }
 
-.hoy__manana {
+.hoy__tarjeta.hoy__manana {
+  background: rgba(178, 150, 125, 0.12);
+  border-color: rgba(178, 150, 125, 0.25);
+}
+
+.hoy__manana-res {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.hoy__manana-btns {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 56px;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 16px;
-  background: rgba(178, 150, 125, 0.14);
-  color: inherit;
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.hoy__manana > span {
-  display: flex;
-  flex-direction: column;
-}
-
-.hoy__manana b {
-  font-size: 0.92rem;
-  font-weight: 600;
-}
-
-.hoy__manana span span {
-  font-size: 0.84rem;
-  color: rgba(255, 255, 255, 0.6);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* La agenda */
@@ -570,8 +556,9 @@
 [data-theme="light"] .hoy__confirmar-nom span,
 [data-theme="light"] .hoy__persona span,
 [data-theme="light"] .hoy__horas span,
-[data-theme="light"] .hoy__renglon-txt span,
-[data-theme="light"] .hoy__manana span span { color: var(--muted); }
+[data-theme="light"] .hoy__renglon-txt span { color: var(--muted); }
+
+[data-theme="light"] .hoy__manana-res { color: var(--espresso); }
 
 [data-theme="light"] .hoy__btn,
 [data-theme="light"] .hoy__icono {
@@ -604,7 +591,7 @@
 [data-theme="light"] .hoy__grilla-cabeza,
 [data-theme="light"] .hoy__lista > li { border-color: rgba(74, 52, 42, 0.09); }
 
-[data-theme="light"] .hoy__manana { background: #EFE6DD; }
+[data-theme="light"] .hoy__tarjeta.hoy__manana { background: #F7EFE7; border-color: #E5D6C6; }
 
 [data-theme="light"] .hoy__col {
   border-left-color: rgba(74, 52, 42, 0.07);

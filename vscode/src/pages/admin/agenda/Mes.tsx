@@ -1,7 +1,7 @@
 import { mesEnCuadricula, type MesVisto } from '../../../site/reservar/calendario';
 import { fechaTitulo } from '../../../site/reservar/resumen';
 import { horasTexto } from '../hoy/dia';
-import type { DiaDelMes } from './agenda';
+import type { DiaDelMes } from './reglas';
 
 const INICIALES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 

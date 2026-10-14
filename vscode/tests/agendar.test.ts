@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buscarServicios, conEspecialista, conHoraPedida, elegidosDelPaquete, estadoAlGuardar, planALas, sesionDelPaquete, sinLaCita,
-} from '../src/pages/admin/agendar/agendar.ts';
+} from '../src/pages/admin/agendar/reglas.ts';
 import { elegidosDeCita, especialistasDeAgenda, horasDelDia } from '../src/pages/admin/citas/proximaCita.ts';
 import type { Appointment } from '../src/store/appointmentStore.ts';
 import type { ClientPackage, Service, SessionPackage } from '../src/store/serviceStore.ts';

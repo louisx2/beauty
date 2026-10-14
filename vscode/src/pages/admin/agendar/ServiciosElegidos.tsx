@@ -3,7 +3,7 @@ import { Search, X } from 'lucide-react';
 import { useServiceStore, type Service } from '../../../store/serviceStore';
 import { quienPuede, type Elegido, type Especialista } from '../../../site/reservar/disponibilidad';
 import { duracionTexto } from '../../../site/reservar/resumen';
-import { buscarServicios, categoriaDe } from './agendar';
+import { buscarServicios, categoriaDe } from './reglas';
 import './Ventana.css';
 
 interface Props {

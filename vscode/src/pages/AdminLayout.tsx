@@ -19,7 +19,6 @@ import {
   Clock,
   AlertCircle,
   CheckCircle2,
-  Scissors,
   Zap,
   Volume2,
   Check,
@@ -55,7 +54,7 @@ const ahora: ItemNav = { to: AHORA, icono: <Zap size={20} />, etiqueta: 'Atender
 const citas: ItemNav = { to: '/admin/citas', icono: <CalendarDays size={20} />, etiqueta: 'Agenda' };
 const clientas: ItemNav = { to: '/admin/clientes', icono: <Users size={20} />, etiqueta: 'Clientas' };
 const paquetes: ItemNav = { to: '/admin/paquetes', icono: <Package size={20} />, etiqueta: 'Paquetes' };
-const miTurno: ItemNav = { to: '/admin/mi-turno', icono: <Scissors size={20} />, etiqueta: 'Mi turno' };
+const miTurno: ItemNav = { to: '/admin/mi-turno', icono: <Sun size={20} />, etiqueta: 'Mi día' };
 const misCitas: ItemNav = { to: '/admin/citas', icono: <CalendarDays size={20} />, etiqueta: 'Mi agenda' };
 const misReportes: ItemNav = { to: '/admin/reportes', icono: <BarChart3 size={20} />, etiqueta: 'Mis reportes', corto: 'Reportes' };
 

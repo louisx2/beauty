@@ -1,474 +1,239 @@
-import { useMemo, useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
+import { AlertTriangle, CalendarPlus, CheckCheck, History, Play, StickyNote } from 'lucide-react';
+import { useAgendarStore } from '../../store/agendarStore';
 import { useAppointmentStore, type Appointment } from '../../store/appointmentStore';
 import { useAuthStore } from '../../store/authStore';
-import {
-  Play, CheckCircle2, Clock, Phone, CalendarDays,
-  Sparkles, User, RefreshCw, X, AlertCircle, Timer,
-} from 'lucide-react';
+import { useBlockStore } from '../../store/blockStore';
+import { useClientStore } from '../../store/clientStore';
+import { useStaffStore } from '../../store/staffStore';
 import { format12h } from '../../lib/timeFormat';
-import { ETIQUETA_ESTADO } from '../../lib/estadosCita';
 import { notifyStatusChange } from '../../lib/whatsapp';
-import toast from 'react-hot-toast';
+import { useAhora } from '../../lib/useAhora';
+import { fechaTitulo } from '../../site/reservar/resumen';
+import HojaCita from '../admin/citas/HojaCita';
+import { primerNombre } from '../admin/citas/proximaCita';
+import { aHora, horasTexto, type Tramo } from '../admin/hoy/dia';
+import { citasPorDia, cuadriculaDelDia, fechaCorta, type ColumnaAgenda } from '../admin/agenda/reglas';
+import { ListaAgenda } from '../admin/agenda/Listas';
+import { antesDeAtender, enSalaYSiguiente, misLineas, proximosDias, saludo, tiempoTranscurrido, type LineaMia } from './miDia';
+import '../admin/agenda/Agenda.css';
 import './SpecialistView.css';
-import { fechaLocal } from '../../lib/fechas';
 
-const STATUS_LABELS: Record<string, string> = ETIQUETA_ESTADO;
+const hora12 = (min: number) => format12h(aHora(min));
+const fechaLargaCorta = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('es-DO', { day: 'numeric', month: 'short' }).replace('.', '');
 
-function timeGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Buenos días';
-  if (h < 18) return 'Buenas tardes';
-  return 'Buenas noches';
-}
-
-function waLink(phone: string, name: string): string {
-  const p = phone.replace(/[^0-9]/g, '');
-  const normalized = p.startsWith('1') ? p : '1' + p;
-  return `https://wa.me/${normalized}?text=${encodeURIComponent(`Hola ${name} 👋`)}`;
-}
-
-function minutesUntil(timeStr: string): number {
-  const [h, m] = timeStr.split(':').map(Number);
-  const now = new Date();
-  const apptMinutes = h * 60 + m;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  return apptMinutes - nowMinutes;
-}
-
-function formatElapsed(startedAt: string | null): string {
-  if (!startedAt) return '';
-  const diffMs = Date.now() - new Date(startedAt).getTime();
-  const totalSec = Math.floor(diffMs / 1000);
-  const mins = Math.floor(totalSec / 60);
-  const secs = totalSec % 60;
-  if (mins >= 60) {
-    const hrs = Math.floor(mins / 60);
-    const rem = mins % 60;
-    return `${hrs}h ${rem}m`;
-  }
-  return `${mins}m ${String(secs).padStart(2, '0')}s`;
-}
-
+/**
+ * Mi día: lo de la especialista mientras trabaja. Quién está en su cabina (y desde cuándo) y quién sigue, con lo que
+ * conviene saber de cada clienta antes de atenderla (alergias, piel, notas y lo que se le hizo la última vez); su día
+ * con los huecos libres (tocar uno agenda ahí) y sus próximos días.
+ */
 export default function SpecialistView() {
   const { appointments, fetchAppointments, updateStatus, updateAppointment } = useAppointmentStore();
-  const { user } = useAuthStore();
-  const [completingId, setCompletingId] = useState<string | null>(null);
-  const [noteText, setNoteText] = useState('');
-  const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [elapsed, setElapsed] = useState('');
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const user = useAuthStore((s) => s.user);
+  const { staff } = useStaffStore();
+  const { clients, fetchClients } = useClientStore();
+  const { blocks, fetchBlocks } = useBlockStore();
+  const abrirAgendar = useAgendarStore((s) => s.abrir);
+  const ahora = useAhora();
+  const [abierta, setAbierta] = useState<string | null>(null);
+  const [completando, setCompletando] = useState(false);
+  const [nota, setNota] = useState('');
+  const [ocupada, setOcupada] = useState(false);
 
   useEffect(() => {
     fetchAppointments();
+    fetchClients();
+    fetchBlocks().catch((e) => console.error('[mi día] bloqueos:', e));
+    // por si la tableta queda abierta todo el día: se refresca cada minuto
     const iv = setInterval(fetchAppointments, 60_000);
     return () => clearInterval(iv);
-  }, [fetchAppointments]);
+  }, [fetchAppointments, fetchClients, fetchBlocks]);
 
-  // Live elapsed timer for in-progress appointment
-  const inProgressForTimer = useMemo(() =>
-    appointments.find(
-      (a) => a.status === 'in_progress' &&
-             a.employee.toLowerCase() === (user?.name ?? '').toLowerCase()
-    ) ?? null,
-    [appointments, user?.name]
+  const nombre = user?.name ?? '';
+  const yo = staff.find((m) => m.name.trim().toLowerCase() === nombre.trim().toLowerCase());
+  const lineas = useMemo(() => misLineas(appointments, nombre, ahora.hoy), [appointments, nombre, ahora.hoy]);
+  const { enSala, siguiente } = enSalaYSiguiente(lineas);
+  const porDia = useMemo(() => citasPorDia(appointments), [appointments]);
+  const columna = useMemo(
+    () => (yo ? cuadriculaDelDia(ahora.hoy, staff, porDia, blocks, ahora, yo.id).columnas[0] : undefined),
+    [yo, ahora, staff, porDia, blocks],
   );
+  const proximos = useMemo(() => proximosDias(appointments, nombre, ahora.hoy), [appointments, nombre, ahora.hoy]);
+  const citasHoy = new Set(lineas.map((l) => l.cita.id));
+  const hechas = new Set(lineas.filter((l) => l.cita.status === 'completed').map((l) => l.cita.id)).size;
+  const cita = abierta ? appointments.find((c) => c.id === abierta) ?? null : null;
 
-  useEffect(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (inProgressForTimer?.startedAt) {
-      setElapsed(formatElapsed(inProgressForTimer.startedAt));
-      timerRef.current = setInterval(() => {
-        setElapsed(formatElapsed(inProgressForTimer.startedAt));
-      }, 1000);
-    } else {
-      setElapsed('');
+  const empezar = async (c: Appointment) => {
+    setOcupada(true);
+    const ok = await updateStatus(c.id, 'in_progress');
+    setOcupada(false);
+    if (ok) toast.success(`${c.clientName} en tu cabina`);
+  };
+
+  const completar = async (c: Appointment) => {
+    setOcupada(true);
+    try {
+      if (nota.trim() && nota.trim() !== (c.notes ?? '').trim()) {
+        const notas = c.notes?.trim() ? `${c.notes.trim()}\n${nota.trim()}` : nota.trim();
+        await updateAppointment(c.id, { notes: notas });
+      }
+      // al completar se descuenta la sesión del paquete y se ofrece agendar la próxima (Agendar)
+      if (await updateStatus(c.id, 'completed')) {
+        notifyStatusChange(c, 'completed');
+        setCompletando(false);
+        setNota('');
+      }
+    } finally {
+      setOcupada(false);
     }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [inProgressForTimer?.id, inProgressForTimer?.startedAt]);
+  };
 
-  const today = fechaLocal();
-  const todayLabel = new Date().toLocaleDateString('es-DO', {
-    weekday: 'long', day: 'numeric', month: 'long',
-  });
+  const agendarEn = (col: ColumnaAgenda, t: Tramo) =>
+    abrirAgendar({ modo: 'nueva', fecha: col.fecha, hora: aHora(t.inicio), empleada: col.empleada ?? undefined });
 
-  // All appointments for this specialist
-  const myAppts = useMemo(() =>
-    appointments
-      .filter((a) => a.employee.toLowerCase() === (user?.name ?? '').toLowerCase())
-      .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)),
-    [appointments, user?.name]
-  );
+  /** Lo que conviene saber de la clienta antes de atenderla. */
+  const queSaber = (c: Appointment) => {
+    const a = antesDeAtender(c, clients, appointments);
+    return (
+      <div className="midia__saber">
+        {a.alergias && <p className="midia__alergia"><AlertTriangle size={16} aria-hidden="true" /> Alergias: {a.alergias}</p>}
+        <div className="midia__chips">
+          {a.piel && <span>Piel {a.piel.toLowerCase()}</span>}
+          <span>{a.visitas === 0 ? 'Primera vez' : a.visitas === 1 ? '1 visita antes' : `${a.visitas} visitas antes`}</span>
+        </div>
+        {a.ultima && (
+          <p className="midia__ultima">
+            <History size={15} aria-hidden="true" />
+            <span>
+              Última vez, {fechaLargaCorta(a.ultima.date)}: {a.ultima.service} con {primerNombre(a.ultima.employee)}
+              {a.ultima.notes && <em> · “{a.ultima.notes}”</em>}
+            </span>
+          </p>
+        )}
+        {a.notas && <p className="midia__nota-ficha"><StickyNote size={15} aria-hidden="true" /> {a.notas}</p>}
+        {c.notes && <p className="midia__nota-cita">Nota de la cita: {c.notes}</p>}
+      </div>
+    );
+  };
 
-  const todayAppts = useMemo(() => myAppts.filter((a) => a.date === today), [myAppts, today]);
-
-  const inProgress = useMemo(() =>
-    todayAppts.find((a) => a.status === 'in_progress') ?? null,
-    [todayAppts]
-  );
-
-  const queue = useMemo(() =>
-    todayAppts.filter((a) => a.status === 'pending' || a.status === 'confirmed'),
-    [todayAppts]
-  );
-
-  const nextUp = queue[0] ?? null;
-
-  const completedToday = useMemo(() =>
-    todayAppts.filter((a) => a.status === 'completed').length,
-    [todayAppts]
-  );
-
-  const futureAppts = useMemo(() =>
-    myAppts.filter((a) => a.date > today && (a.status === 'pending' || a.status === 'confirmed')),
-    [myAppts, today]
-  );
-
-  // ── Actions ─────────────────────────────────────────────────────
-
-  async function handleStart(id: string) {
-    setLoadingId(id);
-    const ok = await updateStatus(id, 'in_progress');
-    setLoadingId(null);
-    if (ok) toast.success('¡Servicio iniciado!');
-    else toast.error('Error al iniciar el servicio');
-  }
-
-  function openCompleteFlow(appt: Appointment) {
-    setCompletingId(appt.id);
-    setNoteText(appt.notes ?? '');
-  }
-
-  async function confirmComplete(appt: Appointment) {
-    setLoadingId(appt.id);
-    if (noteText.trim() !== (appt.notes ?? '').trim()) {
-      await updateAppointment(appt.id, { notes: noteText.trim() });
-    }
-    const ok = await updateStatus(appt.id, 'completed');
-    setLoadingId(null);
-    setCompletingId(null);
-    setNoteText('');
-    if (ok) {
-      toast.success('✅ Servicio marcado como completado');
-      notifyStatusChange(appt, 'completed');
-    }
-    else toast.error('Error al completar el servicio');
-  }
-
-  // ── Next appointment countdown ───────────────────────────────────
-  const nextMinutes = nextUp ? minutesUntil(nextUp.time) : null;
+  const servicios = (c: Appointment) => lineas.filter((l) => l.cita.id === c.id);
+  const rango = (ls: LineaMia[]) => `${hora12(ls[0].inicio)} – ${hora12(ls[ls.length - 1].fin)}`;
+  const faltan = siguiente ? siguiente.inicio - ahora.minutos : 0;
 
   return (
-    <div className="spec-view">
-
-      {/* ── Header ── */}
-      <div className="spec-view__header">
+    <div className="midia">
+      <header className="midia__cabeza">
         <div>
-          <h1 className="spec-view__greeting">
-            {timeGreeting()}, {user?.name?.split(' ')[0]} 👋
-          </h1>
-          <p className="spec-view__date">{todayLabel}</p>
+          <h1 className="midia__titulo">{saludo(ahora.minutos)}, {nombre.split(' ')[0]}</h1>
+          <p className="midia__sub">
+            {fechaTitulo(ahora.hoy)} · {citasHoy.size === 1 ? '1 cita' : `${citasHoy.size} citas`}
+            {hechas > 0 && ` · ${hechas} ${hechas === 1 ? 'hecha' : 'hechas'}`}
+            {columna?.minutosLibres ? ` · ${horasTexto(columna.minutosLibres)} libres` : ''}
+          </p>
         </div>
-        <div className="spec-view__stats">
-          <div className="spec-view__stat spec-view__stat--green">
-            <CheckCircle2 size={15} />
-            <span><strong>{completedToday}</strong> completadas</span>
-          </div>
-          <div className="spec-view__stat spec-view__stat--amber">
-            <Clock size={15} />
-            <span><strong>{queue.length}</strong> en cola</span>
-          </div>
-          {todayAppts.length > 0 && (
-            <div className="spec-view__stat">
-              <CalendarDays size={15} />
-              <span><strong>{todayAppts.length}</strong> hoy</span>
-            </div>
+        <button type="button" className="agenda__btn agenda__btn--principal" onClick={() => abrirAgendar({ modo: 'nueva', fecha: ahora.hoy, empleada: yo?.name })}>
+          <CalendarPlus size={18} aria-hidden="true" /> Agendar cita
+        </button>
+      </header>
+
+      <div className="midia__cuerpo">
+        <div className="midia__ahora">
+          {enSala && (
+            <section className="midia__tarjeta midia__tarjeta--sala" aria-label="En tu cabina">
+              <p className="midia__etiqueta">
+                <span className="midia__punto" aria-hidden="true" /> En tu cabina
+                {enSala.cita.startedAt && <> · {tiempoTranscurrido(enSala.cita.startedAt, Date.now())}</>}
+              </p>
+              <button type="button" className="midia__quien" onClick={() => setAbierta(enSala.cita.id)}>{enSala.cita.clientName}</button>
+              <p className="midia__que">{servicios(enSala.cita).map((l) => l.servicio).join(' + ')} · {rango(servicios(enSala.cita))}</p>
+              {queSaber(enSala.cita)}
+              {completando ? (
+                <div className="midia__completar">
+                  <label className="midia__lbl" htmlFor="midia-nota">¿Algo que anotar de esta sesión? (opcional)</label>
+                  <textarea id="midia-nota" rows={2} value={nota} autoFocus onChange={(e) => setNota(e.target.value)}
+                    placeholder="Ej. sin reacción, usar menos intensidad la próxima…" />
+                  <div className="midia__botones">
+                    <button type="button" className="agenda__btn" onClick={() => { setCompletando(false); setNota(''); }}>Volver</button>
+                    <button type="button" className="agenda__btn agenda__btn--principal" disabled={ocupada} onClick={() => completar(enSala.cita)}>
+                      <CheckCheck size={18} aria-hidden="true" /> {ocupada ? 'Guardando…' : 'Completar'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button type="button" className="agenda__btn agenda__btn--principal midia__principal" onClick={() => setCompletando(true)}>
+                  <CheckCheck size={18} aria-hidden="true" /> Terminé: completar
+                </button>
+              )}
+            </section>
           )}
-          <button
-            className="spec-view__refresh"
-            onClick={fetchAppointments}
-            title="Actualizar citas"
-          >
-            <RefreshCw size={15} />
-          </button>
+
+          {siguiente && (
+            <section className="midia__tarjeta" aria-label="La que sigue">
+              <p className="midia__etiqueta">
+                Sigue · {hora12(siguiente.inicio)}
+                <em className={faltan <= 0 ? 'is-ya' : faltan <= 15 ? 'is-pronto' : ''}>
+                  {faltan > 0 ? ` en ${horasTexto(faltan)}` : faltan === 0 ? ' ahora' : ` hace ${horasTexto(-faltan)}`}
+                </em>
+              </p>
+              <button type="button" className="midia__quien" onClick={() => setAbierta(siguiente.cita.id)}>{siguiente.cita.clientName}</button>
+              <p className="midia__que">
+                {servicios(siguiente.cita).map((l) => l.servicio).join(' + ')} · {rango(servicios(siguiente.cita))}
+                {siguiente.cita.status === 'pending' && <span className="midia__sin-confirmar"> · sin confirmar</span>}
+              </p>
+              {queSaber(siguiente.cita)}
+              <button type="button" className="agenda__btn agenda__btn--principal midia__principal" disabled={!!enSala || ocupada}
+                onClick={() => empezar(siguiente.cita)}>
+                <Play size={18} aria-hidden="true" /> {enSala ? 'Termina la de tu cabina primero' : 'Llegó: empezar'}
+              </button>
+            </section>
+          )}
+
+          {!enSala && !siguiente && (
+            <section className="midia__tarjeta midia__tarjeta--vacia">
+              <p>{lineas.length === 0 ? 'Hoy no tienes citas.' : 'Ya no te quedan citas por hoy.'}</p>
+              {proximos[0] && <p>La próxima: {fechaCorta(proximos[0].fecha)}, {hora12(proximos[0].lineas[0].inicio)} con {proximos[0].lineas[0].cita.clientName}.</p>}
+            </section>
+          )}
+        </div>
+
+        <div className="midia__lado">
+          <section className="midia__seccion" aria-labelledby="midia-dia">
+            <h2 id="midia-dia" className="midia__seccion-tit">Mi día</h2>
+            {columna ? (
+              <ListaAgenda columnas={[columna]} titulos={[{ titulo: 'Hoy', esHoy: true }]} porDia={false} ahora={ahora}
+                onCita={(c) => setAbierta(c.id)} onLibre={agendarEn} onAgendarDia={() => {}} />
+            ) : (
+              <p className="midia__vacio">No encontramos tu horario en Equipo. Pídele a la administración que lo revise.</p>
+            )}
+          </section>
+
+          {proximos.length > 0 && (
+            <section className="midia__seccion" aria-labelledby="midia-proximos">
+              <h2 id="midia-proximos" className="midia__seccion-tit">Próximos días</h2>
+              <div className="midia__proximos">
+                {proximos.map((d) => (
+                  <div key={d.fecha} className="midia__proximo">
+                    <p className="midia__proximo-dia">{fechaCorta(d.fecha)} · {d.lineas.length === 1 ? '1 cita' : `${d.lineas.length} citas`}</p>
+                    <ol className="ag-li">
+                      {d.lineas.map((l) => (
+                        <li key={`${l.cita.id}-${l.inicio}`}>
+                          <button type="button" className={`ag-li__cita ag-li__cita--${l.cita.status}`} onClick={() => setAbierta(l.cita.id)}>
+                            <span className="ag-li__hora">{hora12(l.inicio)}</span>
+                            <span className="ag-li__txt"><b>{l.cita.clientName}</b><span>{l.servicio}</span></span>
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </div>
 
-      {/* ── Countdown banner ── */}
-      {nextMinutes !== null && nextMinutes > 0 && nextMinutes <= 15 && (
-        <div className="spec-view__countdown">
-          <AlertCircle size={16} />
-          Tu próxima cita ({nextUp!.clientName}) comienza en <strong>{nextMinutes} minuto{nextMinutes !== 1 ? 's' : ''}</strong>
-        </div>
-      )}
-
-      {/* ── EN CURSO card ── */}
-      {inProgress && (
-        <div className="spec-card spec-card--inprogress">
-          <div className="spec-card__badge">
-            <span className="spec-card__dot spec-card__dot--pulse" />
-            En Curso Ahora
-          </div>
-
-          <div className="spec-card__body">
-            <div className="spec-card__service">
-              <Sparkles size={22} />
-              {inProgress.service}
-            </div>
-            <div className="spec-card__client">
-              <User size={16} />
-              {inProgress.clientName}
-            </div>
-            <div className="spec-card__meta">
-              <Clock size={14} />
-              {format12h(inProgress.time)} · {inProgress.duration} min
-              {inProgress.clientPhone && (
-                <a
-                  href={waLink(inProgress.clientPhone, inProgress.clientName)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="spec-card__phone"
-                >
-                  <Phone size={13} />
-                  {inProgress.clientPhone}
-                </a>
-              )}
-            </div>
-            {elapsed && (
-              <div className="spec-card__timer">
-                <Timer size={14} />
-                <span>En servicio hace <strong>{elapsed}</strong></span>
-                {inProgress.duration && (
-                  <span className="spec-card__timer-limit">
-                    · duración estimada {inProgress.duration} min
-                  </span>
-                )}
-              </div>
-            )}
-            {inProgress.notes && (
-              <div className="spec-card__notes">
-                📋 {inProgress.notes}
-              </div>
-            )}
-          </div>
-
-          {/* Complete flow */}
-          <div className="spec-card__actions">
-            {completingId === inProgress.id ? (
-              <div className="spec-card__confirm-wrap">
-                <textarea
-                  className="spec-card__notes-input"
-                  placeholder="Observaciones del servicio (opcional)..."
-                  value={noteText}
-                  onChange={(e) => setNoteText(e.target.value)}
-                  rows={2}
-                  autoFocus
-                />
-                <div className="spec-card__confirm-btns">
-                  <button
-                    className="spec-card__btn spec-card__btn--complete"
-                    onClick={() => confirmComplete(inProgress)}
-                    disabled={!!loadingId}
-                  >
-                    <CheckCircle2 size={16} />
-                    {loadingId === inProgress.id ? 'Guardando…' : 'Completar'}
-                  </button>
-                  <button
-                    className="spec-card__btn spec-card__btn--dismiss"
-                    onClick={() => setCompletingId(null)}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                className="spec-card__btn spec-card__btn--complete"
-                onClick={() => openCompleteFlow(inProgress)}
-                disabled={!!loadingId}
-              >
-                <CheckCircle2 size={16} />
-                Marcar como Completado
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── SIGUIENTE card ── */}
-      {nextUp && (
-        <div className="spec-card spec-card--next">
-          <div className="spec-card__badge spec-card__badge--next">
-            {inProgress ? 'Próxima en cola' : '↑ Siguiente en cola'}
-          </div>
-
-          <div className="spec-card__body">
-            <div className="spec-card__service">
-              <Sparkles size={22} />
-              {nextUp.service}
-            </div>
-            <div className="spec-card__client">
-              <User size={16} />
-              {nextUp.clientName}
-            </div>
-            <div className="spec-card__meta">
-              <Clock size={14} />
-              {format12h(nextUp.time)} · {nextUp.duration} min
-              {nextMinutes !== null && nextMinutes > 0 && (
-                <span className="spec-card__countdown-chip">
-                  en {nextMinutes} min
-                </span>
-              )}
-              {nextMinutes !== null && nextMinutes <= 0 && (
-                <span className="spec-card__countdown-chip spec-card__countdown-chip--now">
-                  ¡Ahora!
-                </span>
-              )}
-              {nextUp.clientPhone && (
-                <a
-                  href={waLink(nextUp.clientPhone, nextUp.clientName)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="spec-card__phone"
-                >
-                  <Phone size={13} />
-                  {nextUp.clientPhone}
-                </a>
-              )}
-            </div>
-            {nextUp.notes && (
-              <div className="spec-card__notes">📋 {nextUp.notes}</div>
-            )}
-          </div>
-
-          <div className="spec-card__actions">
-            <button
-              className="spec-card__btn spec-card__btn--start"
-              onClick={() => handleStart(nextUp.id)}
-              disabled={!!inProgress || !!loadingId}
-              title={inProgress ? 'Completa el servicio en curso primero' : ''}
-            >
-              <Play size={16} />
-              {inProgress
-                ? 'Completa el servicio actual primero'
-                : (loadingId === nextUp.id ? 'Iniciando…' : 'Iniciar servicio')}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── No appointments today ── */}
-      {todayAppts.length === 0 && (
-        <div className="spec-view__empty">
-          <CalendarDays size={44} />
-          <p>No tienes citas asignadas para hoy</p>
-          {futureAppts.length > 0 && (
-            <span>Tienes {futureAppts.length} cita{futureAppts.length !== 1 ? 's' : ''} próxima{futureAppts.length !== 1 ? 's' : ''}</span>
-          )}
-        </div>
-      )}
-
-      {/* ── Agenda del día ── */}
-      {todayAppts.length > 0 && (
-        <div className="spec-section">
-          <h2 className="spec-section__title">
-            <CalendarDays size={16} />
-            Agenda de Hoy · {todayAppts.length} cita{todayAppts.length !== 1 ? 's' : ''}
-          </h2>
-          <div className="spec-list">
-            {todayAppts.map((a) => {
-              const isDone = ['completed', 'cancelled', 'no_show'].includes(a.status);
-              const isActive = a.status === 'in_progress';
-              const canStart = (a.status === 'pending' || a.status === 'confirmed') && !inProgress;
-              const mins = (a.status === 'pending' || a.status === 'confirmed') ? minutesUntil(a.time) : null;
-
-              return (
-                <div
-                  key={a.id}
-                  className={[
-                    'spec-list-item',
-                    isActive ? 'spec-list-item--active' : '',
-                    isDone  ? 'spec-list-item--done'   : '',
-                  ].join(' ')}
-                >
-                  <div className="spec-list-item__time">{format12h(a.time)}</div>
-
-                  <div className={`spec-list-item__dot spec-list-item__dot--${a.status}`} />
-
-                  <div className="spec-list-item__info">
-                    <strong>{a.clientName}</strong>
-                    <span>
-                      {a.service} · {a.duration} min
-                      {mins !== null && mins > 0 && mins <= 30 && (
-                        <em className="spec-list-item__soon"> — en {mins} min</em>
-                      )}
-                    </span>
-                  </div>
-
-                  <span className={`spec-list-item__status spec-list-item__status--${a.status}`}>
-                    {STATUS_LABELS[a.status] ?? a.status}
-                  </span>
-
-                  {canStart && (
-                    <button
-                      className="spec-list-item__btn"
-                      onClick={() => handleStart(a.id)}
-                      disabled={!!loadingId}
-                    >
-                      <Play size={12} />
-                      Iniciar
-                    </button>
-                  )}
-
-                  {isActive && !completingId && (
-                    <button
-                      className="spec-list-item__btn spec-list-item__btn--complete"
-                      onClick={() => openCompleteFlow(a)}
-                      disabled={!!loadingId}
-                    >
-                      <CheckCircle2 size={12} />
-                      Completar
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── Próximas citas (future days) ── */}
-      {futureAppts.length > 0 && (
-        <div className="spec-section">
-          <h2 className="spec-section__title">
-            <CalendarDays size={16} />
-            Próximas Citas
-          </h2>
-          <div className="spec-list">
-            {futureAppts.slice(0, 12).map((a) => {
-              const dateLabel = new Date(a.date + 'T12:00:00').toLocaleDateString('es-DO', {
-                weekday: 'short', day: 'numeric', month: 'short',
-              });
-              return (
-                <div key={a.id} className="spec-list-item">
-                  <div className="spec-list-item__time">
-                    <span>{dateLabel}</span>
-                    <span className="spec-list-item__time-sub">{format12h(a.time)}</span>
-                  </div>
-                  <div className={`spec-list-item__dot spec-list-item__dot--${a.status}`} />
-                  <div className="spec-list-item__info">
-                    <strong>{a.clientName}</strong>
-                    <span>{a.service} · {a.duration} min</span>
-                  </div>
-                  <span className={`spec-list-item__status spec-list-item__status--${a.status}`}>
-                    {STATUS_LABELS[a.status] ?? a.status}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
+      {cita && <HojaCita cita={cita} onCerrar={() => setAbierta(null)} />}
     </div>
   );
 }

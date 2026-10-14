@@ -5,7 +5,7 @@ import { format12h } from '../../../lib/timeFormat';
 import { ETIQUETA_ESTADO } from '../../../lib/estadosCita';
 import { primerNombre } from '../citas/proximaCita';
 import { aHora, horasTexto, type Tramo } from '../hoy/dia';
-import type { Ahora, BloqueAgenda, ColumnaAgenda, Cuadricula as Datos } from './agenda';
+import type { Ahora, BloqueAgenda, ColumnaAgenda, Cuadricula as Datos } from './reglas';
 
 /** Alto de una hora: media hora mide 32 px, cómoda con el dedo. */
 const HORA = 64;

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buscarCitas, citasPorDia, cuadriculaDeSemana, cuadriculaDelDia, diasDeSemana, enCarriles, horaDelToque, resumenDelMes,
   tituloDeRango,
-} from '../src/pages/admin/agenda/agenda.ts';
+} from '../src/pages/admin/agenda/reglas.ts';
 import type { Appointment } from '../src/store/appointmentStore.ts';
 import type { ScheduleBlock } from '../src/store/blockStore.ts';
 import type { StaffMember } from '../src/store/staffStore.ts';

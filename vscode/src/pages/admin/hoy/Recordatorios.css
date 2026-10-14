@@ -1,0 +1,183 @@
+/* Recordatorios de mañana. Los botones son los de Hoy (Hoy.css) y el color de cada estado, el de la hoja de la cita
+   (citas/HojaCita.css). */
+
+.modal.recor {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+}
+
+.recor__sub {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.recor__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 28px 24px;
+  font-family: 'Outfit', sans-serif;
+  color: #fff;
+}
+
+.recor__vacio,
+.recor__nota {
+  margin: 0;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.recor__avance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.recor__avance > i {
+  display: block;
+  flex-basis: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.recor__avance > i > i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--camel);
+  transition: width 0.3s;
+}
+
+.recor__siguiente {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(178, 150, 125, 0.14);
+}
+
+.recor__siguiente > span {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.92rem;
+}
+
+.recor__siguiente > span > span {
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.recor__siguiente small {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.recor__listo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 600;
+  color: #4ade80;
+}
+
+.recor__lista {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recor__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 12px 0;
+}
+
+.recor__fila + .recor__fila { border-top: 1px solid rgba(255, 255, 255, 0.07); }
+
+.recor__hora {
+  flex-shrink: 0;
+  width: 72px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.recor__quien {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recor__quien b { font-size: 0.95rem; font-weight: 600; }
+
+.recor__quien > span {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.recor__estado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.recor__estado .estado { margin-top: 2px; font-style: normal; }
+
+.recor__estado small {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4ade80;
+}
+
+.recor__acciones {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+@media (max-width: 560px) {
+  .recor__cuerpo { padding: 14px 18px 20px; }
+  /* en el celular los botones van debajo, a todo el ancho */
+  .recor__acciones { flex-basis: 100%; }
+  .recor__acciones .hoy__btn { flex: 1; }
+}
+
+/* Tema claro */
+[data-theme="light"] .recor__sub,
+[data-theme="light"] .recor__vacio,
+[data-theme="light"] .recor__nota,
+[data-theme="light"] .recor__avance,
+[data-theme="light"] .recor__quien > span,
+[data-theme="light"] .recor__siguiente small,
+[data-theme="light"] .recor__siguiente > span > span { color: var(--muted); }
+
+[data-theme="light"] .recor__cuerpo { color: var(--espresso); }
+[data-theme="light"] .recor__avance > i { background: #EFE9E2; }
+[data-theme="light"] .recor__avance > i > i { background: var(--cocoa); }
+[data-theme="light"] .recor__siguiente { background: #F1E4D8; }
+[data-theme="light"] .recor__fila + .recor__fila { border-color: rgba(74, 52, 42, 0.09); }
+[data-theme="light"] .recor__listo,
+[data-theme="light"] .recor__estado small { color: #2F6B45; }

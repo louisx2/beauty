@@ -14,6 +14,8 @@ import SaveClientModal from '../../../components/SaveClientModal';
 import { enlaceWhatsApp } from '../../../lib/enlaces';
 import { useAhora } from '../../../lib/useAhora';
 import HojaCita from '../citas/HojaCita';
+import Recordatorios from './Recordatorios';
+import { citasParaRecordar, guardarMarcas, leerMarcas, marcasDeHoy, resumenRecordatorios, type Marcas } from './avisos';
 import { accionPrincipal } from '../citas/acciones';
 import { ICONO_PRINCIPAL, useAccionesCita } from '../citas/useAccionesCita';
 import {
@@ -61,6 +63,17 @@ export default function Hoy() {
   const sala = enSala(appointments, hoy);
   const confirmar = porConfirmar(appointments, hoy, manana);
   const deManana = resumenDe(appointments, manana);
+  const paraRecordar = citasParaRecordar(appointments, manana);
+  // a quién ya se le escribió hoy (en este equipo)
+  const [todasLasMarcas, setMarcas] = useState<Marcas>(leerMarcas);
+  const marcas = marcasDeHoy(todasLasMarcas, hoy);
+  const recordar = resumenRecordatorios(paraRecordar, marcas);
+  const [recordando, setRecordando] = useState(false);
+  const marcar = (id: string) => {
+    const nuevas = { ...marcas, [id]: { dia: hoy, hora: aHora(ahora.minutos) } };
+    setMarcas(nuevas);
+    guardarMarcas(nuevas);
+  };
   const totalHoy = resumenDe(appointments, hoy).citas;
   const proxima = appointments
     .filter((c) => c.date === hoy && (c.status === 'pending' || c.status === 'confirmed') && c.time >= aHora(ahora.minutos))
@@ -180,13 +193,24 @@ export default function Hoy() {
             )}
           </section>
 
-          <button type="button" className="hoy__manana" onClick={() => navigate(`/admin/citas?fecha=${manana}`)}>
-            <span>
-              <b>Mañana, {fechaTitulo(manana).toLowerCase()}</b>
-              <span>{deManana.citas === 1 ? '1 cita' : `${deManana.citas} citas`}{deManana.porConfirmar > 0 && ` · ${deManana.porConfirmar} por confirmar`}</span>
-            </span>
-            <ChevronRight size={18} aria-hidden="true" />
-          </button>
+          <section className="hoy__tarjeta hoy__manana" aria-labelledby="hoy-manana">
+            <h2 id="hoy-manana" className="hoy__tarjeta-tit">Mañana · {fechaTitulo(manana).toLowerCase()}</h2>
+            <p className="hoy__manana-res">
+              {deManana.citas === 1 ? '1 cita' : `${deManana.citas} citas`}
+              {recordar.porConfirmar > 0 && ` · ${recordar.porConfirmar} por confirmar`}
+              {recordar.total > 0 && (recordar.sinAvisar > 0 ? ` · ${recordar.sinAvisar} sin avisar` : ' · todas avisadas')}
+            </p>
+            <div className="hoy__manana-btns">
+              {recordar.total > 0 && (
+                <button type="button" className={`hoy__btn hoy__btn--chico ${recordar.sinAvisar > 0 ? 'hoy__btn--principal' : ''}`} onClick={() => setRecordando(true)}>
+                  <MessageCircle size={17} aria-hidden="true" /> {recordar.sinAvisar > 0 ? 'Recordarles' : 'Recordatorios'}
+                </button>
+              )}
+              <button type="button" className="hoy__btn hoy__btn--chico" onClick={() => navigate(`/admin/citas?fecha=${manana}`)}>
+                Ver el día <ChevronRight size={16} aria-hidden="true" />
+              </button>
+            </div>
+          </section>
         </aside>
 
         <section className="hoy__agenda" aria-label="Agenda de hoy por especialista">
@@ -265,6 +289,10 @@ export default function Hoy() {
           )}
         </section>
       </div>
+
+      {recordando && (
+        <Recordatorios manana={manana} citas={paraRecordar} marcas={marcas} onMarcar={marcar} onCerrar={() => setRecordando(false)} />
+      )}
 
       {cita && <HojaCita cita={cita} onCerrar={() => setAbierta(null)} onGuardarClienta={setGuardandoClienta} />}
 
