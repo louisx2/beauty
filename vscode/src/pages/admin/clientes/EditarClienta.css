@@ -32,3 +32,14 @@
 .edc__cumple-campos input { min-width: 0; min-height: 44px; }
 
 [data-theme="light"] .edc__cumple legend { color: var(--muted); }
+
+/* Llegó sin teléfono (del Excel de antes): se puede guardar igual; se recuerda pedirlo. */
+.edc__pista {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="light"] .edc__pista { color: var(--muted); }

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, FileText, Printer } from 'lucide-react';
+import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, FileText, Printer } from 'lucide-react';
 import { useBillingStore } from '../../store/billingStore';
 import { useAppointmentStore } from '../../store/appointmentStore';
 import { useServiceStore } from '../../store/serviceStore';
 import { useStaffStore } from '../../store/staffStore';
+import { useClientStore } from '../../store/clientStore';
 import { useAuthStore } from '../../store/authStore';
 import { useAhora } from '../../lib/useAhora';
 import { FACTURACION_NCF } from '../../lib/modulos';
@@ -16,6 +17,7 @@ import {
   serviciosMasHechos, tituloPeriodo, variacion, type Periodo, type Resumen,
 } from './negocio/reportes';
 import { paquetesVendidos, resumenPaquetes } from './negocio/paquetes';
+import { datosQueFaltan, type Filtro } from './clientes/ficha';
 import './negocio/Negocio.css';
 import './Reports.css';
 
@@ -56,7 +58,8 @@ function Barras({ filas, vacio }: { filas: { clave: string; nombre: React.ReactN
 /**
  * Reportes: cómo le fue al salón en un día, una semana, un mes o un año, comparado con el periodo anterior; de todo el
  * salón o de una especialista. Lo cobrado sale de las citas completadas (cada servicio para quien lo hizo). La
- * especialista ve solo lo suyo. Se descarga en Excel o se imprime.
+ * especialista ve solo lo suyo. Se descarga en Excel o se imprime. Arriba, si hay fichas a las que les falta el teléfono,
+ * el cumpleaños o la dirección, cuántas son (y cada número lleva a esas clientas).
  */
 export default function Reports() {
   const user = useAuthStore((s) => s.user);
@@ -64,6 +67,7 @@ export default function Reports() {
   const { appointments, fetchAppointments } = useAppointmentStore();
   const { services, clientPackages, fetchAll: fetchServices } = useServiceStore();
   const { staff, fetchStaff } = useStaffStore();
+  const { clients, fetchClients } = useClientStore();
   const navigate = useNavigate();
   const { hoy } = useAhora();
   const esEspecialista = user?.role === 'specialist';
@@ -74,7 +78,8 @@ export default function Reports() {
     fetchAppointments();
     fetchServices();
     fetchStaff().catch(() => { /* el equipo ya lo cargó el panel */ });
-  }, [fetchBilling, fetchAppointments, fetchServices, fetchStaff]);
+    if (!esEspecialista) fetchClients();
+  }, [fetchBilling, fetchAppointments, fetchServices, fetchStaff, fetchClients, esEspecialista]);
 
   const [periodo, setPeriodo] = useState<Periodo>('mes');
   const [fecha, setFecha] = useState(hoy);
@@ -99,6 +104,10 @@ export default function Reports() {
   const paquetes = resumenPaquetes(paquetesVendidos(clientPackages, appointments, hoy));
   const titulo = tituloPeriodo(periodo, fecha);
   const comisionMia = esEspecialista ? especialistas[0]?.comision ?? 0 : 0;
+  const faltan = datosQueFaltan(clients);
+  const fichasIncompletas = ([
+    ['sin-telefono', faltan.telefono, 'sin teléfono'], ['sin-cumple', faltan.cumple, 'sin cumpleaños'], ['sin-direccion', faltan.direccion, 'sin dirección'],
+  ] as [Filtro, number, string][]).filter(([, n]) => n > 0);
   const pagadas = FACTURACION_NCF ? invoices.filter((i) => i.status === 'paid' && i.createdAt.slice(0, 10) >= rango.desde && i.createdAt.slice(0, 10) <= rango.hasta) : [];
 
   const cambiarPeriodo = (p: Periodo) => { setPeriodo(p); setFecha(esteEs ? hoy : rango.desde); };
@@ -197,6 +206,25 @@ export default function Reports() {
           <button type="button" className="neg__btn" onClick={imprimir}><Printer size={18} aria-hidden="true" /> Imprimir</button>
         </div>
       </header>
+
+      {!esEspecialista && fichasIncompletas.length > 0 && (
+        <div className="neg__aviso reps__fichas">
+          <AlertTriangle size={16} aria-hidden="true" />
+          <div>
+            <p className="reps__fichas-tit">Fichas incompletas de {clients.length === 1 ? '1 clienta' : `${clients.length} clientas`}</p>
+            <ul className="reps__fichas-lista">
+              {fichasIncompletas.map(([f, n, texto]) => (
+                <li key={f}>
+                  <button type="button" className="reps__fichas-btn" onClick={() => navigate('/admin/clientes', { state: { filtro: f } })}>
+                    <b>{n}</b> {texto}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {faltan.telefono > 0 && <p className="reps__fichas-por">Sin teléfono no se les puede escribir ni recordar sus citas.</p>}
+          </div>
+        </div>
+      )}
 
       <div className="reps__barra">
         <div className="reps__periodos" role="group" aria-label="Periodo">

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { AlertCircle, AlertTriangle, Cake, FileText, Heart, Mail, Phone, Shield, User, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Cake, FileText, Heart, Mail, MapPin, Phone, Shield, User, X } from 'lucide-react';
 import { useClientStore, type Client } from '../../../store/clientStore';
 import { capitalizarNombre } from '../../../lib/nombres';
 import { fechaLocal } from '../../../lib/fechas';
 import { MESES } from '../../../site/reservar/calendario';
 import { formatoTelefono, telefonoClave } from '../atender/atender';
 import { fechaDeCumple, partesDeCumple } from './cumples';
+import { errorDeTelefono } from './ficha';
 import '../atender/AtenderAhora.css';
 import './EditarClienta.css';
 
@@ -20,7 +21,7 @@ function formatoCedula(raw: string): string {
 }
 
 interface Form {
-  name: string; phone: string; cedula: string; email: string; skin_type: string; allergies: string; notes: string;
+  name: string; phone: string; cedula: string; email: string; skin_type: string; allergies: string; notes: string; address: string;
   /** cumpleaños: día, mes y año (opcional) */
   cdia: string; cmes: string; canio: string;
 }
@@ -28,14 +29,16 @@ type Errores = Partial<Record<keyof Form, string>>;
 
 const deClienta = (c: Client | null): Form => ({
   name: c?.name ?? '', phone: c?.phone ?? '', cedula: c?.cedula ?? '', email: c?.email ?? '',
-  skin_type: c?.skin_type ?? '', allergies: c?.allergies ?? '', notes: c?.notes ?? '',
+  skin_type: c?.skin_type ?? '', allergies: c?.allergies ?? '', notes: c?.notes ?? '', address: c?.address ?? '',
   ...(({ dia, mes, anio }) => ({ cdia: dia, cmes: mes, canio: anio }))(partesDeCumple(c?.birthday)),
 });
 
-function validar(f: Form): Errores {
+/** `telefonoAntes`: el que tenía la ficha (null si es nueva) */
+function validar(f: Form, telefonoAntes: string | null): Errores {
   const e: Errores = {};
   if (f.name.trim().length < 2) e.name = 'Escribe su nombre';
-  if (f.phone.replace(/\D/g, '').length !== 10) e.phone = 'Teléfono de 10 dígitos';
+  const tel = errorDeTelefono(f.phone, telefonoAntes);
+  if (tel) e.phone = tel;
   if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = 'Correo no válido';
   if (f.cedula && f.cedula.replace(/\D/g, '').length !== 11) e.cedula = 'Cédula de 11 dígitos';
   const cumple = fechaDeCumple({ dia: f.cdia, mes: f.cmes, anio: f.canio }, fechaLocal());
@@ -53,7 +56,8 @@ interface Props {
   onVerOtra: (c: Client) => void;
 }
 
-/** Nueva clienta o sus datos: nombre, teléfono (sin repetir el de otra ficha), cédula, correo, piel, alergias y notas. */
+/** Nueva clienta o sus datos: nombre, teléfono (sin repetir el de otra ficha), dirección, cédula, correo, piel, alergias
+ *  y notas. */
 export default function EditarClienta({ clienta, onCerrar, onGuardada, onVerOtra }: Props) {
   const { clients, addClient, updateClient } = useClientStore();
   const [form, setForm] = useState<Form>(() => deClienta(clienta));
@@ -75,7 +79,7 @@ export default function EditarClienta({ clienta, onCerrar, onGuardada, onVerOtra
 
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
-    const errs = validar(form);
+    const errs = validar(form, clienta ? clienta.phone : null);
     setErrores(errs);
     if (Object.keys(errs).length > 0 || otra) return;
     setGuardando(true);
@@ -88,6 +92,7 @@ export default function EditarClienta({ clienta, onCerrar, onGuardada, onVerOtra
         skin_type: form.skin_type || null,
         allergies: form.allergies.trim() || null,
         notes: form.notes.trim() || null,
+        address: form.address.trim() || null,
         birthday: fechaDeCumple({ dia: form.cdia, mes: form.cmes, anio: form.canio }, fechaLocal()).fecha,
       };
       if (clienta) {
@@ -117,10 +122,11 @@ export default function EditarClienta({ clienta, onCerrar, onGuardada, onVerOtra
               {errores.name && <span className="field-error"><AlertCircle size={12} /> {errores.name}</span>}
             </div>
             <div className="modal__field">
-              <label htmlFor="edc-telefono"><Phone size={14} aria-hidden="true" /> Teléfono *</label>
+              <label htmlFor="edc-telefono"><Phone size={14} aria-hidden="true" /> Teléfono{clienta && !clienta.phone ? '' : ' *'}</label>
               <input id="edc-telefono" type="tel" inputMode="tel" placeholder="829-000-0000" maxLength={12} value={form.phone}
                 className={errores.phone || otra ? 'input--error' : ''} onChange={(e) => cambiar('phone', formatoTelefono(e.target.value))} />
               {errores.phone && <span className="field-error"><AlertCircle size={12} /> {errores.phone}</span>}
+              {!errores.phone && clienta && !form.phone && <span className="edc__pista">Sin teléfono: pídeselo para escribirle y recordarle sus citas.</span>}
             </div>
           </div>
           {otra && (
@@ -173,6 +179,11 @@ export default function EditarClienta({ clienta, onCerrar, onGuardada, onVerOtra
             <input id="edc-correo" type="email" inputMode="email" placeholder="correo@ejemplo.com" value={form.email}
               className={errores.email ? 'input--error' : ''} onChange={(e) => cambiar('email', e.target.value.toLowerCase().trim())} />
             {errores.email && <span className="field-error"><AlertCircle size={12} /> {errores.email}</span>}
+          </div>
+          <div className="modal__field">
+            <label htmlFor="edc-direccion"><MapPin size={14} aria-hidden="true" /> Dirección</label>
+            <input id="edc-direccion" value={form.address} autoComplete="off" placeholder="Ej. C/ Duvergé #83, Barrio San Antonio"
+              onChange={(e) => cambiar('address', e.target.value)} />
           </div>
           <div className="modal__field">
             <label htmlFor="edc-notas"><FileText size={14} aria-hidden="true" /> Notas</label>
