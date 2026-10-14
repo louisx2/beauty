@@ -1,0 +1,567 @@
+/* Lo que comparten las pantallas de Negocio (Servicios, Paquetes, Equipo, Reportes): la cabeza con el título y el
+   botón principal, los filtros en chips, la búsqueda, los datos del resumen, las tarjetas y el "no hay nada". Mismo
+   aspecto que Hoy y la Agenda: botón principal cocoa sólido, todo lo que se toca de 44 px o más. Cada pantalla se
+   acomoda al ancho que tiene (container "neg"), no al de la pantalla, porque el menú lateral ocupa parte. */
+
+.neg {
+  container: neg / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: 'Outfit', sans-serif;
+  color: #fff;
+}
+
+.neg__oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Cabeza */
+.neg__cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.neg__titulo {
+  margin: 0;
+  font-family: var(--panel-titulo);
+  font-size: 2.2rem;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.neg__sub {
+  margin: 4px 0 0;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.neg__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Botones */
+.neg__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.neg__btn:hover { border-color: var(--camel); }
+.neg__btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.neg__btn:focus-visible,
+.neg__chip:focus-visible,
+.neg__icono:focus-visible { outline: 2px solid var(--camel); outline-offset: 2px; }
+
+.neg__btn--principal {
+  border-color: var(--cocoa);
+  background: var(--cocoa);
+}
+
+.neg__btn--principal:hover {
+  border-color: var(--cocoa-dark);
+  background: var(--cocoa-dark);
+}
+
+.neg__btn--chico {
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 0.85rem;
+}
+
+.neg__btn--peligro { border-color: rgba(248, 113, 113, 0.4); color: #fca5a5; }
+.neg__btn--peligro:hover { border-color: #f87171; }
+
+.neg__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.neg__icono:hover { border-color: var(--camel); }
+
+/* Filtros: chips que se deslizan si no caben */
+.neg__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.neg__chips {
+  display: flex;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.neg__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.neg__chip b {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.76rem;
+  text-align: center;
+}
+
+.neg__chip.is-on {
+  border-color: var(--cocoa);
+  background: var(--cocoa);
+  color: #fff;
+}
+
+.neg__chip.is-on b { background: rgba(255, 255, 255, 0.22); }
+
+/* Búsqueda */
+.neg__buscar {
+  flex: 1 1 260px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 6px 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.neg__buscar:focus-within { border-color: var(--camel); }
+
+.neg__buscar input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+}
+
+.neg__buscar input::-webkit-search-cancel-button { display: none; }
+
+.neg__borrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Interruptor "ver también ..." */
+.neg__ver {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+}
+
+.neg__ver input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--cocoa);
+}
+
+/* Resumen: datos grandes que también filtran */
+.neg__resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.neg__dato {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+}
+
+button.neg__dato { cursor: pointer; }
+button.neg__dato:hover { border-color: var(--camel); }
+.neg__dato.is-on { border-color: var(--cocoa); box-shadow: inset 0 0 0 1px var(--cocoa); }
+
+.neg__dato b {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.neg__dato span {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.neg__dato small {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.neg__dato--alerta b { color: #fbbf24; }
+.neg__dato--bien b { color: #4ade80; }
+
+.neg__sube { color: #4ade80; }
+.neg__baja { color: #f87171; }
+.neg__igual { color: rgba(255, 255, 255, 0.5); }
+
+/* Tarjetas y secciones */
+.neg__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.neg__tarjeta.is-apagada { opacity: 0.6; }
+
+.neg__seccion-tit {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.neg__grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.neg__vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 20px;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: center;
+}
+
+.neg__vacio p { margin: 0; font-size: 0.95rem; }
+
+.neg__aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(178, 150, 125, 0.14);
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.neg__aviso svg { flex-shrink: 0; margin-top: 1px; color: var(--camel-light); }
+
+/* Etiquetas pequeñas (estado, "con sesiones", "inactivo"...) */
+.neg__etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.neg__etiqueta--bien { background: rgba(74, 222, 128, 0.14); color: #86efac; }
+.neg__etiqueta--alerta { background: rgba(251, 191, 36, 0.15); color: #fcd34d; }
+.neg__etiqueta--peligro { background: rgba(248, 113, 113, 0.14); color: #fca5a5; }
+.neg__etiqueta--suave { background: transparent; border: 1px solid rgba(255, 255, 255, 0.16); }
+
+/* Partes de los formularios de Negocio: un grupo con su título (categoría, forma de pago...) */
+.neg__grupo {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.neg__grupo legend,
+.neg__etq {
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.neg__opc { font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+/* Opciones de un toque dentro de un formulario (duración, forma de pago...) */
+.neg__opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.neg__opcion {
+  min-height: 44px;
+  min-width: 56px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.neg__opcion.is-on {
+  border-color: var(--cocoa);
+  background: var(--cocoa);
+  color: #fff;
+}
+
+/* Casillas grandes (quién hace un servicio) */
+.neg__casillas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px;
+}
+
+.neg__casilla {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* dentro de un formulario, la casilla no lleva el aspecto de las etiquetas de los campos (mayúsculas, gris) */
+.modal__field .neg__casilla,
+.modal__form .neg__casilla {
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: inherit;
+}
+
+.neg__casilla.is-on { border-color: var(--cocoa); background: rgba(125, 90, 68, 0.22); }
+.neg__casilla.is-fija { cursor: default; opacity: 0.85; }
+
+.neg__casilla input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--cocoa);
+}
+
+.neg__casilla span { display: flex; flex-direction: column; min-width: 0; }
+.neg__casilla small { font-size: 0.76rem; color: rgba(255, 255, 255, 0.55); }
+
+/* Barras de los reportes */
+.neg__barras {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.neg__barras li { display: flex; flex-direction: column; gap: 5px; }
+
+.neg__barras-txt {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.88rem;
+}
+
+.neg__barras-txt span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.neg__barras-txt b { flex-shrink: 0; font-weight: 600; }
+
+.neg__barra-pista {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.neg__barra-pista i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--camel);
+}
+
+/* Los botones de una fila al pie de una tarjeta */
+.neg__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.neg__acciones .neg__espacio { flex: 1; }
+
+@container neg (max-width: 560px) {
+  .neg__titulo { font-size: 1.9rem; }
+  .neg__cabeza > .neg__botones { width: 100%; }
+  .neg__cabeza > .neg__botones .neg__btn { flex: 1; }
+  .neg__grilla { grid-template-columns: 1fr; }
+  .neg__resumen { grid-template-columns: repeat(2, 1fr); }
+  .neg__dato b { font-size: 1.35rem; }
+}
+
+/* Tema claro */
+[data-theme="light"] .neg { color: var(--espresso); }
+
+[data-theme="light"] .neg__sub,
+[data-theme="light"] .neg__dato span,
+[data-theme="light"] .neg__seccion-tit,
+[data-theme="light"] .neg__vacio,
+[data-theme="light"] .neg__ver,
+[data-theme="light"] .neg__casilla small,
+[data-theme="light"] .neg__grupo legend,
+[data-theme="light"] .neg__etq,
+[data-theme="light"] .neg__igual { color: var(--muted); }
+
+[data-theme="light"] .neg__btn,
+[data-theme="light"] .neg__icono,
+[data-theme="light"] .neg__chip,
+[data-theme="light"] .neg__opcion,
+[data-theme="light"] .neg__casilla {
+  border-color: rgba(74, 52, 42, 0.16);
+  background: #fff;
+  color: var(--espresso);
+}
+
+[data-theme="light"] .neg__btn--principal,
+[data-theme="light"] .neg__chip.is-on,
+[data-theme="light"] .neg__opcion.is-on {
+  border-color: var(--cocoa);
+  background: var(--cocoa);
+  color: #fff;
+}
+
+[data-theme="light"] .neg__btn--principal:hover { border-color: var(--cocoa-dark); background: var(--cocoa-dark); }
+[data-theme="light"] .neg__btn--peligro { border-color: rgba(185, 28, 28, 0.3); color: #B42318; }
+[data-theme="light"] .neg__chip b { background: #F1EAE2; }
+[data-theme="light"] .neg__chip.is-on b { background: rgba(255, 255, 255, 0.22); }
+[data-theme="light"] .neg__casilla.is-on { border-color: var(--cocoa); background: #F4EBE2; }
+
+[data-theme="light"] .neg__buscar {
+  border-color: rgba(74, 52, 42, 0.16);
+  background: #fff;
+  color: var(--muted);
+}
+
+[data-theme="light"] .neg__buscar input { color: var(--espresso); }
+
+[data-theme="light"] .neg__dato,
+[data-theme="light"] .neg__tarjeta {
+  border-color: rgba(74, 52, 42, 0.09);
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(74, 52, 42, 0.05);
+}
+
+[data-theme="light"] .neg__dato--alerta b { color: #A15C00; }
+[data-theme="light"] .neg__dato--bien b,
+[data-theme="light"] .neg__sube { color: #2F6B45; }
+[data-theme="light"] .neg__baja { color: #B42318; }
+[data-theme="light"] .neg__vacio { border-color: rgba(74, 52, 42, 0.18); }
+[data-theme="light"] .neg__aviso { background: #F4EBE2; color: var(--espresso); }
+[data-theme="light"] .neg__aviso svg { color: var(--cocoa); }
+[data-theme="light"] .neg__etiqueta { background: #F1EAE2; color: var(--espresso); }
+[data-theme="light"] .neg__etiqueta--bien { background: #E3F1E7; color: #2F6B45; }
+[data-theme="light"] .neg__etiqueta--alerta { background: #FBEFD5; color: #7A4F00; }
+[data-theme="light"] .neg__etiqueta--peligro { background: #FBE4E1; color: #B42318; }
+[data-theme="light"] .neg__etiqueta--suave { background: transparent; border-color: rgba(74, 52, 42, 0.2); }
+[data-theme="light"] .neg__barra-pista { background: #EFE9E2; }
+[data-theme="light"] .neg__barra-pista i { background: var(--cocoa); }

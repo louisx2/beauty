@@ -1,19 +1,30 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useStaffStore, type StaffMember, type StaffRole, type StaffStats, WEEKDAYS } from '../../store/staffStore';
+import { useNavigate } from 'react-router-dom';
+import { useStaffStore, type StaffMember, type StaffRole, WEEKDAYS } from '../../store/staffStore';
 import { useServiceStore } from '../../store/serviceStore';
+import { useAppointmentStore } from '../../store/appointmentStore';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
 import {
-  Search, User, UserPlus, Phone, Mail, Edit2, Trash2, X,
-  Clock, Shield, Sparkles, CheckCircle2, XCircle, AlertCircle,
-  Percent, Filter, Key, Lock, Unlock, UserCog, Globe,
+  User, UserPlus, Phone, Mail, X, Clock, Shield, Sparkles, CheckCircle2, XCircle, AlertCircle,
+  Percent, Key, UserCog, Globe, Search, CalendarDays, Pencil, Power, Trash2, MessageCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
+import { enlaceLlamar, enlaceWhatsApp } from '../../lib/enlaces';
+import { useAhora } from '../../lib/useAhora';
 import { textoONull } from '../../site/landing/equipo';
+import { sinTildes } from '../../site/reservar/servicios';
 import { capitalizarNombre } from '../../lib/nombres';
 import { reducirFoto } from '../../lib/fotos';
 import { atiendeClientas } from '../../lib/quienAtiende';
+import MenuAcciones, { type ItemMenu } from '../../components/MenuAcciones';
+import Confirmar from '../../components/Confirmar';
+import { iniciales } from './clientes/ficha';
+import { primerNombre } from './citas/proximaCita';
+import { aHora } from './hoy/dia';
+import { hoyDe, mesDe } from './negocio/equipo';
+import './negocio/Negocio.css';
 import './Staff.css';
 
 const ROLES: { key: StaffRole; label: string }[] = [
@@ -22,17 +33,19 @@ const ROLES: { key: StaffRole; label: string }[] = [
   { key: 'admin',        label: 'Administradora' },
 ];
 
-const ROLE_FILTERS = [
+const ROLE_FILTERS: { key: StaffRole | 'all'; label: string }[] = [
   { key: 'all',          label: 'Todas' },
   { key: 'specialist',   label: 'Especialistas' },
-  { key: 'receptionist', label: 'Recepcionistas' },
-  { key: 'admin',        label: 'Admin' },
+  { key: 'receptionist', label: 'Recepción' },
+  { key: 'admin',        label: 'Administración' },
 ];
 
 const HOURS = Array.from({ length: 15 }, (_, i) => {
   const h = i + 7;
   return `${String(h).padStart(2, '0')}:00`;
 });
+
+const rd = (n: number) => `RD$ ${n.toLocaleString('es-DO')}`;
 
 const emptyForm: Omit<StaffMember, 'id' | 'createdAt'> = {
   name: '', role: 'specialist', phone: '', email: null,
@@ -81,13 +94,22 @@ function validateStaffForm(form: Omit<StaffMember, 'id' | 'createdAt'>): StaffEr
   return errors;
 }
 
+/**
+ * Equipo: quién trabaja en el salón. De cada una, qué está haciendo hoy (en cabina, quién le sigue, o si hoy no
+ * trabaja), cómo va su mes (citas, lo que cobró y su comisión), su horario y lo que hace. Desde aquí se ve su agenda,
+ * se edita su ficha y se maneja su acceso al panel. Todo sale de las citas ya cargadas: no hay una consulta por persona.
+ */
 export default function Staff() {
-  const { staff, loading, fetchStaff, addStaff, updateStaff, deleteStaff, fetchStaffStats } = useStaffStore();
+  const { staff, loading, fetchStaff, addStaff, updateStaff, deleteStaff } = useStaffStore();
   const { services, fetchAll: fetchServices } = useServiceStore();
+  const appointments = useAppointmentStore((s) => s.appointments);
   const { user } = useAuthStore();
+  const navigate = useNavigate();
+  const { hoy } = useAhora();
+  const esAdmin = user?.role === 'admin';
 
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState<StaffRole | 'all'>('all');
   const [showInactive, setShowInactive] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -98,9 +120,7 @@ export default function Staff() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [eliminando, setEliminando] = useState(false);
   const [uploading, setUploading] = useState(false);
-
-  // Stats for all staff loaded concurrently
-  const [memberStats, setMemberStats] = useState<Record<string, StaffStats>>({});
+  const [revocar, setRevocar] = useState(false);
 
   // Credentials / Logins state
   const [logins, setLogins] = useState<{ id: string; email: string; created_at: string; last_sign_in_at: string | null }[]>([]);
@@ -127,24 +147,10 @@ export default function Staff() {
   }, []);
 
   useEffect(() => {
-    fetchStaff().catch(() => toast.error('Error al cargar empleadas'));
+    fetchStaff().catch(() => toast.error('Error al cargar el equipo'));
     fetchServices();
     loadLogins();
   }, [fetchStaff, fetchServices, loadLogins]);
-
-  // Load stats for each staff member on fetch
-  useEffect(() => {
-    if (staff.length > 0) {
-      staff.forEach(async (m) => {
-        try {
-          const s = await fetchStaffStats(m.name);
-          setMemberStats((prev) => ({ ...prev, [m.name]: s }));
-        } catch {
-          // Ignore stats error for individual staff members
-        }
-      });
-    }
-  }, [staff, fetchStaffStats]);
 
   const hasLogin = useCallback((email: string | null) => {
     if (!email) return false;
@@ -157,20 +163,23 @@ export default function Staff() {
   }, [logins]);
 
   const filtered = useMemo(() => {
-    let result = staff;
-    if (!showInactive) result = result.filter((m) => m.active);
-    if (roleFilter !== 'all') result = result.filter((m) => m.role === roleFilter);
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (m) => m.name.toLowerCase().includes(q) || m.phone.includes(q) || (m.email && m.email.toLowerCase().includes(q))
-      );
-    }
-    return result;
+    const palabras = sinTildes(search.trim()).split(/\s+/).filter(Boolean);
+    const digitos = search.replace(/\D/g, '');
+    return staff
+      .filter((m) => showInactive || m.active)
+      .filter((m) => roleFilter === 'all' || m.role === roleFilter)
+      .filter((m) => palabras.every((p) => sinTildes(`${m.name} ${m.email ?? ''}`).includes(p))
+        || (digitos.length >= 3 && m.phone.replace(/\D/g, '').includes(digitos)))
+      // las activas primero; entre ellas, por nombre
+      .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name, 'es'));
   }, [staff, search, roleFilter, showInactive]);
 
   const activeCount = staff.filter((m) => m.active).length;
   const inactiveCount = staff.filter((m) => !m.active).length;
+  const cuantasDe = (rol: StaffRole | 'all') => staff.filter((m) => (showInactive || m.active) && (rol === 'all' || m.role === rol)).length;
+  // hoy y el mes de cada una, de las citas ya cargadas
+  const delDia = useMemo(() => new Map(staff.map((m) => [m.id, hoyDe(m, appointments, hoy)])), [staff, appointments, hoy]);
+  const delMes = useMemo(() => new Map(staff.map((m) => [m.id, mesDe(m, appointments, services, hoy)])), [staff, appointments, services, hoy]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -201,8 +210,8 @@ export default function Staff() {
 
       setForm((prev) => ({ ...prev, avatarUrl: publicUrl }));
       toast.success('Foto cargada temporalmente. Guarda la ficha para aplicar.');
-    } catch (err: any) {
-      toast.error(err.message || 'Error al subir la imagen');
+    } catch (err) {
+      toast.error((err as { message?: string } | null)?.message || 'Error al subir la imagen');
     } finally {
       setUploading(false);
     }
@@ -247,8 +256,8 @@ export default function Staff() {
       toast.success('Acceso de login habilitado correctamente.');
       loadLogins();
       setShowLoginModal(false);
-    } catch (err: any) {
-      toast.error(err.message || 'Error al habilitar acceso');
+    } catch (err) {
+      toast.error((err as { message?: string } | null)?.message || 'Error al habilitar acceso');
     } finally {
       setLoginSubmitting(false);
     }
@@ -274,8 +283,8 @@ export default function Staff() {
       } else {
         toast.error('No se pudo encontrar el usuario en Supabase Auth.');
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Error al cambiar contraseña');
+    } catch (err) {
+      toast.error((err as { message?: string } | null)?.message || 'Error al cambiar contraseña');
     } finally {
       setLoginSubmitting(false);
     }
@@ -283,8 +292,6 @@ export default function Staff() {
 
   const handleDeleteLogin = async () => {
     if (!loginStaff || !loginStaff.email) return;
-    if (!window.confirm(`¿Estás segura de revocar el acceso a ${loginStaff.name}? La cuenta en Supabase Auth será eliminada.`)) return;
-
     setLoginSubmitting(true);
     try {
       const { data, error } = await supabase.rpc('delete_staff_user', {
@@ -295,12 +302,13 @@ export default function Staff() {
       if (data) {
         toast.success('Acceso revocado correctamente.');
         loadLogins();
+        setRevocar(false);
         setShowLoginModal(false);
       } else {
         toast.error('No se pudo eliminar el usuario de Supabase Auth.');
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Error al revocar acceso');
+    } catch (err) {
+      toast.error((err as { message?: string } | null)?.message || 'Error al revocar acceso');
     } finally {
       setLoginSubmitting(false);
     }
@@ -394,282 +402,175 @@ export default function Staff() {
 
   const closeModal = () => { setShowModal(false); setErrors({}); };
 
-  const roleBadgeClass = (role: StaffRole) => {
-    switch (role) {
-      case 'admin': return 'staff-card__role-badge staff-card__role-badge--admin';
-      case 'receptionist': return 'staff-card__role-badge staff-card__role-badge--receptionist';
-      default: return 'staff-card__role-badge staff-card__role-badge--specialist';
-    }
-  };
-
-  const avatarGradientClass = (role: StaffRole) => {
-    switch (role) {
-      case 'admin': return 'staff-card__avatar--admin';
-      case 'receptionist': return 'staff-card__avatar--receptionist';
-      default: return 'staff-card__avatar--specialist';
-    }
+  const accionesDe = (m: StaffMember): ItemMenu[] => {
+    const items: ItemMenu[] = [];
+    if (atiendeClientas(m)) items.push({ id: 'agenda', etiqueta: 'Ver su agenda', icono: <CalendarDays size={16} />, onSelect: () => navigate(`/admin/citas?con=${m.id}`) });
+    if (!esAdmin) return items;
+    items.push({ id: 'editar', etiqueta: 'Editar ficha', icono: <Pencil size={16} />, onSelect: () => openEdit(m) });
+    if (m.email) items.push({ id: 'acceso', etiqueta: hasLogin(m.email) ? 'Acceso al panel' : 'Darle acceso al panel', icono: <Key size={16} />, onSelect: () => openManageLogin(m) });
+    items.push({ id: 'activar', etiqueta: m.active ? 'Desactivar' : 'Activar', icono: <Power size={16} />, onSelect: () => handleToggleActive(m) });
+    items.push({ id: 'borrar', etiqueta: 'Eliminar', icono: <Trash2 size={16} />, peligro: true, onSelect: () => { setSelected(m); setShowDeleteConfirm(true); } });
+    return items;
   };
 
   return (
-    <div className="staff-page">
-      {/* Header */}
-      <div className="staff-page__header">
+    <div className="neg equipo">
+      <header className="neg__cabeza">
         <div>
-          <h1 className="staff-page__title">Equipo</h1>
-          <p className="staff-page__subtitle">
-            {activeCount} activas{inactiveCount > 0 && ` · ${inactiveCount} inactivas`}
+          <h1 className="neg__titulo">Equipo</h1>
+          <p className="neg__sub">
+            {activeCount === 1 ? '1 activa' : `${activeCount} activas`}{inactiveCount > 0 && ` · ${inactiveCount} inactiva${inactiveCount === 1 ? '' : 's'}`}
           </p>
         </div>
-        <div className="staff-page__header-actions">
-          {user?.role === 'admin' && (
-            <button className="staff-page__add-btn" onClick={openCreate} id="btn-new-staff">
-              <UserPlus size={18} /> Agregar
+        {esAdmin && (
+          <div className="neg__botones">
+            <button type="button" className="neg__btn neg__btn--principal" onClick={openCreate} id="btn-new-staff">
+              <UserPlus size={18} aria-hidden="true" /> Agregar al equipo
             </button>
-          )}
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="staff-filters">
-        <div className="staff-filters__search">
-          <Search size={16} />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, teléfono o email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            id="staff-search"
-          />
-        </div>
-        <div className="staff-filters__roles">
-          {ROLE_FILTERS.map((rf) => (
-            <button
-              key={rf.key}
-              className={`staff-filter-tab ${roleFilter === rf.key ? 'staff-filter-tab--active' : ''}`}
-              onClick={() => setRoleFilter(rf.key)}
-            >
-              {rf.label}
-            </button>
-          ))}
-        </div>
-        <button
-          className={`staff-filter-inactive ${showInactive ? 'staff-filter-inactive--on' : ''}`}
-          onClick={() => setShowInactive(!showInactive)}
-        >
-          <Filter size={14} />
-          {showInactive ? 'Todas' : 'Solo activas'}
-        </button>
-      </div>
-
-      {loading && <div className="staff-page__loading">Cargando equipo...</div>}
-
-      {/* Cards Grid */}
-      <div className="staff-grid">
-        {filtered.length === 0 ? (
-          <div className="staff-page__empty">
-            <User size={48} />
-            <p>{search || roleFilter !== 'all' ? 'No se encontraron resultados' : 'No hay empleadas registradas'}</p>
           </div>
-        ) : (
-          filtered.map((m) => {
-            const stats = memberStats[m.name] || null;
-            return (
-              <div
-                key={m.id}
-                className={`staff-card ${!m.active ? 'staff-card--inactive' : ''}`}
-              >
-                <div className="staff-card__header">
-                  <div className={`staff-card__avatar ${avatarGradientClass(m.role)}`} style={{ padding: 0, overflow: 'hidden' }}>
-                    {m.avatarUrl ? (
-                      <img src={m.avatarUrl} alt={m.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      m.name.split(' ').map((n) => n[0]).join('').slice(0, 2)
-                    )}
-                    <span className={`staff-card__status-dot ${m.active ? 'staff-card__status-dot--active' : ''}`} />
-                  </div>
-                  <div className="staff-card__name-role">
-                    <h3>{m.name}</h3>
-                    <span className={roleBadgeClass(m.role)}>{roleLabel(m.role)}</span>
-                    {m.active && m.mostrarEnWeb && (
-                      <span className="staff-card__web-badge" title="Aparece en «Nuestro equipo» de la página web">
-                        <Globe size={10} /> En la web
-                      </span>
-                    )}
-                  </div>
-                </div>
+        )}
+      </header>
 
-                <div className="staff-card__body">
-                  {/* Quick Stats Grid */}
-                  <div className="staff-card__stats">
-                    <div className="staff-card__stat-item">
-                      <span className="staff-card__stat-val">{stats?.completedAppointments ?? 0}/{stats?.totalAppointments ?? 0}</span>
-                      <span className="staff-card__stat-lbl">Citas</span>
-                    </div>
-                    <div className="staff-card__stat-item">
-                      <span className="staff-card__stat-val text-info">{stats?.upcomingAppointments ?? 0}</span>
-                      <span className="staff-card__stat-lbl">Próximas</span>
-                    </div>
-                    <div className="staff-card__stat-item">
-                      <span className="staff-card__stat-val text-success">{m.commissionPct > 0 ? `${m.commissionPct}%` : '—'}</span>
-                      <span className="staff-card__stat-lbl">Comisión</span>
-                    </div>
-                  </div>
-
-                  {/* Info List */}
-                  <div className="staff-card__info-list">
-                    <div className="staff-card__info-item">
-                      <Phone size={13} />
-                      <span>{m.phone || 'Sin teléfono'}</span>
-                    </div>
-                    <div className="staff-card__info-item">
-                      <Mail size={13} />
-                      <span className="staff-card__email-text">{m.email || 'Sin correo'}</span>
-                    </div>
-                  </div>
-
-                  {/* Schedule */}
-                  <div className="staff-card__schedule">
-                    <div className="staff-card__schedule-days">
-                      {WEEKDAYS.map((d) => {
-                        const isWorking = m.workingDays.includes(d.key);
-                        return (
-                          <span
-                            key={d.key}
-                            className={`staff-card__day-dot ${isWorking ? 'staff-card__day-dot--active' : ''}`}
-                            title={d.label}
-                          >
-                            {d.label[0]}
-                          </span>
-                        );
-                      })}
-                    </div>
-                    <div className="staff-card__schedule-hours">
-                      <Clock size={12} />
-                      <span>{format12h(m.workingStart)} — {format12h(m.workingEnd)}</span>
-                    </div>
-                  </div>
-
-                  {/* Services tags */}
-                  <div className="staff-card__services">
-                    <h4 className="staff-card__section-title">Servicios que realiza</h4>
-                    <div className="staff-card__services-tags">
-                      {m.serviceIds.length === 0 ? (
-                        atiendeClientas(m) ? (
-                          <span className="staff-card__service-tag staff-card__service-tag--all">
-                            Todos los servicios
-                          </span>
-                        ) : (
-                          <span className="staff-card__service-tag">No atiende clientas</span>
-                        )
-                      ) : (
-                        staffServices(m).slice(0, 3).map((s) => (
-                          <span key={s.id} className="staff-card__service-tag">
-                            <Sparkles size={10} /> {s.name}
-                          </span>
-                        ))
-                      )}
-                      {m.serviceIds.length > 3 && (
-                        <span className="staff-card__service-tag staff-card__service-tag--more">
-                          +{m.serviceIds.length - 3} más
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="staff-card__footer">
-                  {/* Credentials / login status */}
-                  <div className="staff-card__login-status">
-                    {m.email ? (
-                      hasLogin(m.email) ? (
-                        <span className="staff-card__login-badge staff-card__login-badge--active" title="Acceso habilitado">
-                          <Lock size={11} /> Con acceso
-                        </span>
-                      ) : (
-                        <span className="staff-card__login-badge staff-card__login-badge--inactive" title="Sin cuenta de acceso">
-                          <Unlock size={11} /> Sin acceso
-                        </span>
-                      )
-                    ) : (
-                      <span className="staff-card__login-badge staff-card__login-badge--noemail" title="Introduce un email para habilitar acceso">
-                        <AlertCircle size={11} /> Falta el correo
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="staff-card__actions">
-                    {user?.role === 'admin' && (
-                      <>
-                        {m.email && (
-                          <button
-                            className={`staff-card__action-btn staff-card__action-btn--login ${hasLogin(m.email) ? 'staff-card__action-btn--active-login' : ''}`}
-                            onClick={() => openManageLogin(m)}
-                            title="Administrar acceso a la plataforma"
-                          >
-                            <Key size={14} />
-                          </button>
-                        )}
-                        <button
-                          className="staff-card__action-btn"
-                          onClick={() => openEdit(m)}
-                          title="Editar"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          className="staff-card__action-btn staff-card__action-btn--danger"
-                          onClick={() => { setSelected(m); setShowDeleteConfirm(true); }}
-                          title="Eliminar"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })
+      <div className="neg__barra">
+        <label className="neg__buscar">
+          <Search size={18} aria-hidden="true" />
+          <span className="neg__oculto">Buscar en el equipo</span>
+          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nombre, teléfono o correo" id="staff-search" />
+          {search && <button type="button" className="neg__borrar" onClick={() => setSearch('')} aria-label="Borrar la búsqueda"><X size={18} /></button>}
+        </label>
+        {inactiveCount > 0 && (
+          <label className="neg__ver">
+            <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
+            Ver también las inactivas
+          </label>
         )}
       </div>
 
-      {/* Delete Confirmation */}
-      {showDeleteConfirm && selected && (
-        <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="modal staff-delete-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="staff-delete-modal__content">
-              <div className="staff-delete-modal__icon">
-                <AlertCircle size={32} />
-              </div>
-              <h3>Eliminar empleada</h3>
-              <p>
-                ¿Estás segura de que deseas eliminar a <strong>{selected.name}</strong>?
-                Esta acción removerá su ficha de empleada de la base de datos.
-              </p>
-              {hasLogin(selected.email) && (
-                <div className="staff-delete-modal__warning" style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', borderColor: 'rgba(239,68,68,0.15)' }}>
-                  <Shield size={14} />
-                  Tiene acceso al panel ({selected.email}): también se borrará y ya no podrá entrar.
-                </div>
-              )}
-              <div className="staff-delete-modal__actions">
-                <button
-                  className="modal__cancel-btn"
-                  onClick={() => setShowDeleteConfirm(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="staff-delete-modal__confirm"
-                  onClick={handleDelete}
-                  disabled={eliminando}
-                >
-                  <Trash2 size={14} /> {eliminando ? 'Eliminando…' : 'Eliminar'}
-                </button>
-              </div>
-            </div>
-          </div>
+      <div className="neg__chips" role="group" aria-label="Rol">
+        {ROLE_FILTERS.map((rf) => (
+          <button key={rf.key} type="button" className={`neg__chip ${roleFilter === rf.key ? 'is-on' : ''}`} aria-pressed={roleFilter === rf.key}
+            onClick={() => setRoleFilter(rf.key)}>
+            {rf.label} <b>{cuantasDe(rf.key)}</b>
+          </button>
+        ))}
+      </div>
+
+      {loading && staff.length === 0 ? (
+        <p className="neg__sub">Cargando el equipo…</p>
+      ) : filtered.length === 0 ? (
+        <div className="neg__vacio">
+          <User size={32} aria-hidden="true" />
+          <p>{search || roleFilter !== 'all' ? 'Nadie con eso.' : 'Todavía no hay nadie en el equipo.'}</p>
         </div>
+      ) : (
+        <ul className="neg__grilla equipo__lista">
+          {filtered.map((m) => {
+            const atiende = atiendeClientas(m);
+            const dia = delDia.get(m.id);
+            const mes = delMes.get(m.id);
+            const suyos = staffServices(m);
+            return (
+              <li key={m.id} className={`neg__tarjeta persona ${m.active ? '' : 'is-apagada'}`}>
+                <div className="persona__cabeza">
+                  <span className={`persona__foto persona__foto--${m.role}`} aria-hidden="true">
+                    {m.avatarUrl ? <img src={m.avatarUrl} alt="" /> : iniciales(m.name)}
+                  </span>
+                  <div className="persona__quien">
+                    <h3>{m.name}</h3>
+                    <div className="persona__etiquetas">
+                      <span className="neg__etiqueta">{roleLabel(m.role)}</span>
+                      {!m.active && <span className="neg__etiqueta neg__etiqueta--peligro">Inactiva</span>}
+                      {m.active && m.mostrarEnWeb && <span className="neg__etiqueta neg__etiqueta--suave" title="Sale en «Nuestro equipo» de la página web"><Globe size={12} aria-hidden="true" /> En la web</span>}
+                    </div>
+                  </div>
+                  {accionesDe(m).length > 0 && <MenuAcciones etiqueta={`Más acciones para ${m.name}`} items={accionesDe(m)} />}
+                </div>
+
+                {m.active && atiende && dia && (
+                  <div className={`persona__hoy ${dia.enCabina ? 'is-ocupada' : ''}`}>
+                    {!dia.trabaja && dia.servicios === 0 ? (
+                      <span>Hoy no trabaja</span>
+                    ) : dia.enCabina ? (
+                      <span><i aria-hidden="true" /> En cabina con <b>{primerNombre(dia.enCabina.cita.clientName)}</b> · {dia.enCabina.servicio}</span>
+                    ) : dia.siguiente ? (
+                      <span>Sigue a las <b>{format12h(aHora(dia.siguiente.inicio))}</b>: {primerNombre(dia.siguiente.cita.clientName)}</span>
+                    ) : (
+                      <span>{dia.servicios === 0 ? 'Libre todo el día' : 'Ya terminó lo de hoy'}</span>
+                    )}
+                    {dia.servicios > 0 && <small>{dia.servicios === 1 ? '1 servicio hoy' : `${dia.servicios} servicios hoy`}</small>}
+                  </div>
+                )}
+
+                {(atiende || (mes && mes.atendidas > 0)) && mes && (
+                  <dl className="persona__mes">
+                    <div><dt>Citas del mes</dt><dd>{mes.atendidas}</dd></div>
+                    {esAdmin && <div><dt>Cobrado</dt><dd>{rd(mes.ingresos)}</dd></div>}
+                    {esAdmin && <div><dt>Comisión{m.commissionPct > 0 && ` (${m.commissionPct} %)`}</dt><dd>{m.commissionPct > 0 ? rd(mes.comision) : '—'}</dd></div>}
+                    <div><dt>Por venir</dt><dd>{mes.proximos}</dd></div>
+                  </dl>
+                )}
+
+                <div className="persona__horario">
+                  <div className="persona__dias" aria-label={`Trabaja: ${WEEKDAYS.filter((d) => m.workingDays.includes(d.key)).map((d) => d.label).join(', ') || 'ningún día'}`}>
+                    {WEEKDAYS.map((d) => (
+                      <span key={d.key} className={m.workingDays.includes(d.key) ? 'is-on' : ''} aria-hidden="true">{d.label.slice(0, 2)}</span>
+                    ))}
+                  </div>
+                  <span className="persona__horas"><Clock size={14} aria-hidden="true" /> {format12h(m.workingStart)} – {format12h(m.workingEnd)}</span>
+                </div>
+
+                <p className="persona__servicios">
+                  <Sparkles size={14} aria-hidden="true" />
+                  {!atiende ? 'No atiende clientas'
+                    : m.serviceIds.length === 0 ? 'Hace todos los servicios'
+                      : `${suyos.length === 1 ? 'Hace 1 servicio' : `Hace ${suyos.length} servicios`}: ${suyos.slice(0, 3).map((s) => s.name).join(', ')}${suyos.length > 3 ? '…' : ''}`}
+                </p>
+
+                <div className="neg__acciones">
+                  {m.phone && (
+                    <>
+                      <a className="neg__icono" href={enlaceLlamar(m.phone)} aria-label={`Llamar a ${m.name}`}><Phone size={18} /></a>
+                      <a className="neg__icono" href={enlaceWhatsApp(m.phone, `Hola ${primerNombre(m.name)}`)} target="_blank" rel="noopener noreferrer"
+                        aria-label={`Escribirle a ${m.name} por WhatsApp`}><MessageCircle size={18} /></a>
+                    </>
+                  )}
+                  {esAdmin && (
+                    <span className={`persona__acceso ${hasLogin(m.email) ? 'is-on' : ''}`}>
+                      {!m.email ? 'Sin correo' : hasLogin(m.email) ? 'Con acceso' : 'Sin acceso'}
+                    </span>
+                  )}
+                  <span className="neg__espacio" />
+                  {atiende && m.active && (
+                    <button type="button" className="neg__btn neg__btn--chico" onClick={() => navigate(`/admin/citas?con=${m.id}`)}>
+                      <CalendarDays size={16} aria-hidden="true" /> Su agenda
+                    </button>
+                  )}
+                  {esAdmin && !(atiende && m.active) && (
+                    <button type="button" className="neg__btn neg__btn--chico" onClick={() => openEdit(m)}>
+                      <Pencil size={16} aria-hidden="true" /> Editar
+                    </button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {showDeleteConfirm && selected && (
+        <Confirmar titulo={`¿Eliminar a ${selected.name}?`} boton="Eliminar del equipo" peligro ocupado={eliminando}
+          onSi={handleDelete} onNo={() => setShowDeleteConfirm(false)}>
+          <p>Se borra su ficha del equipo. Sus citas pasadas se quedan como están.</p>
+          {hasLogin(selected.email) && <p><Shield size={14} aria-hidden="true" /> Tiene acceso al panel ({selected.email}): también se borra y ya no podrá entrar.</p>}
+          {selected.active && <p>Si solo dejó de trabajar aquí, mejor desactívala: se conserva todo.</p>}
+        </Confirmar>
+      )}
+
+      {revocar && loginStaff && (
+        <Confirmar titulo={`¿Quitarle el acceso a ${loginStaff.name}?`} boton="Quitar acceso" peligro ocupado={loginSubmitting}
+          onSi={handleDeleteLogin} onNo={() => setRevocar(false)}>
+          <p>Ya no podrá entrar al panel con {loginStaff.email}. Su ficha del equipo se queda.</p>
+        </Confirmar>
       )}
 
       {/* Create/Edit Modal */}
@@ -677,8 +578,8 @@ export default function Staff() {
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h2>{editingId ? 'Editar empleada' : 'Nueva empleada'}</h2>
-              <button className="modal__close" onClick={closeModal}>
+              <h2>{editingId ? 'Editar ficha' : 'Agregar al equipo'}</h2>
+              <button type="button" className="modal__close" onClick={closeModal} aria-label="Cerrar">
                 <X size={20} />
               </button>
             </div>
@@ -951,7 +852,7 @@ export default function Staff() {
                   Cancelar
                 </button>
                 <button type="submit" className="modal__submit-btn" id="staff-submit" disabled={submitting}>
-                  {submitting ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear empleada'}
+                  {submitting ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Agregar'}
                 </button>
               </div>
             </form>
@@ -965,7 +866,7 @@ export default function Staff() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
               <h2><UserCog size={18} /> Acceso al panel</h2>
-              <button className="modal__close" onClick={() => setShowLoginModal(false)}>
+              <button type="button" className="modal__close" onClick={() => setShowLoginModal(false)} aria-label="Cerrar">
                 <X size={20} />
               </button>
             </div>
@@ -1027,7 +928,7 @@ export default function Staff() {
                         <button
                           type="button"
                           className="login-status-actions__revoke"
-                          onClick={handleDeleteLogin}
+                          onClick={() => setRevocar(true)}
                           disabled={loginSubmitting}
                         >
                           <XCircle size={14} /> Quitar acceso
@@ -1080,4 +981,3 @@ export default function Staff() {
     </div>
   );
 }
-

@@ -1,0 +1,77 @@
+/* La pregunta antes de algo que no se deshace (eliminar un servicio, un paquete...). */
+
+.confirmar__fondo { z-index: 260; }
+
+.modal.confirmar {
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 26px 24px 22px;
+  color: #fff;
+  text-align: center;
+}
+
+.confirmar__icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(178, 150, 125, 0.18);
+  color: var(--camel-light);
+}
+
+.confirmar__icono.is-peligro { background: rgba(248, 113, 113, 0.14); color: #fca5a5; }
+
+.confirmar__titulo {
+  margin: 4px 0 0;
+  font-family: var(--panel-titulo);
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.confirmar__texto {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.confirmar__texto p { margin: 0 0 6px; }
+.confirmar__texto p:last-child { margin-bottom: 0; }
+
+.confirmar__botones {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.confirmar__btn {
+  flex: 1;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirmar__btn:focus-visible { outline: 2px solid var(--camel); outline-offset: 2px; }
+.confirmar__btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.confirmar__btn--principal { border-color: var(--cocoa); background: var(--cocoa); }
+.confirmar__btn--peligro { border-color: #b42318; background: #b42318; }
+
+[data-theme="light"] .modal.confirmar { color: var(--espresso); }
+[data-theme="light"] .confirmar__texto { color: var(--muted); }
+[data-theme="light"] .confirmar__icono { background: #F4EBE2; color: var(--cocoa); }
+[data-theme="light"] .confirmar__icono.is-peligro { background: #FBE4E1; color: #B42318; }
+[data-theme="light"] .confirmar__btn { border-color: rgba(74, 52, 42, 0.16); background: #fff; color: var(--espresso); }
+[data-theme="light"] .confirmar__btn--principal { border-color: var(--cocoa); background: var(--cocoa); color: #fff; }
+[data-theme="light"] .confirmar__btn--peligro { border-color: #b42318; background: #b42318; color: #fff; }

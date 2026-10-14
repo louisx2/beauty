@@ -76,15 +76,24 @@ export default function Agenda() {
 
   useEffect(() => { guardar({ vista, especialista: elegida }); }, [vista, elegida]);
 
-  // "Mañana" en Hoy abre ese día (?fecha=); una notificación, su cita para editarla (?highlight=)
+  // "Mañana" en Hoy abre ese día (?fecha=); una notificación, su cita para editarla (?highlight=); "Su agenda" en
+  // Equipo, la semana de esa especialista (?con=)
   const pide = new URLSearchParams(location.search);
   const idPedido = pide.get('highlight');
   const fechaPedida = pide.get('fecha') ?? (idPedido ? appointments.find((a) => a.id === idPedido)?.date : undefined);
+  const conPedida = pide.get('con');
   const [visto, setVisto] = useState<string | null>(null);
-  if (fechaPedida && location.search !== visto) {
+  if ((fechaPedida || conPedida) && location.search !== visto) {
     setVisto(location.search);
-    setVista('dia');
-    setFecha(fechaPedida);
+    if (conPedida) {
+      setElegida(conPedida);
+      setVista('semana');
+      setFecha(ahora.hoy);
+    }
+    if (fechaPedida) {
+      setVista('dia');
+      setFecha(fechaPedida);
+    }
   } else if (!location.search && visto) {
     setVisto(null);
   }
@@ -96,7 +105,7 @@ export default function Agenda() {
       if (!cita && appointments.length === 0) return; // todavía no llegan las citas
       if (cita) abrirAgendar({ modo: 'editar', cita });
     }
-    if (id || params.has('fecha')) navigate('/admin/citas', { replace: true });
+    if (id || params.has('fecha') || params.has('con')) navigate('/admin/citas', { replace: true });
   }, [location.search, appointments, navigate, abrirAgendar]);
 
   const porDia = useMemo(() => citasPorDia(appointments), [appointments]);
