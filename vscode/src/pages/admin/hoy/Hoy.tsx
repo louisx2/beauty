@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarPlus, ChevronRight, MessageCircle, Phone, Plus, UserRound, X } from 'lucide-react';
+import { ChevronRight, MessageCircle, Plus } from 'lucide-react';
 import { useAgendarStore } from '../../../store/agendarStore';
 import { useAppointmentStore, type Appointment } from '../../../store/appointmentStore';
 import { useBlockStore } from '../../../store/blockStore';
 import { useStaffStore } from '../../../store/staffStore';
-import { fechaLocal } from '../../../lib/fechas';
 import { format12h } from '../../../lib/timeFormat';
 import { ETIQUETA_ESTADO } from '../../../lib/estadosCita';
 import { EVENTO_ATENDER_AHORA } from '../../../lib/eventosPanel';
 import { sumarDias } from '../../../site/reservar/calendario';
 import { fechaTitulo } from '../../../site/reservar/resumen';
-import MenuAcciones from '../../../components/MenuAcciones';
 import SaveClientModal from '../../../components/SaveClientModal';
+import { enlaceWhatsApp } from '../../../lib/enlaces';
+import { useAhora } from '../../../lib/useAhora';
+import HojaCita from '../citas/HojaCita';
+import Recordatorios from './Recordatorios';
+import { citasParaRecordar, guardarMarcas, leerMarcas, marcasDeHoy, resumenRecordatorios, type Marcas } from './avisos';
 import { accionPrincipal } from '../citas/acciones';
 import { ICONO_PRINCIPAL, useAccionesCita } from '../citas/useAccionesCita';
 import {
@@ -30,26 +33,9 @@ const primerNombre = (n: string) => {
   return /^dra?\.$/i.test(a ?? '') && b ? `${a} ${b}` : a ?? n;
 };
 
-/** El enlace de WhatsApp con el número de RD (10 dígitos → 1 delante). */
-function enlaceWhatsApp(telefono: string, texto: string): string {
-  const d = telefono.replace(/\D/g, '');
-  return `https://wa.me/${d.length === 10 ? `1${d}` : d}?text=${encodeURIComponent(texto)}`;
-}
-
 function textoConfirmar(c: Appointment, hoy: string): string {
   const cuando = c.date === hoy ? 'hoy' : `mañana ${fechaTitulo(c.date).toLowerCase()}`;
   return `Hola ${c.clientName}, te escribimos de Anadsll Beauty Esthetic para confirmar tu cita de ${cuando} a las ${format12h(c.time)} (${c.service}). ¿Nos confirmas?`;
-}
-
-/** Fecha y minutos de ahora; se actualiza cada minuto (la línea de "ahora" y los huecos que ya pasaron). */
-function useAhora() {
-  const leer = () => { const d = new Date(); return { hoy: fechaLocal(d), minutos: d.getHours() * 60 + d.getMinutes() }; };
-  const [ahora, setAhora] = useState(leer);
-  useEffect(() => {
-    const iv = setInterval(() => setAhora(leer()), 60_000);
-    return () => clearInterval(iv);
-  }, []);
-  return ahora;
 }
 
 /**
@@ -58,7 +44,7 @@ function useAhora() {
  */
 export default function Hoy() {
   const navigate = useNavigate();
-  const { appointments, promptNextSession } = useAppointmentStore();
+  const { appointments } = useAppointmentStore();
   const abrirAgendar = useAgendarStore((s) => s.abrir);
   const { staff } = useStaffStore();
   const { blocks, fetchBlocks } = useBlockStore();
@@ -77,6 +63,17 @@ export default function Hoy() {
   const sala = enSala(appointments, hoy);
   const confirmar = porConfirmar(appointments, hoy, manana);
   const deManana = resumenDe(appointments, manana);
+  const paraRecordar = citasParaRecordar(appointments, manana);
+  // a quién ya se le escribió hoy (en este equipo)
+  const [todasLasMarcas, setMarcas] = useState<Marcas>(leerMarcas);
+  const marcas = marcasDeHoy(todasLasMarcas, hoy);
+  const recordar = resumenRecordatorios(paraRecordar, marcas);
+  const [recordando, setRecordando] = useState(false);
+  const marcar = (id: string) => {
+    const nuevas = { ...marcas, [id]: { dia: hoy, hora: aHora(ahora.minutos) } };
+    setMarcas(nuevas);
+    guardarMarcas(nuevas);
+  };
   const totalHoy = resumenDe(appointments, hoy).citas;
   const proxima = appointments
     .filter((c) => c.date === hoy && (c.status === 'pending' || c.status === 'confirmed') && c.time >= aHora(ahora.minutos))
@@ -192,17 +189,28 @@ export default function Hoy() {
               </ul>
             )}
             {confirmar.length > 5 && (
-              <button type="button" className="hoy__enlace" onClick={() => navigate('/admin/citas')}>Y {confirmar.length - 5} más en Citas</button>
+              <button type="button" className="hoy__enlace" onClick={() => navigate('/admin/citas')}>Y {confirmar.length - 5} más en la Agenda</button>
             )}
           </section>
 
-          <button type="button" className="hoy__manana" onClick={() => navigate(`/admin/citas?fecha=${manana}`)}>
-            <span>
-              <b>Mañana, {fechaTitulo(manana).toLowerCase()}</b>
-              <span>{deManana.citas === 1 ? '1 cita' : `${deManana.citas} citas`}{deManana.porConfirmar > 0 && ` · ${deManana.porConfirmar} por confirmar`}</span>
-            </span>
-            <ChevronRight size={18} aria-hidden="true" />
-          </button>
+          <section className="hoy__tarjeta hoy__manana" aria-labelledby="hoy-manana">
+            <h2 id="hoy-manana" className="hoy__tarjeta-tit">Mañana · {fechaTitulo(manana).toLowerCase()}</h2>
+            <p className="hoy__manana-res">
+              {deManana.citas === 1 ? '1 cita' : `${deManana.citas} citas`}
+              {recordar.porConfirmar > 0 && ` · ${recordar.porConfirmar} por confirmar`}
+              {recordar.total > 0 && (recordar.sinAvisar > 0 ? ` · ${recordar.sinAvisar} sin avisar` : ' · todas avisadas')}
+            </p>
+            <div className="hoy__manana-btns">
+              {recordar.total > 0 && (
+                <button type="button" className={`hoy__btn hoy__btn--chico ${recordar.sinAvisar > 0 ? 'hoy__btn--principal' : ''}`} onClick={() => setRecordando(true)}>
+                  <MessageCircle size={17} aria-hidden="true" /> {recordar.sinAvisar > 0 ? 'Recordarles' : 'Recordatorios'}
+                </button>
+              )}
+              <button type="button" className="hoy__btn hoy__btn--chico" onClick={() => navigate(`/admin/citas?fecha=${manana}`)}>
+                Ver el día <ChevronRight size={16} aria-hidden="true" />
+              </button>
+            </div>
+          </section>
         </aside>
 
         <section className="hoy__agenda" aria-label="Agenda de hoy por especialista">
@@ -282,56 +290,11 @@ export default function Hoy() {
         </section>
       </div>
 
-      {cita && (
-        <div className="modal-overlay" onClick={() => setAbierta(null)}>
-          <div className="modal hoy__hoja" role="dialog" aria-modal="true" aria-labelledby="hoy-hoja-tit" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <div>
-                <h2 id="hoy-hoja-tit">{cita.clientName}</h2>
-                <span className={`hoy__estado hoy__estado--${cita.status}`}>{ETIQUETA_ESTADO[cita.status]}</span>
-              </div>
-              <button className="modal__close" onClick={() => setAbierta(null)} aria-label="Cerrar"><X size={20} /></button>
-            </div>
-            <div className="hoy__hoja-cuerpo">
-              <p className="hoy__hoja-dia">{cita.date === hoy ? 'Hoy' : fechaTitulo(cita.date)}, {format12h(cita.time)}</p>
-              <ul className="hoy__hoja-servicios">
-                {(cita.services.length > 0 ? cita.services : [{ serviceName: cita.service, employee: cita.employee, startTime: cita.time, duration: cita.duration }]).map((l, i) => (
-                  <li key={i}>
-                    <b>{l.serviceName}</b>
-                    <span>{format12h(l.startTime || cita.time)} · {l.duration} min · con {l.employee}</span>
-                  </li>
-                ))}
-              </ul>
-              {cita.notes && <p className="hoy__hoja-nota">{cita.notes}</p>}
-              <div className="hoy__hoja-contacto">
-                <a className="hoy__btn" href={enlaceWhatsApp(cita.clientPhone, `Hola ${cita.clientName}, te escribimos de Anadsll Beauty Esthetic.`)} target="_blank" rel="noopener noreferrer">
-                  <MessageCircle size={17} aria-hidden="true" /> WhatsApp
-                </a>
-                <a className="hoy__btn" href={`tel:${cita.clientPhone.replace(/\D/g, '')}`}><Phone size={17} aria-hidden="true" /> Llamar</a>
-                {cita.client_id && (
-                  <button type="button" className="hoy__btn" onClick={() => navigate('/admin/clientes', { state: { searchName: cita.clientName } })}>
-                    <UserRound size={17} aria-hidden="true" /> Ficha
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="hoy__hoja-pie">
-              <MenuAcciones etiqueta={`Más acciones para la cita de ${cita.clientName}`}
-                items={acciones.itemsDe(cita).map((it) => ({ ...it, onSelect: () => { setAbierta(null); it.onSelect(); } }))} />
-              {accionPrincipal(cita.status) ? (
-                <button type="button" className="hoy__btn hoy__btn--principal"
-                  onClick={() => { setAbierta(null); pasoSiguiente(cita); }}>
-                  {ICONO_PRINCIPAL[accionPrincipal(cita.status)!.accion]} {accionPrincipal(cita.status)!.etiqueta}
-                </button>
-              ) : cita.status === 'completed' ? (
-                <button type="button" className="hoy__btn hoy__btn--principal" onClick={() => { setAbierta(null); promptNextSession(cita); }}>
-                  <CalendarPlus size={18} aria-hidden="true" /> Agendar próxima
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </div>
+      {recordando && (
+        <Recordatorios manana={manana} citas={paraRecordar} marcas={marcas} onMarcar={marcar} onCerrar={() => setRecordando(false)} />
       )}
+
+      {cita && <HojaCita cita={cita} onCerrar={() => setAbierta(null)} onGuardarClienta={setGuardandoClienta} />}
 
       {guardandoClienta && <SaveClientModal appointment={guardandoClienta} onClose={() => setGuardandoClienta(null)} />}
     </div>

@@ -10,6 +10,7 @@ import { puedeHacer } from '../../../lib/quienAtiende.ts';
 import {
   quienPuede, repartirDesde, timeToMinutes, type Elegido, type Especialista, type Horario, type LineaPlan,
 } from '../../../site/reservar/disponibilidad.ts';
+import { sinTildes } from '../../../site/reservar/servicios.ts';
 import { agendaDelDia } from '../citas/proximaCita.ts';
 
 /** La clienta de la cita: con ficha (`id`) o solo nombre y teléfono (una reserva sin ficha). */
@@ -114,4 +115,30 @@ export function planALas(
 export function conHoraPedida(horas: Horario[], hora: string, plan: LineaPlan[] | null): Horario[] {
   if (!hora || horas.some((h) => h.hora === hora)) return horas;
   return [...horas, { hora, plan }].sort((a, b) => a.hora.localeCompare(b.hora));
+}
+
+/** Cómo se llama cada categoría de servicios en el panel. */
+export const CATEGORIAS: Record<string, string> = {
+  facial: 'Facial', laser: 'Láser', corporal: 'Corporal', belleza: 'Cejas, pestañas y maquillaje', medicina: 'Medicina estética',
+};
+export const categoriaDe = (s: Pick<Service, 'category'>) => CATEGORIAS[s.category] ?? 'Otros';
+
+/** Buscar un servicio al agendar: todas las palabras escritas (sin tildes) en su nombre ("cejas", "laser axilas");
+ *  si ningún nombre las tiene, en su categoría ("medicina"). Primero los que empiezan así, después los que tienen una
+ *  palabra que empieza así. Sin texto, todos, por categoría y nombre (para recorrerlos). */
+export function buscarServicios<T extends Pick<Service, 'name' | 'category'>>(servicios: T[], texto: string): T[] {
+  const q = sinTildes(texto.trim()).replace(/\s+/g, ' ');
+  if (!q) {
+    return [...servicios].sort((a, b) => categoriaDe(a).localeCompare(categoriaDe(b), 'es') || a.name.localeCompare(b.name, 'es'));
+  }
+  const palabras = q.split(' ');
+  const cercania = (s: T) => {
+    const nombre = sinTildes(s.name);
+    if (nombre.startsWith(q)) return 0;
+    return nombre.split(/[\s-]+/).some((w) => w.startsWith(palabras[0])) ? 1 : 2;
+  };
+  const tiene = (texto: string) => palabras.every((p) => texto.includes(p));
+  const porNombre = servicios.filter((s) => tiene(sinTildes(s.name)));
+  const encontrados = porNombre.length > 0 ? porNombre : servicios.filter((s) => tiene(sinTildes(`${s.name} ${categoriaDe(s)}`)));
+  return encontrados.sort((a, b) => cercania(a) - cercania(b) || a.name.localeCompare(b.name, 'es'));
 }

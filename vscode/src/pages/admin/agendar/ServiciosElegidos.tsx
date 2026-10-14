@@ -1,13 +1,10 @@
-import { useMemo } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Fragment, useId, useMemo, useRef, useState } from 'react';
+import { Search, X } from 'lucide-react';
 import { useServiceStore, type Service } from '../../../store/serviceStore';
 import { quienPuede, type Elegido, type Especialista } from '../../../site/reservar/disponibilidad';
 import { duracionTexto } from '../../../site/reservar/resumen';
+import { buscarServicios, categoriaDe } from './reglas';
 import './Ventana.css';
-
-const CATEGORIAS: Record<string, string> = {
-  facial: 'Facial', laser: 'Láser', corporal: 'Corporal', belleza: 'Cejas, pestañas y maquillaje', medicina: 'Medicina estética',
-};
 
 interface Props {
   elegidos: Elegido[];
@@ -19,25 +16,18 @@ interface Props {
   alAgregar?: (e: Elegido) => Elegido;
 }
 
-/** Qué se le va a hacer: los servicios elegidos (con quién los hace) y la lista para agregar otro, por categoría.
+/** Qué se le va a hacer: los servicios elegidos (con quién los hace) y una caja para buscar otro y agregarlo.
  *  Solo se ofrece lo que alguien del equipo sabe hacer. */
 export default function ServiciosElegidos({ elegidos, especialistas, onCambiar, conQuien, alAgregar = (e) => e }: Props) {
   const services = useServiceStore((s) => s.services);
 
-  const porCategoria = useMemo(() => {
-    const grupos = new Map<string, Service[]>();
-    for (const s of services) {
-      if (!s.active || elegidos.some((e) => e.serviceId === s.id) || quienPuede(especialistas, s.id).length === 0) continue;
-      const g = CATEGORIAS[s.category] ?? 'Otros';
-      grupos.set(g, [...(grupos.get(g) ?? []), s]);
-    }
-    return [...grupos.entries()].map(([g, delGrupo]) => [g, delGrupo.sort((a, b) => a.name.localeCompare(b.name, 'es'))] as const);
-  }, [services, elegidos, especialistas]);
+  const opciones = useMemo(
+    () => services.filter((s) => s.active && !elegidos.some((e) => e.serviceId === s.id) && quienPuede(especialistas, s.id).length > 0),
+    [services, elegidos, especialistas],
+  );
 
-  const agregar = (id: string) => {
-    const s = services.find((x) => x.id === id);
-    if (s) onCambiar([...elegidos, alAgregar({ serviceId: s.id, staffId: '', nombre: s.name, duracion: s.duration || 45 })]);
-  };
+  const agregar = (s: Service) =>
+    onCambiar([...elegidos, alAgregar({ serviceId: s.id, staffId: '', nombre: s.name, duracion: s.duration || 45 })]);
 
   return (
     <>
@@ -62,19 +52,100 @@ export default function ServiciosElegidos({ elegidos, especialistas, onCambiar, 
           })}
         </ul>
       )}
-      {porCategoria.length > 0 && (
-        <label className="prox__agregar">
-          <Plus size={15} aria-hidden="true" />
-          <select value="" onChange={(ev) => agregar(ev.target.value)} aria-label="Agregar servicio">
-            <option value="">{elegidos.length === 0 ? 'Elegir servicio' : 'Agregar otro servicio'}</option>
-            {porCategoria.map(([g, delGrupo]) => (
-              <optgroup key={g} label={g}>
-                {delGrupo.map((s) => <option key={s.id} value={s.id}>{s.name} · {duracionTexto(s.duration || 45)}</option>)}
-              </optgroup>
-            ))}
-          </select>
-        </label>
-      )}
+      {opciones.length > 0 && <BuscarServicio opciones={opciones} primero={elegidos.length === 0} onElegir={agregar} />}
     </>
+  );
+}
+
+const dinero = (n: number) => `RD$ ${n.toLocaleString('es-DO')}`;
+
+/**
+ * Caja para buscar un servicio por nombre (sin tildes) o categoría. Al tocarla, sin escribir, se ven todos por
+ * categoría para recorrerlos; al escribir, solo los que coinciden. Con el teclado: flechas, Enter y Escape.
+ */
+function BuscarServicio({ opciones, primero, onElegir }: { opciones: Service[]; primero: boolean; onElegir: (s: Service) => void }) {
+  const [texto, setTexto] = useState('');
+  const [abierta, setAbierta] = useState(false);
+  const [activo, setActivo] = useState(0);
+  const caja = useRef<HTMLInputElement>(null);
+  const id = useId();
+  const lista = useMemo(() => buscarServicios(opciones, texto), [opciones, texto]);
+  const enFoco = Math.min(activo, lista.length - 1);
+
+  const elegir = (s: Service) => {
+    onElegir(s);
+    setTexto('');
+    setActivo(0);
+    setAbierta(false);
+    caja.current?.blur();
+  };
+
+  const teclas = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setAbierta(true);
+      setActivo(Math.min(enFoco + 1, lista.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActivo(Math.max(enFoco - 1, 0));
+    } else if (e.key === 'Enter' && abierta && lista[enFoco]) {
+      e.preventDefault();
+      elegir(lista[enFoco]);
+    } else if (e.key === 'Escape' && abierta) {
+      e.stopPropagation();
+      setAbierta(false);
+    }
+  };
+
+  return (
+    <div className="busv">
+      <label className={`busv__caja ${abierta ? 'is-abierta' : ''}`}>
+        <Search size={17} aria-hidden="true" />
+        <span className="busv__oculto">Buscar servicio</span>
+        <input
+          ref={caja}
+          role="combobox"
+          aria-expanded={abierta}
+          aria-controls={`${id}-lista`}
+          aria-autocomplete="list"
+          aria-activedescendant={abierta && lista[enFoco] ? `${id}-${lista[enFoco].id}` : undefined}
+          value={texto}
+          autoComplete="off"
+          placeholder={primero ? 'Buscar servicio: cejas, láser, limpieza…' : 'Agregar otro servicio'}
+          onChange={(e) => { setTexto(e.target.value); setActivo(0); setAbierta(true); }}
+          onFocus={() => setAbierta(true)}
+          onBlur={() => setAbierta(false)}
+          onKeyDown={teclas}
+        />
+        {texto && (
+          <button type="button" className="busv__borrar" aria-label="Borrar la búsqueda"
+            onMouseDown={(e) => e.preventDefault()} onClick={() => { setTexto(''); setActivo(0); caja.current?.focus(); }}>
+            <X size={16} />
+          </button>
+        )}
+      </label>
+
+      {abierta && (
+        // tocar una opción no le quita el foco a la caja (si no, la lista se cerraría antes de elegir)
+        <ul id={`${id}-lista`} role="listbox" aria-label="Servicios" className="busv__lista" onMouseDown={(e) => e.preventDefault()}>
+          {lista.length === 0 ? (
+            <li className="busv__nada" role="presentation">Ningún servicio con “{texto.trim()}”.</li>
+          ) : lista.map((s, i) => (
+            <Fragment key={s.id}>
+              {!texto.trim() && (i === 0 || categoriaDe(lista[i - 1]) !== categoriaDe(s)) && (
+                <li className="busv__grupo" role="presentation">{categoriaDe(s)}</li>
+              )}
+              <li id={`${id}-${s.id}`} role="option" aria-selected={i === enFoco} className={`busv__opcion ${i === enFoco ? 'is-on' : ''}`}
+                onClick={() => elegir(s)} onMouseMove={() => setActivo(i)}>
+                <b>{s.name}</b>
+                <span>
+                  {texto.trim() && `${categoriaDe(s)} · `}{duracionTexto(s.duration || 45)}{s.price > 0 && ` · ${dinero(s.price)}`}
+                </span>
+              </li>
+            </Fragment>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

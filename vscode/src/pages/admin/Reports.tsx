@@ -1,868 +1,344 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, FileText, Printer } from 'lucide-react';
 import { useBillingStore } from '../../store/billingStore';
 import { useAppointmentStore } from '../../store/appointmentStore';
 import { useServiceStore } from '../../store/serviceStore';
-import { useClientStore } from '../../store/clientStore';
 import { useStaffStore } from '../../store/staffStore';
-import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
-import { FileText, Download, Receipt, CalendarDays, UserCog, TrendingUp } from 'lucide-react';
-import { format12h } from '../../lib/timeFormat';
-import { serviciosConPrecio } from '../../lib/ingresos';
+import { useAhora } from '../../lib/useAhora';
 import { FACTURACION_NCF } from '../../lib/modulos';
 import { atiendeClientas } from '../../lib/quienAtiende';
+import { primerNombre } from './citas/proximaCita';
+import {
+  mejoresClientas, moverPeriodo, origenDeCitas, porCategoria, porEspecialista, porHora, rangoDe, resumenDelPeriodo,
+  serviciosMasHechos, tituloPeriodo, variacion, type Periodo, type Resumen,
+} from './negocio/reportes';
+import { paquetesVendidos, resumenPaquetes } from './negocio/paquetes';
+import './negocio/Negocio.css';
 import './Reports.css';
 
-function fmtPrice(p: number) { return `RD$ ${Math.round(p).toLocaleString('es-DO')}`; }
+const rd = (n: number) => `RD$ ${Math.round(n).toLocaleString('es-DO')}`;
+const PERIODOS: [Periodo, string][] = [['dia', 'Día'], ['semana', 'Semana'], ['mes', 'Mes'], ['anio', 'Año']];
+const ESTE: Record<Periodo, string> = { dia: 'Hoy', semana: 'Esta semana', mes: 'Este mes', anio: 'Este año' };
+const FRENTE: Record<Periodo, string> = { dia: 'frente al día anterior', semana: 'frente a la semana anterior', mes: 'frente al mes anterior', anio: 'frente al año anterior' };
+const hora12 = (h: number) => `${h % 12 || 12}${h < 12 ? 'a' : 'p'}`;
+const escapar = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] ?? c));
 
+/** "↑ 12 %" frente al periodo anterior (o nada si antes no hubo con qué comparar). */
+function Cambio({ actual, antes, periodo }: { actual: number; antes: number; periodo: Periodo }) {
+  const v = variacion(actual, antes);
+  if (v === null) return null;
+  const Icono = v > 0 ? ArrowUpRight : v < 0 ? ArrowDownRight : ArrowRight;
+  return (
+    <small className={v > 0 ? 'neg__sube' : v < 0 ? 'neg__baja' : 'neg__igual'} title={FRENTE[periodo]}>
+      <Icono size={14} aria-hidden="true" /> {v > 0 ? '+' : ''}{v} %<span className="neg__oculto"> {FRENTE[periodo]}</span>
+    </small>
+  );
+}
+
+function Barras({ filas, vacio }: { filas: { clave: string; nombre: React.ReactNode; valor: number; texto: string }[]; vacio: string }) {
+  const max = Math.max(1, ...filas.map((f) => f.valor));
+  if (filas.length === 0) return <p className="reps__vacio">{vacio}</p>;
+  return (
+    <ul className="neg__barras">
+      {filas.map((f) => (
+        <li key={f.clave}>
+          <div className="neg__barras-txt"><span>{f.nombre}</span><b>{f.texto}</b></div>
+          <div className="neg__barra-pista"><i style={{ width: `${Math.max(2, Math.round((f.valor / max) * 100))}%` }} /></div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Reportes: cómo le fue al salón en un día, una semana, un mes o un año, comparado con el periodo anterior; de todo el
+ * salón o de una especialista. Lo cobrado sale de las citas completadas (cada servicio para quien lo hizo). La
+ * especialista ve solo lo suyo. Se descarga en Excel o se imprime.
+ */
 export default function Reports() {
-  const { user } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
   const { invoices, fetchAll: fetchBilling } = useBillingStore();
   const { appointments, fetchAppointments } = useAppointmentStore();
-  const { clientPackages, services, fetchAll: fetchServices } = useServiceStore();
-  const { clients, fetchClients } = useClientStore();
+  const { services, clientPackages, fetchAll: fetchServices } = useServiceStore();
   const { staff, fetchStaff } = useStaffStore();
-
-  const [timePeriod, setTimePeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
-  const [activeDate, setActiveDate] = useState<string>(() => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  });
-
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const navigate = useNavigate();
+  const { hoy } = useAhora();
+  const esEspecialista = user?.role === 'specialist';
+  const esAdmin = user?.role === 'admin';
 
   useEffect(() => {
-    if (FACTURACION_NCF) fetchBilling(); // las facturas solo alimentan métodos de pago y DGII
+    if (FACTURACION_NCF) fetchBilling(); // las facturas solo alimentan formas de pago y DGII
     fetchAppointments();
     fetchServices();
-    fetchClients();
-    fetchStaff();
-  }, [fetchBilling, fetchAppointments, fetchServices, fetchClients, fetchStaff]);
+    fetchStaff().catch(() => { /* el equipo ya lo cargó el panel */ });
+  }, [fetchBilling, fetchAppointments, fetchServices, fetchStaff]);
 
-  // Helper: get all dates of a week containing dateStr (Monday to Sunday)
-  const getWeekRange = (dateStr: string) => {
-    const d = new Date(dateStr + 'T12:00:00');
-    const day = d.getDay();
-    const diff = d.getDate() - (day === 0 ? 6 : day - 1);
-    const monday = new Date(d.setDate(diff));
-    const dates: string[] = [];
-    for (let i = 0; i < 7; i++) {
-      const temp = new Date(monday);
-      temp.setDate(monday.getDate() + i);
-      const y = temp.getFullYear();
-      const m = String(temp.getMonth() + 1).padStart(2, '0');
-      const dayStr = String(temp.getDate()).padStart(2, '0');
-      dates.push(`${y}-${m}-${dayStr}`);
-    }
-    return dates;
-  };
+  const [periodo, setPeriodo] = useState<Periodo>('mes');
+  const [fecha, setFecha] = useState(hoy);
+  const [elegida, setElegida] = useState<string | null>(null);
+  // la especialista, solo lo suyo
+  const quien = esEspecialista ? user?.name ?? '' : elegida;
 
-  const getPeriodLabel = () => {
-    if (timePeriod === 'day') {
-      return new Date(activeDate + 'T12:00:00').toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    } else if (timePeriod === 'week') {
-      const dates = getWeekRange(activeDate);
-      const startStr = dates[0];
-      const endStr = dates[6];
-      return `Semana del ${new Date(startStr + 'T12:00:00').toLocaleDateString('es-DO', { day: 'numeric', month: 'short' })} al ${new Date(endStr + 'T12:00:00').toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' })}`;
-    } else if (timePeriod === 'month') {
-      return new Date(activeDate + 'T12:00:00').toLocaleDateString('es-DO', { month: 'long', year: 'numeric' });
-    } else {
-      return `Año ${activeDate.slice(0, 4)}`;
-    }
-  };
+  const rango = rangoDe(periodo, fecha);
+  const rangoAntes = rangoDe(periodo, moverPeriodo(periodo, fecha, -1));
+  const esteEs = rango.desde <= hoy && hoy <= rango.hasta;
+  const enElFuturo = rango.desde > hoy;
 
-  // Filter lists based on selected period
-  const filteredAppointments = useMemo(() => {
-    let baseList = [];
-    if (timePeriod === 'day') {
-      baseList = appointments.filter(a => a.date === activeDate);
-    } else if (timePeriod === 'week') {
-      const dates = getWeekRange(activeDate);
-      baseList = appointments.filter(a => dates.includes(a.date));
-    } else if (timePeriod === 'month') {
-      const m = activeDate.slice(0, 7);
-      baseList = appointments.filter(a => a.date.startsWith(m));
-    } else {
-      const y = activeDate.slice(0, 4);
-      baseList = appointments.filter(a => a.date.startsWith(y));
-    }
+  const equipo = useMemo(() => staff.filter((m) => m.active && atiendeClientas(m)).sort((a, b) => a.name.localeCompare(b.name, 'es')), [staff]);
+  const r = resumenDelPeriodo(appointments, services, rango, quien);
+  const antes = resumenDelPeriodo(appointments, services, rangoAntes, quien);
+  const especialistas = porEspecialista(appointments, services, quien ? staff.filter((m) => m.name.trim().toLowerCase() === quien.trim().toLowerCase()) : staff, rango);
+  const categorias = porCategoria(appointments, services, rango, quien);
+  const masHechos = serviciosMasHechos(appointments, services, rango, quien);
+  const clientas = mejoresClientas(appointments, services, rango);
+  const horas = porHora(appointments, services, rango, quien);
+  const origen = origenDeCitas(appointments, rango, quien);
+  const paquetes = resumenPaquetes(paquetesVendidos(clientPackages, appointments, hoy));
+  const titulo = tituloPeriodo(periodo, fecha);
+  const comisionMia = esEspecialista ? especialistas[0]?.comision ?? 0 : 0;
+  const pagadas = FACTURACION_NCF ? invoices.filter((i) => i.status === 'paid' && i.createdAt.slice(0, 10) >= rango.desde && i.createdAt.slice(0, 10) <= rango.hasta) : [];
 
-    if (user?.role === 'specialist') {
-      return baseList.filter(a => a.employee.toLowerCase() === user.name.toLowerCase());
-    }
-    return baseList;
-  }, [appointments, timePeriod, activeDate, user]);
+  const cambiarPeriodo = (p: Periodo) => { setPeriodo(p); setFecha(esteEs ? hoy : rango.desde); };
 
-  const filteredInvoices = useMemo(() => {
-    if (timePeriod === 'day') {
-      return invoices.filter(i => i.createdAt.startsWith(activeDate));
-    } else if (timePeriod === 'week') {
-      const dates = getWeekRange(activeDate);
-      return invoices.filter(i => dates.some(d => i.createdAt.startsWith(d)));
-    } else if (timePeriod === 'month') {
-      const m = activeDate.slice(0, 7);
-      return invoices.filter(i => i.createdAt.startsWith(m));
-    } else {
-      const y = activeDate.slice(0, 4);
-      return invoices.filter(i => i.createdAt.startsWith(y));
-    }
-  }, [invoices, timePeriod, activeDate]);
+  const filasResumen = (x: Resumen): [string, string][] => [
+    ['Citas completadas', String(x.completadas)],
+    ...(esEspecialista ? [] : [['Cobrado (citas completadas)', rd(x.ingresos)] as [string, string]]),
+    ['Promedio por cita', rd(x.ticket)],
+    ['Clientas atendidas', String(x.atendidas)],
+    ['Por primera vez', String(x.primeraVez)],
+    ['Volvieron', String(x.volvieron)],
+    ['No vinieron', String(x.noVino)],
+    ['Canceladas', String(x.canceladas)],
+  ];
 
-  const filteredClients = useMemo(() => {
-    if (timePeriod === 'day') {
-      return clients.filter(c => c.created_at?.startsWith(activeDate));
-    } else if (timePeriod === 'week') {
-      const dates = getWeekRange(activeDate);
-      return clients.filter(c => dates.some(d => c.created_at?.startsWith(d)));
-    } else if (timePeriod === 'month') {
-      const m = activeDate.slice(0, 7);
-      return clients.filter(c => c.created_at?.startsWith(m));
-    } else {
-      const y = activeDate.slice(0, 4);
-      return clients.filter(c => c.created_at?.startsWith(y));
-    }
-  }, [clients, timePeriod, activeDate]);
-
-  // General Metrics
-  const totalCompleted = useMemo(() => filteredAppointments.filter(a => a.status === 'completed').length, [filteredAppointments]);
-  const totalNoShow = useMemo(() => filteredAppointments.filter(a => a.status === 'no_show').length, [filteredAppointments]);
-  const totalCancelled = useMemo(() => filteredAppointments.filter(a => a.status === 'cancelled').length, [filteredAppointments]);
-  const totalNewClients = useMemo(() => filteredClients.length, [filteredClients]);
-
-  // CALCULATION EXPLANATION: Revenue generated ONLY by completed appointments in the selected period.
-  // Sum of catalog prices for appointments with status = 'completed'.
-  /** Servicios de una cita, ya con precio resuelto. Una cita puede llevar
-   *  varios, cada uno de una especialista distinta. Las citas antiguas sin
-   *  lineas se tratan como un unico servicio. */
-  const serviciosDe = useMemo(
-    () => (a: (typeof filteredAppointments)[number]) => serviciosConPrecio(a, services),
-    [services],
-  );
-
-  const totalRevenue = useMemo(() => {
-    return filteredAppointments
-      .filter(a => a.status === 'completed')
-      .reduce((acc, a) => acc + serviciosDe(a).reduce((t, l) => t + l.precio, 0), 0);
-  }, [filteredAppointments, serviciosDe]);
-
-  // Specialist Metrics
-  const specialistStats = useMemo(() => {
-    const targetStaff = user?.role === 'specialist'
-      ? staff.filter(emp => emp.name.toLowerCase() === user.name.toLowerCase())
-      : staff;
-
-    return targetStaff.flatMap(emp => {
-      // Con varios servicios por cita, a cada una le toca lo que hizo ella.
-      let generatedRevenue = 0;
-      let citas = 0;
-      filteredAppointments.forEach(a => {
-        if (a.status !== 'completed') return;
-        const suyos = serviciosDe(a).filter(
-          (l) => l.empleada.toLowerCase() === emp.name.toLowerCase(),
-        );
-        if (suyos.length === 0) return;
-        citas++;
-        generatedRevenue += suyos.reduce((t, l) => t + l.precio, 0);
-      });
-      // quien no atiende (recepción, la cuenta de soporte) solo sale si hizo algún servicio en el periodo
-      if (citas === 0 && !atiendeClientas(emp)) return [];
-      const commission = generatedRevenue * (emp.commissionPct / 100);
-      return [{
-        name: emp.name,
-        completedAppts: citas,
-        revenue: generatedRevenue,
-        commission: commission,
-        commissionPct: emp.commissionPct
-      }];
-    }).sort((a, b) => b.revenue - a.revenue);
-  }, [staff, filteredAppointments, serviciosDe, user]);
-
-  // ── Advanced Stats Calculations ──
-
-  // Category stats (Laser, Facial, Corporal, Belleza, Medicina)
-  const categoryStats = useMemo(() => {
-    const stats: Record<string, { count: number; revenue: number }> = {};
-    filteredAppointments.forEach(a => {
-      if (a.status !== 'completed') return;
-      serviciosDe(a).forEach((l) => {
-        const svc = services.find(s => s.name === l.nombre);
-        const category = svc ? svc.category : 'Otros';
-        if (!stats[category]) {
-          stats[category] = { count: 0, revenue: 0 };
-        }
-        stats[category].count++;
-        stats[category].revenue += l.precio;
-      });
-    });
-    return Object.entries(stats).map(([category, data]) => ({
-      category,
-      count: data.count,
-      revenue: data.revenue
-    })).sort((a, b) => b.revenue - a.revenue);
-  }, [filteredAppointments, services, serviciosDe]);
-
-  const maxCategoryRevenue = useMemo(() => {
-    return Math.max(...categoryStats.map(c => c.revenue), 1);
-  }, [categoryStats]);
-
-  // Top Clients (VIP)
-  const topClients = useMemo(() => {
-    const stats: Record<string, { name: string; count: number; spent: number }> = {};
-    filteredAppointments.forEach(a => {
-      if (a.status !== 'completed') return;
-      const key = a.clientPhone || a.clientName;
-      const svc = services.find(s => s.name === a.service);
-      const price = svc ? svc.price : 0;
-      if (!stats[key]) {
-        stats[key] = { name: a.clientName, count: 0, spent: 0 };
-      }
-      stats[key].count++;
-      stats[key].spent += price;
-    });
-    return Object.values(stats).sort((a, b) => b.spent - a.spent).slice(0, 5);
-  }, [filteredAppointments, services]);
-
-  const maxClientSpent = useMemo(() => {
-    return Math.max(...topClients.map(c => c.spent), 1);
-  }, [topClients]);
-
-  // Payment Methods
-  const paymentStats = useMemo(() => {
-    const stats: Record<string, { count: number; total: number }> = {};
-    filteredInvoices.forEach(i => {
-      if (i.status !== 'paid') return;
-      const method = i.paymentMethod || 'No especificado';
-      if (!stats[method]) {
-        stats[method] = { count: 0, total: 0 };
-      }
-      stats[method].count++;
-      stats[method].total += i.total;
-    });
-    return Object.entries(stats).map(([method, data]) => ({
-      method,
-      count: data.count,
-      total: data.total
-    })).sort((a, b) => b.total - a.total);
-  }, [filteredInvoices]);
-
-  // Peak Hours
-  const peakHours = useMemo(() => {
-    const stats: Record<string, number> = {};
-    filteredAppointments.forEach(a => {
-      if (a.status !== 'completed') return;
-      stats[a.time] = (stats[a.time] || 0) + 1;
-    });
-    return Object.entries(stats).map(([time, count]) => ({
-      time,
-      count
-    })).sort((a, b) => b.count - a.count).slice(0, 5);
-  }, [filteredAppointments]);
-
-  const maxPeakCount = useMemo(() => {
-    return Math.max(...peakHours.map(p => p.count), 1);
-  }, [peakHours]);
-
-  // Booking Source Effectiveness
-  const sourceStats = useMemo(() => {
-    let online = 0;
-    let manual = 0;
-    filteredAppointments.forEach(a => {
-      if (a.status !== 'completed') return;
-      if (a.source === 'online') online++;
-      else manual++;
-    });
-    const total = online + manual || 1;
-    return {
-      online,
-      manual,
-      onlinePct: Math.round((online / total) * 100),
-      manualPct: Math.round((manual / total) * 100)
-    };
-  }, [filteredAppointments]);
-
-  // CSV Export
-  const downloadExcel = () => {
-    const isSpec = user?.role === 'specialist';
-    let csv = '\uFEFF'; // UTF-8 BOM
-    csv += `REPORTE DE RENDIMIENTO - ANADSLL BEAUTY ESTHETIC\n`;
-    csv += `Periodo:;${getPeriodLabel()}\n`;
-    csv += `Generado el:;${new Date().toLocaleString('es-DO')}\n\n`;
-
-    csv += `RESUMEN GENERAL\n`;
-    csv += `Metrica;Cantidad / Monto\n`;
-    csv += `Citas Completadas;${totalCompleted}\n`;
-    csv += `Citas Perdidas (No Asistió);${totalNoShow}\n`;
-    csv += `Citas Canceladas;${totalCancelled}\n`;
-    csv += `Clientes Nuevos;${totalNewClients}\n`;
-    if (!isSpec) {
-      csv += `Ingresos Cobrados (Citas Completadas);RD$ ${totalRevenue}\n\n`;
-    } else {
-      csv += `\n`;
-    }
-
-    csv += `RENDIMIENTO POR ESPECIALISTA\n`;
-    csv += `Especialista;Citas Realizadas;${isSpec ? '' : 'Ingresos Generados;'}% Comision;Comision Calculada\n`;
-    specialistStats.forEach(s => {
-      csv += `"${s.name}";${s.completedAppts};${isSpec ? '' : 'RD$ ' + s.revenue + ';'}${s.commissionPct}%;RD$ ${s.commission}\n`;
-    });
-    csv += `\n`;
-
-    if (showAdvanced) {
-      csv += `VISTA AVANZADA\n\n`;
-
-      csv += `DISTRIBUCIÓN POR CATEGORÍA\n`;
-      csv += `Categoria;Citas;Ingresos\n`;
-      categoryStats.forEach(c => {
-        csv += `"${c.category}";${c.count};RD$ ${c.revenue}\n`;
-      });
-      csv += `\n`;
-
-      csv += `CLIENTES VIP (TOP SPENDERS)\n`;
-      csv += `Cliente;Citas Completadas;Total Gastado\n`;
-      topClients.forEach(c => {
-        csv += `"${c.name}";${c.count};RD$ ${c.spent}\n`;
-      });
-      csv += `\n`;
-
-      if (FACTURACION_NCF) {
-        csv += `METODOS DE PAGO\n`;
-        csv += `Metodo;Transacciones;Total Recibido\n`;
-        paymentStats.forEach(p => {
-          csv += `"${p.method}";${p.count};RD$ ${p.total}\n`;
-        });
-        csv += `\n`;
-      }
-
-      csv += `ORIGEN DE CITAS\n`;
-      csv += `Origen;Citas;Porcentaje\n`;
-      csv += `Online;${sourceStats.online};${sourceStats.onlinePct}%\n`;
-      csv += `Presencial/Manual;${sourceStats.manual};${sourceStats.manualPct}%\n`;
-    }
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Reporte_${timePeriod}_${activeDate}${showAdvanced ? '_Avanzado' : ''}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success('Reporte Excel descargado');
-  };
-
-  // PDF Export via native print layout
-  const downloadPDF = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast.error('Por favor permite ventanas emergentes para descargar el PDF');
-      return;
-    }
-
-    const htmlContent = `
-      <html>
-        <head>
-          <title>Reporte de Rendimiento - Anadsll Beauty Esthetic</title>
-          <style>
-            body { font-family: 'Outfit', sans-serif; padding: 40px; color: #1a1a1a; background: #fff; }
-            h1 { font-family: 'Playfair Display', Georgia, serif; font-weight: 500; font-size: 2.5rem; margin-bottom: 5px; color: #4a342a; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
-            .meta { font-size: 0.95rem; color: #6b7280; margin-bottom: 30px; }
-            .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
-            .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; background: #fdfcf9; }
-            .card span { display: block; font-size: 0.85rem; color: #6b7280; text-transform: uppercase; margin-bottom: 5px; }
-            .card strong { font-size: 1.5rem; color: #4a342a; }
-            h2 { font-size: 1.25rem; color: #4a342a; border-bottom: 1px solid #f3f4f6; padding-bottom: 8px; margin-top: 30px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-            th { text-align: left; padding: 10px; background: #f9f6f1; border-bottom: 2px solid #e5e7eb; font-size: 0.85rem; text-transform: uppercase; color: #6b7280; }
-            td { padding: 10px; border-bottom: 1px solid #e5e7eb; font-size: 0.9rem; }
-            tr:hover { background: #fdfcf9; }
-            .footer { margin-top: 50px; text-align: center; font-size: 0.8rem; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 15px; }
-            .adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
-            .bar-track { background: #f3f4f6; border-radius: 99px; height: 10px; overflow: hidden; margin-top: 8px; width: 100%; }
-            .bar-fill { background: #B2967D; height: 100%; border-radius: 99px; }
-            .donut-container { display: flex; align-items: center; gap: 20px; }
-            @media print {
-              body { padding: 20px; }
-              .card { page-break-inside: avoid; }
-              table { page-break-inside: avoid; }
-              .adv-grid { page-break-inside: avoid; }
-            }
-          </style>
-        </head>
-        <body>
-          <h1>Reporte de Rendimiento ${showAdvanced ? '(Avanzado)' : ''}</h1>
-          <div class="meta">
-            <div><strong>Establecimiento:</strong> Anadsll Beauty Esthetic</div>
-            <div><strong>Periodo:</strong> ${getPeriodLabel()}</div>
-            <div><strong>Generado el:</strong> ${new Date().toLocaleString('es-DO')}</div>
-          </div>
-
-          <h2>Resumen General</h2>
-          <div class="grid">
-            <div class="card"><span>Citas Completadas</span><strong>${totalCompleted}</strong></div>
-            <div class="card"><span>Citas Perdidas (No Asistió)</span><strong>${totalNoShow}</strong></div>
-            <div class="card"><span>Citas Canceladas</span><strong>${totalCancelled}</strong></div>
-            <div class="card"><span>Clientes Nuevos</span><strong>${totalNewClients}</strong></div>
-            ${user?.role !== 'specialist' ? `
-              <div class="card" style="grid-column: span 2"><span>Ingresos Cobrados (Citas Completadas)</span><strong>RD$ ${totalRevenue.toLocaleString('es-DO')}</strong></div>
-            ` : ''}
-          </div>
-
-          <h2>Rendimiento por Especialista</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Especialista</th>
-                <th>Citas Realizadas</th>
-                ${user?.role !== 'specialist' ? '<th>Ingresos Generados</th>' : ''}
-                <th>% Comisión</th>
-                <th>Comisión Calculada</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${specialistStats.map(s => `
-                <tr>
-                  <td><strong>${s.name}</strong></td>
-                  <td>${s.completedAppts}</td>
-                  ${user?.role !== 'specialist' ? `<td>RD$ ${s.revenue.toLocaleString('es-DO')}</td>` : ''}
-                  <td>${s.commissionPct}%</td>
-                  <td><strong>RD$ ${s.commission.toLocaleString('es-DO')}</strong></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-
-          ${showAdvanced ? `
-            <h2>Análisis Avanzado de Negocios</h2>
-            <div class="adv-grid">
-
-              <div class="card">
-                <h3>Categorias de Servicio</h3>
-                ${categoryStats.map(c => `
-                  <div style="margin-top: 10px;">
-                    <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                      <span>${c.category.toUpperCase()}</span>
-                      <strong>RD$ ${c.revenue.toLocaleString('es-DO')} (${c.count} citas)</strong>
-                    </div>
-                    <div class="bar-track">
-                      <div class="bar-fill" style="width: ${Math.round((c.revenue / maxCategoryRevenue) * 100)}%;"></div>
-                    </div>
-                  </div>
-                `).join('')}
-              </div>
-
-              <div class="card">
-                <h3>Top Clientes VIP</h3>
-                ${topClients.map(c => `
-                  <div style="margin-top: 10px;">
-                    <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                      <span>${c.name}</span>
-                      <strong>RD$ ${c.spent.toLocaleString('es-DO')} (${c.count} citas)</strong>
-                    </div>
-                    <div class="bar-track">
-                      <div class="bar-fill" style="width: ${Math.round((c.spent / maxClientSpent) * 100)}%; background: #7D5A44;"></div>
-                    </div>
-                  </div>
-                `).join('')}
-              </div>
-
-              <div class="card">
-                <h3>Origen de Citas</h3>
-                <div class="donut-container">
-                  <svg viewBox="0 0 36 36" style="width: 80px; height: 80px;">
-                    <circle cx="18" cy="18" r="15.9154" fill="transparent" stroke="#f3f4f6" stroke-width="3" />
-                    <circle cx="18" cy="18" r="15.9154" fill="transparent" stroke="#B2967D" stroke-width="3"
-                            stroke-dasharray="${sourceStats.onlinePct} ${100 - sourceStats.onlinePct}"
-                            stroke-dashoffset="25" />
-                  </svg>
-                  <div style="font-size:0.85rem;">
-                    <div><span style="color:#B2967D;font-weight:bold;">■</span> Online: ${sourceStats.onlinePct}% (${sourceStats.online} citas)</div>
-                    <div><span style="color:#9ca3af;font-weight:bold;">■</span> Manual: ${sourceStats.manualPct}% (${sourceStats.manual} citas)</div>
-                  </div>
-                </div>
-              </div>
-
-              ${FACTURACION_NCF ? `<div class="card">
-                <h3>Métodos de Pago</h3>
-                ${paymentStats.map(p => `
-                  <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding: 6px 0; border-bottom:1px solid #f3f4f6;">
-                    <span>${p.method}</span>
-                    <strong>RD$ ${p.total.toLocaleString('es-DO')} (${p.count} trans.)</strong>
-                  </div>
-                `).join('')}
-              </div>` : ''}
-
-            </div>
-          ` : ''}
-
-          <div class="footer">
-            Documento de control interno - Anadsll Beauty Esthetic
-          </div>
-
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 500);
-            };
-          </script>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-  };
-
-  const generate607 = () => {
-    const targetMonth = activeDate.slice(0, 7);
-    const paid = invoices.filter((i) => i.createdAt.startsWith(targetMonth) && i.status === 'paid');
-    const rows = ['RNC/Cédula|Tipo ID|NCF|NCF Modificado|Tipo Ingreso|Fecha Comprobante|Fecha Retención|Monto Facturado|ITBIS Facturado'];
-    paid.forEach((i) => {
-      rows.push(`${i.clientCedula}|1|${i.ncf}||01|${i.createdAt.replace(/-/g, '')}||${i.subtotal}|${i.totalItbis}`);
-    });
-    const blob = new Blob([rows.join('\n')], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
+  const descargarExcel = () => {
+    const celda = (t: string | number) => `"${String(t).replace(/"/g, '""')}"`;
+    const filas: (string | number)[][] = [
+      [`Reporte · Anadsll Beauty Esthetic${quien ? ` · ${quien}` : ''}`], ['Periodo', titulo], ['Generado', new Date().toLocaleString('es-DO')], [],
+      ['RESUMEN', 'Este periodo', FRENTE[periodo].replace('frente', 'Frente')],
+      ...filasResumen(r).map(([k, v], i) => [k, v, filasResumen(antes)[i][1]]),
+      [], ['POR ESPECIALISTA', 'Citas', ...(esEspecialista ? [] : ['Cobrado']), '% comisión', 'Comisión'],
+      ...especialistas.map((e) => [e.miembro.name, e.citas, ...(esEspecialista ? [] : [e.ingresos]), e.miembro.commissionPct, e.comision]),
+      [], ['POR CATEGORÍA', 'Servicios', 'Cobrado'], ...categorias.map((c) => [c.nombre, c.cantidad, c.monto]),
+      [], ['LO MÁS HECHO', 'Veces', 'Cobrado'], ...masHechos.map((c) => [c.nombre, c.cantidad, c.monto]),
+      ...(esEspecialista ? [] : [[], ['MEJORES CLIENTAS', 'Citas', 'Dejó'], ...clientas.map((c) => [c.nombre, c.cantidad, c.monto])]),
+    ];
+    const csv = '﻿' + filas.map((f) => f.map(celda).join(';')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `607_${targetMonth}.txt`;
+    a.download = `Reporte_${periodo}_${rango.desde}${quien ? `_${quien.replace(/\s+/g, '-')}` : ''}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Reporte descargado');
+  };
+
+  const imprimir = () => {
+    const v = window.open('', '_blank');
+    if (!v) {
+      toast.error('Permite las ventanas emergentes para imprimir el reporte');
+      return;
+    }
+    const tabla = (cab: string[], filas: (string | number)[][]) =>
+      `<table><thead><tr>${cab.map((c) => `<th>${escapar(c)}</th>`).join('')}</tr></thead><tbody>${filas.map((f) => `<tr>${f.map((x) => `<td>${escapar(String(x))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    v.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Reporte · ${escapar(titulo)}</title><style>
+      body{font-family:Outfit,Arial,sans-serif;padding:32px;color:#2b2b2b}
+      h1{font-family:'Playfair Display',Georgia,serif;font-weight:500;color:#4a342a;margin:0 0 4px}
+      .meta{color:#6b7280;margin-bottom:24px}
+      h2{font-size:1.05rem;color:#4a342a;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-top:26px}
+      table{width:100%;border-collapse:collapse;margin-top:8px}
+      th{text-align:left;font-size:.78rem;text-transform:uppercase;color:#6b7280;padding:8px;border-bottom:2px solid #e5e7eb}
+      td{padding:8px;border-bottom:1px solid #f0ebe4;font-size:.9rem}
+      @media print{table{page-break-inside:avoid}}
+    </style></head><body>
+      <h1>Reporte${quien ? ` de ${escapar(quien)}` : ''}</h1>
+      <div class="meta">Anadsll Beauty Esthetic · ${escapar(titulo)} · generado el ${escapar(new Date().toLocaleString('es-DO'))}</div>
+      <h2>Resumen</h2>${tabla(['', 'Este periodo', FRENTE[periodo].replace('frente', 'Frente')], filasResumen(r).map(([k, x], i) => [k, x, filasResumen(antes)[i][1]]))}
+      <h2>Por especialista</h2>${tabla(['Especialista', 'Citas', ...(esEspecialista ? [] : ['Cobrado']), '% comisión', 'Comisión'],
+        especialistas.map((e) => [e.miembro.name, e.citas, ...(esEspecialista ? [] : [rd(e.ingresos)]), `${e.miembro.commissionPct} %`, rd(e.comision)]))}
+      <h2>Por categoría</h2>${tabla(['Categoría', 'Servicios', 'Cobrado'], categorias.map((c) => [c.nombre, c.cantidad, rd(c.monto)]))}
+      <h2>Lo más hecho</h2>${tabla(['Servicio', 'Veces', 'Cobrado'], masHechos.map((c) => [c.nombre, c.cantidad, rd(c.monto)]))}
+      ${esEspecialista ? '' : `<h2>Mejores clientas</h2>${tabla(['Clienta', 'Citas', 'Dejó'], clientas.map((c) => [c.nombre, c.cantidad, rd(c.monto)]))}`}
+      <script>window.onload=function(){window.print();setTimeout(function(){window.close()},500)}</script>
+    </body></html>`);
+    v.document.close();
+  };
+
+  const generar607 = () => {
+    const mes = rango.desde.slice(0, 7);
+    const filas = ['RNC/Cédula|Tipo ID|NCF|NCF Modificado|Tipo Ingreso|Fecha Comprobante|Fecha Retención|Monto Facturado|ITBIS Facturado'];
+    invoices.filter((i) => i.createdAt.startsWith(mes) && i.status === 'paid').forEach((i) => {
+      filas.push(`${i.clientCedula}|1|${i.ncf}||01|${i.createdAt.slice(0, 10).replace(/-/g, '')}||${i.subtotal}|${i.totalItbis}`);
+    });
+    const url = URL.createObjectURL(new Blob([filas.join('\n')], { type: 'text/plain' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `607_${mes}.txt`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success('Formato DGII 607 generado');
   };
 
-  const years = useMemo(() => {
-    return Array.from({ length: 5 }, (_, i) => String(new Date().getFullYear() - i));
-  }, []);
+  const maxHora = Math.max(1, ...horas.map((h) => h.cantidad));
+  const totalOrigen = origen.enLinea + origen.enSalon;
 
   return (
-    <div className="reports">
-      <div className="clients__header" style={{ marginBottom: 16 }}>
+    <div className="neg reps">
+      <header className="neg__cabeza">
         <div>
-          <h1 className="clients__title">{user?.role === 'specialist' ? 'Mis reportes' : 'Reportes'}</h1>
-          <p className="clients__subtitle">
-            {user?.role === 'specialist'
-              ? 'Consulta tu rendimiento individual y comisiones acumuladas'
-              : 'Consulta el rendimiento general y comisiones del personal'}
-          </p>
+          <h1 className="neg__titulo">{esEspecialista ? 'Mis reportes' : 'Reportes'}</h1>
+          <p className="neg__sub">{esEspecialista ? 'Lo que has hecho y tu comisión' : 'Cómo le va al salón, comparado con el periodo anterior'}</p>
+        </div>
+        <div className="neg__botones">
+          <button type="button" className="neg__btn" onClick={descargarExcel}><Download size={18} aria-hidden="true" /> Excel</button>
+          <button type="button" className="neg__btn" onClick={imprimir}><Printer size={18} aria-hidden="true" /> Imprimir</button>
+        </div>
+      </header>
+
+      <div className="reps__barra">
+        <div className="reps__periodos" role="group" aria-label="Periodo">
+          {PERIODOS.map(([p, nombre]) => (
+            <button key={p} type="button" className={periodo === p ? 'is-on' : ''} aria-pressed={periodo === p} onClick={() => cambiarPeriodo(p)}>{nombre}</button>
+          ))}
+        </div>
+        <div className="reps__nav">
+          <button type="button" className="neg__icono" onClick={() => setFecha(moverPeriodo(periodo, fecha, -1))} aria-label="Periodo anterior"><ChevronLeft size={20} /></button>
+          <h2 className="reps__titulo" aria-live="polite">{titulo}</h2>
+          <button type="button" className="neg__icono" onClick={() => setFecha(moverPeriodo(periodo, fecha, 1))} aria-label="Periodo siguiente"><ChevronRight size={20} /></button>
+          {!esteEs && <button type="button" className="neg__btn neg__btn--chico" onClick={() => setFecha(hoy)}>{ESTE[periodo]}</button>}
         </div>
       </div>
 
-      {/* ── Period Selector & Downloads ── */}
-      <div className="reports__filters">
-        <div className="reports__period-tabs">
-          <button
-            className={`reports__period-btn ${timePeriod === 'day' ? 'reports__period-btn--active' : ''}`}
-            onClick={() => setTimePeriod('day')}
-          >
-            Diario
-          </button>
-          <button
-            className={`reports__period-btn ${timePeriod === 'week' ? 'reports__period-btn--active' : ''}`}
-            onClick={() => setTimePeriod('week')}
-          >
-            Semanal
-          </button>
-          <button
-            className={`reports__period-btn ${timePeriod === 'month' ? 'reports__period-btn--active' : ''}`}
-            onClick={() => setTimePeriod('month')}
-          >
-            Mensual
-          </button>
-          <button
-            className={`reports__period-btn ${timePeriod === 'year' ? 'reports__period-btn--active' : ''}`}
-            onClick={() => setTimePeriod('year')}
-          >
-            Anual
-          </button>
-        </div>
-
-        <div>
-          {timePeriod === 'day' && (
-            <input
-              type="date"
-              className="reports__date-input"
-              value={activeDate}
-              onChange={(e) => setActiveDate(e.target.value)}
-            />
-          )}
-          {timePeriod === 'week' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input
-                type="date"
-                className="reports__date-input"
-                value={activeDate}
-                onChange={(e) => setActiveDate(e.target.value)}
-              />
-              <span className="reports__periodo">
-                {getPeriodLabel()}
-              </span>
-            </div>
-          )}
-          {timePeriod === 'month' && (
-            <input
-              type="month"
-              className="reports__date-input"
-              value={activeDate.slice(0, 7)}
-              onChange={(e) => setActiveDate(e.target.value + '-01')}
-            />
-          )}
-          {timePeriod === 'year' && (
-            <select
-              className="reports__date-input"
-              value={activeDate.slice(0, 4)}
-              onChange={(e) => setActiveDate(e.target.value + '-01-01')}
-            >
-              {years.map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        <div className="reports__download-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {user?.role !== 'specialist' && (
-            <button
-              className={`reports__download-btn ${showAdvanced ? 'reports__download-btn--advanced-active' : 'reports__download-btn--advanced'}`}
-              onClick={() => setShowAdvanced(!showAdvanced)}
-            >
-              <TrendingUp size={16} /> {showAdvanced ? 'Vista general' : 'Vista avanzada'}
+      {!esEspecialista && equipo.length > 0 && (
+        <div className="neg__chips" role="group" aria-label="De quién">
+          <button type="button" className={`neg__chip ${!elegida ? 'is-on' : ''}`} aria-pressed={!elegida} onClick={() => setElegida(null)}>Todo el salón</button>
+          {equipo.map((m) => (
+            <button key={m.id} type="button" className={`neg__chip ${elegida === m.name ? 'is-on' : ''}`} aria-pressed={elegida === m.name} onClick={() => setElegida(m.name)}>
+              {primerNombre(m.name)}
             </button>
-          )}
-          <button
-            className="reports__download-btn reports__download-btn--excel"
-            onClick={downloadExcel}
-          >
-            <Download size={16} /> Excel
-          </button>
-          <button
-            className="reports__download-btn reports__download-btn--pdf"
-            onClick={downloadPDF}
-          >
-            <Download size={16} /> PDF
-          </button>
+          ))}
         </div>
+      )}
+
+      {enElFuturo && <p className="neg__aviso">Este periodo todavía no llega: aquí solo cuenta lo que ya se completó.</p>}
+
+      <div className="neg__resumen">
+        {esEspecialista ? (
+          <div className="neg__dato neg__dato--bien"><b>{rd(comisionMia)}</b><span>Tu comisión</span></div>
+        ) : (
+          <div className="neg__dato"><b>{rd(r.ingresos)}</b><span>Cobrado</span><Cambio actual={r.ingresos} antes={antes.ingresos} periodo={periodo} /></div>
+        )}
+        <div className="neg__dato"><b>{r.completadas}</b><span>Citas completadas</span><Cambio actual={r.completadas} antes={antes.completadas} periodo={periodo} /></div>
+        <div className="neg__dato"><b>{rd(r.ticket)}</b><span>Promedio por cita</span><Cambio actual={r.ticket} antes={antes.ticket} periodo={periodo} /></div>
+        <div className="neg__dato">
+          <b>{r.atendidas}</b><span>Clientas atendidas</span>
+          {r.atendidas > 0 && <small className="neg__igual">{r.primeraVez} por primera vez · {r.volvieron} volvieron</small>}
+        </div>
+        <div className={`neg__dato ${r.noVino > 0 ? 'neg__dato--alerta' : ''}`}>
+          <b>{r.noVino}</b><span>No vinieron</span>
+          {r.noVino > 0 && <small className="neg__igual">{Math.round((r.noVino / (r.noVino + r.completadas)) * 100)} % de las citas</small>}
+        </div>
+        <div className="neg__dato"><b>{r.canceladas}</b><span>Canceladas</span></div>
       </div>
 
-      {/* ── Key Metrics Cards ── */}
-      <div className="reports__section">
-        <h2><CalendarDays size={20} /> Resumen del periodo</h2>
-        <div className="reports__cards">
-          <div className="report-card">
-            <span>Citas completadas</span>
-            <strong>{totalCompleted}</strong>
-          </div>
-          <div className="report-card report-card--red">
-            <span>No asistieron</span>
-            <strong>{totalNoShow}</strong>
-          </div>
-          <div className="report-card report-card--amber">
-            <span>Citas canceladas</span>
-            <strong>{totalCancelled}</strong>
-          </div>
-          <div className="report-card report-card--rose">
-            <span>Clientas nuevas</span>
-            <strong>{totalNewClients}</strong>
-          </div>
-          {user?.role !== 'specialist' && (
-            <div className="report-card report-card--green" style={{ gridColumn: 'span 2' }}>
-              <span>Ingresos de citas completadas</span>
-              <strong>{fmtPrice(totalRevenue)}</strong>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Vista avanzada ── */}
-      {showAdvanced && (
-        <div className="reports__section">
-          <h2><TrendingUp size={20} /> Análisis avanzado</h2>
-          <div className="reports__avanzado">
-
-            {/* Origen de las reservas (dona) */}
-            <div className="report-card reports__chart">
-              <h3 className="reports__chart-title">Origen de las reservas</h3>
-              <div className="reports__advanced-donut-wrap" style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                <div style={{ position: 'relative', width: '90px', height: '90px' }}>
-                  <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }} aria-hidden="true">
-                    <circle className="reports__chart-ring" cx="18" cy="18" r="15.91549430918954" fill="transparent" strokeWidth="4" />
-                    <circle cx="18" cy="18" r="15.91549430918954" fill="transparent" stroke="var(--rose)" strokeWidth="4"
-                            strokeDasharray={`${sourceStats.onlinePct} ${100 - sourceStats.onlinePct}`}
-                            strokeDashoffset="0" />
-                  </svg>
-                  <div className="reports__donut-num">
-                    {sourceStats.onlinePct}%
-                  </div>
-                </div>
-                <div className="reports__chart-text" style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div><span style={{ color: 'var(--rose)', marginRight: '6px' }}>■</span><strong>Online:</strong> {sourceStats.onlinePct}% ({sourceStats.online} citas)</div>
-                  <div><span className="reports__chart-muted" style={{ marginRight: '6px' }}>■</span><strong>Presencial / manual:</strong> {sourceStats.manualPct}% ({sourceStats.manual} citas)</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Ingresos por categoría (barras) */}
-            <div className="report-card reports__chart">
-              <h3 className="reports__chart-title">Ingresos por categoría</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {categoryStats.map(c => (
-                  <div key={c.category} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div className="reports__chart-text" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ textTransform: 'capitalize' }}>{c.category}</span>
-                      <strong>{fmtPrice(c.revenue)} ({c.count})</strong>
-                    </div>
-                    <div className="reports__horizontal-track reports__chart-track" style={{ borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
-                      <div className="reports__horizontal-fill" style={{ background: 'linear-gradient(90deg, var(--rose), var(--lavender))', height: '100%', borderRadius: '99px', width: `${Math.round((c.revenue / maxCategoryRevenue) * 100)}%` }} />
-                    </div>
-                  </div>
+      <div className="reps__grilla">
+        {!quien && (
+          <section className="neg__tarjeta reps__ancha" aria-labelledby="rep-esp">
+            <h2 id="rep-esp" className="neg__seccion-tit">Por especialista</h2>
+            {especialistas.length === 0 ? <p className="reps__vacio">No hay servicios completados en este periodo.</p> : (
+              <ul className="reps__equipo">
+                {especialistas.map((e) => (
+                  <li key={e.miembro.id}>
+                    <button type="button" className="reps__persona" onClick={() => setElegida(e.miembro.name)} aria-label={`Ver solo lo de ${e.miembro.name}`}>
+                      {e.miembro.name}
+                    </button>
+                    <span><b>{e.citas}</b> citas</span>
+                    <span><b>{rd(e.ingresos)}</b> cobrado</span>
+                    <span><b>{e.miembro.commissionPct > 0 ? rd(e.comision) : '—'}</b> comisión{e.miembro.commissionPct > 0 && ` (${e.miembro.commissionPct} %)`}</span>
+                  </li>
                 ))}
-                {categoryStats.length === 0 && <div className="reports__chart-muted" style={{ textAlign: 'center', padding: '10px 0' }}>Sin datos disponibles</div>}
-              </div>
-            </div>
-
-            {/* Las clientas que más gastan (barras) */}
-            <div className="report-card reports__chart">
-              <h3 className="reports__chart-title">Las 5 clientas que más gastan</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {topClients.map(c => (
-                  <div key={c.name} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div className="reports__chart-text" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>{c.name}</span>
-                      <strong>{fmtPrice(c.spent)} ({c.count} citas)</strong>
-                    </div>
-                    <div className="reports__horizontal-track reports__chart-track" style={{ borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
-                      <div className="reports__horizontal-fill" style={{ background: 'linear-gradient(90deg, var(--camel), var(--cocoa))', height: '100%', borderRadius: '99px', width: `${Math.round((c.spent / maxClientSpent) * 100)}%` }} />
-                    </div>
-                  </div>
-                ))}
-                {topClients.length === 0 && <div className="reports__chart-muted" style={{ textAlign: 'center', padding: '10px 0' }}>Sin datos disponibles</div>}
-              </div>
-            </div>
-
-            {/* Horas con más citas (columnas) */}
-            <div className="report-card reports__chart">
-              <h3 className="reports__chart-title">Horas con más citas</h3>
-              <div className="reports__vertical-chart" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', height: '90px', paddingTop: '10px', gap: '8px' }}>
-                {peakHours.map(p => (
-                  <div key={p.time} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: '6px' }}>
-                    <span className="reports__chart-text" style={{ fontSize: '0.72rem' }}>{p.count}</span>
-                    <div className="reports__chart-track" style={{ width: '100%', height: '50px', borderRadius: '4px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
-                      <div style={{ background: 'linear-gradient(to top, var(--lavender-dark), var(--lavender))', width: '100%', height: `${Math.round((p.count / maxPeakCount) * 100)}%` }} />
-                    </div>
-                    <span className="reports__chart-muted" style={{ fontSize: '0.7rem' }}>{format12h(p.time)}</span>
-                  </div>
-                ))}
-                {peakHours.length === 0 && <div className="reports__chart-muted" style={{ textAlign: 'center', width: '100%', paddingBottom: '30px' }}>Sin datos de horas</div>}
-              </div>
-            </div>
-
-            {/* Métodos de pago: salen de las facturas, así que solo con la facturación encendida */}
-            {FACTURACION_NCF && (
-              <div className="report-card reports__chart" style={{ gridColumn: '1 / -1' }}>
-                <h3 className="reports__chart-title">Métodos de pago (facturación)</h3>
-                <table className="reports__chart-text" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-                  <thead>
-                    <tr className="reports__chart-muted" style={{ textTransform: 'uppercase', fontSize: '0.7rem', textAlign: 'left' }}>
-                      <th style={{ padding: '8px 0' }}>Método</th>
-                      <th>Transacciones</th>
-                      <th style={{ textAlign: 'right' }}>Monto recibido</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paymentStats.map(p => (
-                      <tr key={p.method}>
-                        <td style={{ padding: '8px 0', fontWeight: 600 }}>{p.method}</td>
-                        <td>{p.count}</td>
-                        <td className="reports__comision" style={{ textAlign: 'right', fontWeight: 'bold' }}>{fmtPrice(p.total)}</td>
-                      </tr>
-                    ))}
-                    {paymentStats.length === 0 && (
-                      <tr>
-                        <td colSpan={3} className="reports__chart-muted" style={{ textAlign: 'center', padding: '16px 0' }}>No hay facturas pagadas registradas en este periodo.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              </ul>
             )}
+          </section>
+        )}
 
+        <section className="neg__tarjeta" aria-labelledby="rep-cat">
+          <h2 id="rep-cat" className="neg__seccion-tit">Por categoría</h2>
+          <Barras vacio="Sin servicios completados." filas={categorias.map((c) => ({ clave: c.clave, nombre: c.nombre, valor: c.monto, texto: `${rd(c.monto)} · ${c.cantidad === 1 ? '1 servicio' : `${c.cantidad} servicios`}` }))} />
+        </section>
+
+        <section className="neg__tarjeta" aria-labelledby="rep-mas">
+          <h2 id="rep-mas" className="neg__seccion-tit">Lo más hecho</h2>
+          <Barras vacio="Sin servicios completados." filas={masHechos.map((c) => ({ clave: c.clave, nombre: c.nombre, valor: c.cantidad, texto: c.cantidad === 1 ? '1 vez' : `${c.cantidad} veces` }))} />
+        </section>
+
+        {!esEspecialista && !quien && (
+          <section className="neg__tarjeta" aria-labelledby="rep-cli">
+            <h2 id="rep-cli" className="neg__seccion-tit">Las clientas que más dejaron</h2>
+            <Barras vacio="Sin citas completadas." filas={clientas.map((c) => ({
+              clave: c.clave,
+              nombre: c.clientId ? <button type="button" className="reps__enlace" onClick={() => navigate(`/admin/clientes/${c.clientId}`)}>{c.nombre}</button> : c.nombre,
+              valor: c.monto,
+              texto: `${rd(c.monto)} · ${c.cantidad === 1 ? '1 cita' : `${c.cantidad} citas`}`,
+            }))} />
+          </section>
+        )}
+
+        <section className="neg__tarjeta" aria-labelledby="rep-horas">
+          <h2 id="rep-horas" className="neg__seccion-tit">A qué hora se trabaja más</h2>
+          <div className="reps__horas" role="img" aria-label={horas.filter((h) => h.cantidad > 0).map((h) => `${hora12(h.hora)}: ${h.cantidad}`).join(', ') || 'Sin servicios'}>
+            {horas.map((h) => (
+              <div key={h.hora} className="reps__hora">
+                <span className="reps__hora-n">{h.cantidad || ''}</span>
+                <div className="reps__hora-pista"><i style={{ height: `${Math.round((h.cantidad / maxHora) * 100)}%` }} /></div>
+                <span className="reps__hora-h">{hora12(h.hora)}</span>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        </section>
 
-      {/* ── Specialist Report ── */}
-      <div className="reports__section">
-        <h2><UserCog size={20} /> Rendimiento y comisiones por especialista</h2>
-        <div className="reports__table-wrap">
-          <table className="reports__table">
-            <thead>
-              <tr>
-                <th>Especialista</th>
-                <th>Citas realizadas</th>
-                {user?.role !== 'specialist' && <th>Ingresos generados</th>}
-                <th>% Comisión</th>
-                <th>Comisión calculada</th>
-              </tr>
-            </thead>
-            <tbody>
-              {specialistStats.map((s) => (
-                <tr key={s.name}>
-                  {/* data-label: en pantallas angostas cada fila se muestra como tarjeta y la etiqueta va al lado del dato */}
-                  <td data-label="Especialista"><strong>{s.name}</strong></td>
-                  <td data-label="Citas realizadas">{s.completedAppts}</td>
-                  {user?.role !== 'specialist' && <td data-label="Ingresos generados">{fmtPrice(s.revenue)}</td>}
-                  <td data-label="% Comisión">{s.commissionPct}%</td>
-                  <td data-label="Comisión calculada"><strong className="reports__comision">{fmtPrice(s.commission)}</strong></td>
-                </tr>
-              ))}
-              {specialistStats.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="reports__specialist-empty">
-                    No se registraron servicios en este periodo.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ── Paquetes (y DGII, solo con la facturación encendida) ── */}
-      {user?.role !== 'specialist' && (
-        <div className={FACTURACION_NCF ? 'reports__row' : undefined}>
-          <div className="reports__section">
-            <h2><Receipt size={20} /> Paquetes activos</h2>
-            <div className="reports__cards reports__cards--small">
-              <div className="report-card report-card--green">
-                <span>Activos</span>
-                <strong>{clientPackages.filter((c) => c.usedSessions < c.totalSessions).length}</strong>
+        <section className="neg__tarjeta" aria-labelledby="rep-origen">
+          <h2 id="rep-origen" className="neg__seccion-tit">De dónde vinieron las citas</h2>
+          {totalOrigen === 0 ? <p className="reps__vacio">Sin citas completadas.</p> : (
+            <>
+              <div className="reps__origen" aria-hidden="true">
+                <i style={{ width: `${Math.round((origen.enLinea / totalOrigen) * 100)}%` }} />
               </div>
-              <div className="report-card">
-                <span>Completados</span>
-                <strong>{clientPackages.filter((c) => c.usedSessions >= c.totalSessions).length}</strong>
-              </div>
-              <div className="report-card report-card--rose">
-                <span>Sesiones usadas</span>
-                <strong>{clientPackages.reduce((a, c) => a + c.usedSessions, 0)}</strong>
-              </div>
-            </div>
-          </div>
-
-          {FACTURACION_NCF && (
-            <div className="reports__section">
-              <h2><FileText size={20} /> Reportes DGII</h2>
-              <p className="reports__dgii-note">Genera los archivos de formato DGII para el periodo correspondiente.</p>
-              <div className="reports__dgii-buttons">
-                <button className="reports__dgii-btn" onClick={generate607} id="btn-dgii-607">
-                  <Download size={16} /> Formato 607 — Ingresos ({activeDate.slice(0, 7)})
-                </button>
-              </div>
-            </div>
+              <ul className="reps__leyenda">
+                <li><i className="is-linea" aria-hidden="true" /> Reservaron en la web: <b>{origen.enLinea}</b> ({Math.round((origen.enLinea / totalOrigen) * 100)} %)</li>
+                <li><i aria-hidden="true" /> En el salón o por teléfono: <b>{origen.enSalon}</b></li>
+              </ul>
+            </>
           )}
-        </div>
-      )}
+        </section>
 
+        {!esEspecialista && (
+          <section className="neg__tarjeta" aria-labelledby="rep-paq">
+            <h2 id="rep-paq" className="neg__seccion-tit">Paquetes (hoy)</h2>
+            <dl className="reps__paquetes">
+              <div><dt>Activos</dt><dd>{paquetes.activos}</dd></div>
+              <div><dt>Sin la próxima agendada</dt><dd>{paquetes.sinAgendar}</dd></div>
+              <div><dt>Por cobrar</dt><dd>{rd(paquetes.porCobrar)}</dd></div>
+            </dl>
+            <div className="neg__acciones">
+              <button type="button" className="neg__btn neg__btn--chico" onClick={() => navigate('/admin/paquetes')}>Ver paquetes</button>
+            </div>
+          </section>
+        )}
+
+        {FACTURACION_NCF && esAdmin && (
+          <section className="neg__tarjeta" aria-labelledby="rep-fact">
+            <h2 id="rep-fact" className="neg__seccion-tit">Facturación</h2>
+            <p className="reps__vacio">{pagadas.length} facturas pagadas · {rd(pagadas.reduce((t, i) => t + i.total, 0))}</p>
+            <div className="neg__acciones">
+              <button type="button" className="neg__btn neg__btn--chico" onClick={generar607}><FileText size={16} aria-hidden="true" /> Formato 607 ({rango.desde.slice(0, 7)})</button>
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

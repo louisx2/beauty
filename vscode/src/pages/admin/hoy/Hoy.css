@@ -216,35 +216,21 @@
   font-weight: 600;
 }
 
-.hoy__manana {
+.hoy__tarjeta.hoy__manana {
+  background: rgba(178, 150, 125, 0.12);
+  border-color: rgba(178, 150, 125, 0.25);
+}
+
+.hoy__manana-res {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.hoy__manana-btns {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 56px;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 16px;
-  background: rgba(178, 150, 125, 0.14);
-  color: inherit;
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.hoy__manana > span {
-  display: flex;
-  flex-direction: column;
-}
-
-.hoy__manana b {
-  font-size: 0.92rem;
-  font-weight: 600;
-}
-
-.hoy__manana span span {
-  font-size: 0.84rem;
-  color: rgba(255, 255, 255, 0.6);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* La agenda */
@@ -541,95 +527,6 @@
   cursor: pointer;
 }
 
-/* Hoja de la cita */
-.modal.hoy__hoja {
-  max-width: 480px;
-}
-
-.hoy__estado {
-  display: inline-block;
-  margin-top: 6px;
-  padding: 3px 10px;
-  border-radius: 99px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.hoy__estado--pending { background: rgba(251, 191, 36, 0.14); color: #fbbf24; }
-.hoy__estado--confirmed { background: rgba(96, 165, 250, 0.14); color: #93c5fd; }
-.hoy__estado--in_progress { background: rgba(178, 150, 125, 0.22); color: var(--camel-light); }
-.hoy__estado--completed { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
-.hoy__estado--cancelled,
-.hoy__estado--no_show { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.6); }
-
-.hoy__hoja-cuerpo {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 16px 28px 8px;
-}
-
-.hoy__hoja-dia {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.hoy__hoja-servicios {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.hoy__hoja-servicios li {
-  display: flex;
-  flex-direction: column;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.hoy__hoja-servicios b {
-  font-size: 0.92rem;
-  font-weight: 600;
-}
-
-.hoy__hoja-servicios span {
-  font-size: 0.82rem;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.hoy__hoja-nota {
-  margin: 0;
-  padding: 8px 12px;
-  border-left: 2px solid var(--camel);
-  font-size: 0.86rem;
-  white-space: pre-wrap;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.hoy__hoja-contacto {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.hoy__hoja-pie {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 14px 28px 22px;
-}
-
-.hoy__hoja-pie .hoy__btn--principal {
-  flex: 1;
-  max-width: 260px;
-}
-
 /* Tableta vertical en adelante: la agenda en columnas y las dos tarjetas lado a lado */
 @container (min-width: 560px) {
   .hoy__grilla { display: block; }
@@ -659,9 +556,9 @@
 [data-theme="light"] .hoy__confirmar-nom span,
 [data-theme="light"] .hoy__persona span,
 [data-theme="light"] .hoy__horas span,
-[data-theme="light"] .hoy__renglon-txt span,
-[data-theme="light"] .hoy__hoja-servicios span,
-[data-theme="light"] .hoy__manana span span { color: var(--muted); }
+[data-theme="light"] .hoy__renglon-txt span { color: var(--muted); }
+
+[data-theme="light"] .hoy__manana-res { color: var(--espresso); }
 
 [data-theme="light"] .hoy__btn,
 [data-theme="light"] .hoy__icono {
@@ -694,7 +591,7 @@
 [data-theme="light"] .hoy__grilla-cabeza,
 [data-theme="light"] .hoy__lista > li { border-color: rgba(74, 52, 42, 0.09); }
 
-[data-theme="light"] .hoy__manana { background: #EFE6DD; }
+[data-theme="light"] .hoy__tarjeta.hoy__manana { background: #F7EFE7; border-color: #E5D6C6; }
 
 [data-theme="light"] .hoy__col {
   border-left-color: rgba(74, 52, 42, 0.07);
@@ -726,12 +623,4 @@
 [data-theme="light"] .hoy__ahora,
 [data-theme="light"] .hoy__ahora span { background: #B4533A; }
 
-[data-theme="light"] .hoy__estado--pending { background: #FBEFD5; color: #7A4F00; }
-[data-theme="light"] .hoy__estado--confirmed { background: #E4EDF6; color: #2D5B86; }
-[data-theme="light"] .hoy__estado--in_progress { background: #F1E4D8; color: #6B4630; }
-[data-theme="light"] .hoy__estado--completed { background: #E3F0E7; color: #2F6B45; }
-[data-theme="light"] .hoy__estado--cancelled,
-[data-theme="light"] .hoy__estado--no_show { background: #EEEAE6; color: #5E5651; }
 
-[data-theme="light"] .hoy__hoja-servicios li { background: #F9F6F1; }
-[data-theme="light"] .hoy__hoja-nota { color: var(--espresso); }

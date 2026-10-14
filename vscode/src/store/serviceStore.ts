@@ -106,18 +106,19 @@ interface ServiceState {
   loading: boolean;
 
   fetchAll: () => Promise<void>;
-  addService: (s: Omit<Service, 'id'>) => Promise<void>;
-  updateService: (id: string, data: Partial<Service>) => Promise<void>;
-  deleteService: (id: string) => Promise<void>;
+  // Los que guardan dicen si se guardó (el error ya se avisó): la pantalla no dice "listo" si no fue así.
+  addService: (s: Omit<Service, 'id'>) => Promise<Service | null>;
+  updateService: (id: string, data: Partial<Service>) => Promise<boolean>;
+  deleteService: (id: string) => Promise<boolean>;
 
-  addPackage: (p: Omit<SessionPackage, 'id'>) => Promise<void>;
-  updatePackage: (id: string, data: Partial<SessionPackage>) => Promise<void>;
-  deletePackage: (id: string) => Promise<void>;
+  addPackage: (p: Omit<SessionPackage, 'id'>) => Promise<boolean>;
+  updatePackage: (id: string, data: Partial<SessionPackage>) => Promise<boolean>;
+  deletePackage: (id: string) => Promise<boolean>;
 
   sellPackage: (cp: Omit<ClientPackage, 'id' | 'status'>) => Promise<ClientPackage | null>;
-  useSession: (clientPackageId: string) => Promise<void>;
-  updateClientPackage: (id: string, data: { usedSessions?: number; notes?: string; status?: string }) => Promise<void>;
-  deleteClientPackage: (id: string) => Promise<void>;
+  useSession: (clientPackageId: string) => Promise<boolean>;
+  updateClientPackage: (id: string, data: { usedSessions?: number; notes?: string; status?: string }) => Promise<boolean>;
+  deleteClientPackage: (id: string) => Promise<boolean>;
 
   addPayment: (p: Omit<PackagePayment, 'id' | 'createdAt'>) => Promise<boolean>;
   fetchPayments: (packageId: string) => Promise<PackagePayment[]>;
@@ -151,13 +152,14 @@ export const useServiceStore = create<ServiceState>()((set, get) => ({
       duration: s.duration, price: s.price, taxable: s.taxable,
       has_session: s.hasSession, active: s.active,
     }).select().single();
-    if (error) {
+    if (error || !data) {
       console.error("Error al crear servicio:", error);
-      toast.error('Error al crear servicio');
-    } else if (data) {
-      set((st) => ({ services: [...st.services, mapService(data)] }));
-      toast.success('Servicio creado');
+      toast.error('No se pudo crear el servicio');
+      return null;
     }
+    const nuevo = mapService(data);
+    set((st) => ({ services: [...st.services, nuevo] }));
+    return nuevo;
   },
 
   updateService: async (id, updates) => {
@@ -172,23 +174,24 @@ export const useServiceStore = create<ServiceState>()((set, get) => ({
     if (updates.active !== undefined) db.active = updates.active;
 
     const { data, error } = await supabase.from('services').update(db).eq('id', id).select().single();
-    if (error) {
-      toast.error('Error al actualizar servicio');
+    if (error || !data) {
+      toast.error('No se pudo guardar el servicio');
       console.error(error);
-    } else if (data) {
-      set((st) => ({ services: st.services.map((s) => s.id === id ? mapService(data) : s) }));
-      toast.success('Servicio actualizado');
+      return false;
     }
+    set((st) => ({ services: st.services.map((s) => s.id === id ? mapService(data) : s) }));
+    return true;
   },
 
   deleteService: async (id) => {
     const { error } = await supabase.from('services').delete().eq('id', id);
     if (error) {
-      toast.error('Error al eliminar servicio');
-    } else {
-      set((st) => ({ services: st.services.filter((s) => s.id !== id) }));
-      toast.success('Servicio eliminado');
+      // 23503: lo usa un paquete (o algo más que lo nombra); se puede desactivar en su lugar
+      toast.error(error.code === '23503' ? 'Este servicio está en un paquete: desactívalo en lugar de eliminarlo' : 'No se pudo eliminar el servicio');
+      return false;
     }
+    set((st) => ({ services: st.services.filter((s) => s.id !== id) }));
+    return true;
   },
 
   addPackage: async (p) => {
@@ -196,13 +199,13 @@ export const useServiceStore = create<ServiceState>()((set, get) => ({
       service_id: p.serviceId, name: p.name, sessions: p.sessions,
       price: p.price, active: p.active,
     }).select('*, services(name)').single();
-    if (error) {
+    if (error || !data) {
       console.error("Error al crear paquete:", error);
-      toast.error('Error al crear paquete');
-    } else if (data) {
-      set((st) => ({ packages: [...st.packages, mapPkg(data)] }));
-      toast.success('Paquete creado');
+      toast.error('No se pudo crear el paquete');
+      return false;
     }
+    set((st) => ({ packages: [...st.packages, mapPkg(data)] }));
+    return true;
   },
 
   updatePackage: async (id, updates) => {
@@ -214,22 +217,23 @@ export const useServiceStore = create<ServiceState>()((set, get) => ({
     if (updates.active !== undefined) db.active = updates.active;
 
     const { data, error } = await supabase.from('session_packages').update(db).eq('id', id).select('*, services(name)').single();
-    if (error) {
-      toast.error('Error al actualizar paquete');
-    } else if (data) {
-      set((st) => ({ packages: st.packages.map((p) => p.id === id ? mapPkg(data) : p) }));
-      toast.success('Paquete actualizado');
+    if (error || !data) {
+      toast.error('No se pudo guardar el paquete');
+      return false;
     }
+    set((st) => ({ packages: st.packages.map((p) => p.id === id ? mapPkg(data) : p) }));
+    return true;
   },
 
   deletePackage: async (id) => {
     const { error } = await supabase.from('session_packages').delete().eq('id', id);
     if (error) {
-      toast.error('Error al eliminar paquete');
-    } else {
-      set((st) => ({ packages: st.packages.filter((p) => p.id !== id) }));
-      toast.success('Paquete eliminado');
+      // 23503: ya se vendió a alguna clienta; se puede dejar de vender (desactivarlo) en su lugar
+      toast.error(error.code === '23503' ? 'Este paquete ya se vendió: desactívalo para no venderlo más' : 'No se pudo eliminar el paquete');
+      return false;
     }
+    set((st) => ({ packages: st.packages.filter((p) => p.id !== id) }));
+    return true;
   },
 
   sellPackage: async (cp) => {
@@ -248,14 +252,17 @@ export const useServiceStore = create<ServiceState>()((set, get) => ({
 
   useSession: async (id) => {
     const cp = get().clientPackages.find((c) => c.id === id);
-    if (!cp || cp.usedSessions >= cp.totalSessions) return;
+    if (!cp || cp.usedSessions >= cp.totalSessions) return false;
 
     const { data, error } = await supabase.from('client_packages')
       .update({ used_sessions: cp.usedSessions + 1 })
       .eq('id', id).select('*, clients(name), session_packages(name, services(name))').single();
-    if (!error && data) {
-      set((st) => ({ clientPackages: st.clientPackages.map((c) => c.id === id ? mapClientPkg(data) : c) }));
+    if (error || !data) {
+      toast.error('No se pudo descontar la sesión');
+      return false;
     }
+    set((st) => ({ clientPackages: st.clientPackages.map((c) => c.id === id ? mapClientPkg(data) : c) }));
+    return true;
   },
 
   updateClientPackage: async (id, data) => {
@@ -266,14 +273,22 @@ export const useServiceStore = create<ServiceState>()((set, get) => ({
     const { data: row, error } = await supabase.from('client_packages')
       .update(db).eq('id', id)
       .select('*, clients(name), session_packages(name, services(name))').single();
-    if (!error && row) {
-      set((st) => ({ clientPackages: st.clientPackages.map((c) => c.id === id ? mapClientPkg(row) : c) }));
+    if (error || !row) {
+      toast.error('No se pudo guardar el paquete');
+      return false;
     }
+    set((st) => ({ clientPackages: st.clientPackages.map((c) => c.id === id ? mapClientPkg(row) : c) }));
+    return true;
   },
 
   deleteClientPackage: async (id) => {
     const { error } = await supabase.from('client_packages').delete().eq('id', id);
-    if (!error) set((st) => ({ clientPackages: st.clientPackages.filter((c) => c.id !== id) }));
+    if (error) {
+      toast.error('No se pudo eliminar el paquete');
+      return false;
+    }
+    set((st) => ({ clientPackages: st.clientPackages.filter((c) => c.id !== id) }));
+    return true;
   },
 
   addPayment: async (p) => {
@@ -299,13 +314,13 @@ export const useServiceStore = create<ServiceState>()((set, get) => ({
       // if (newAmountPaid >= cp.totalPrice && cp.usedSessions >= cp.totalSessions) {
       //   newStatus = 'completed';
       // }
-      await supabase.from('client_packages').update({ amount_paid: newAmountPaid }).eq('id', p.packageId);
+      const { error: errSuma } = await supabase.from('client_packages').update({ amount_paid: newAmountPaid }).eq('id', p.packageId);
+      if (errSuma) toast.error('El abono quedó anotado, pero no se pudo sumar a lo pagado. Recarga la página.');
       set(st => ({
         clientPackages: st.clientPackages.map(c => c.id === p.packageId ? { ...c, amountPaid: newAmountPaid, status: newStatus } : c),
         payments: [mapPayment(data), ...st.payments],
       }));
     }
-    toast.success('Abono registrado');
     return true;
   },
 

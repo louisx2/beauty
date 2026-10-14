@@ -1,746 +1,327 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { useServiceStore, type SessionPackage, type ClientPackage } from '../../store/serviceStore';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import {
+  CalendarClock, CalendarPlus, CheckCircle2, MinusCircle, Package, Pencil, Plus, Power, Search, ShoppingBag, Trash2, User,
+  Wallet, X,
+} from 'lucide-react';
+import { useServiceStore, type ClientPackage, type SessionPackage } from '../../store/serviceStore';
+import { useAppointmentStore } from '../../store/appointmentStore';
 import { useAuthStore } from '../../store/authStore';
 import { useClientStore } from '../../store/clientStore';
 import { useAgendarStore } from '../../store/agendarStore';
+import { useAhora } from '../../lib/useAhora';
+import { format12h } from '../../lib/timeFormat';
+import MenuAcciones, { type ItemMenu } from '../../components/MenuAcciones';
+import Confirmar from '../../components/Confirmar';
+import { sumarDias } from '../../site/reservar/calendario';
+import { fechaCorta } from './agenda/reglas';
+import { iniciales } from './clientes/ficha';
 import {
-  Plus, X, Package, Users, CheckCircle2, AlertTriangle,
-  DollarSign, Search, Edit2, AlertCircle, CalendarPlus, FileText,
-  CreditCard, MoreVertical, Trash2
-} from 'lucide-react';
-import toast from 'react-hot-toast';
-import ClientAutocomplete from '../../components/ClientAutocomplete';
+  ETIQUETA_PAQUETE, catalogoDePaquetes, filtrarPaquetes, paquetesVendidos, resumenPaquetes, sigueActivo,
+  type FiltroPaquetes, type PaqueteVendido,
+} from './negocio/paquetes';
+import VenderPaquete from './negocio/VenderPaquete';
+import AbonosPaquete from './negocio/AbonosPaquete';
+import EditarVendido from './negocio/EditarVendido';
+import EditarTipoPaquete from './negocio/EditarTipoPaquete';
+import './negocio/Negocio.css';
 import './SessionPackages.css';
-import { fechaLocal } from '../../lib/fechas';
 
-function fmtPrice(p: number) { return `RD$ ${p.toLocaleString('es-DO')}`; }
-function todayStr() { return fechaLocal(); }
+const rd = (n: number) => `RD$ ${n.toLocaleString('es-DO')}`;
 
+const FILTROS: [FiltroPaquetes, string][] = [
+  ['activos', 'Activos'], ['sinAgendar', 'Sin agendar'], ['conSaldo', 'Con saldo'], ['completados', 'Completados'], ['todos', 'Todos'],
+];
+
+type Pregunta =
+  | { que: 'descontar'; v: PaqueteVendido }
+  | { que: 'borrarVendido'; v: PaqueteVendido }
+  | { que: 'borrarTipo'; tipo: SessionPackage };
+
+/**
+ * Paquetes: los que tiene cada clienta (cuántas sesiones le quedan, cuándo es la próxima, cuánto debe) y los tipos
+ * que se venden. Lo primero que se ve son los activos, empezando por los que no tienen la próxima sesión agendada:
+ * a esas clientas hay que llamarlas.
+ */
 export default function SessionPackages() {
   const {
-    packages, clientPackages, fetchAll, addPackage, updatePackage, deletePackage,
-    sellPackage, useSession: descontarSesion, updateClientPackage, deleteClientPackage,
-    addPayment, fetchPayments, payments,
+    packages, clientPackages, services, fetchAll, updatePackage, deletePackage, useSession: descontarSesion, deleteClientPackage,
   } = useServiceStore();
-  const { services } = useServiceStore();
-  const { clients, fetchClients } = useClientStore();
-  const { user } = useAuthStore();
+  const appointments = useAppointmentStore((s) => s.appointments);
+  const fetchClients = useClientStore((s) => s.fetchClients);
+  const esAdmin = useAuthStore((s) => s.user?.role) === 'admin';
   const abrirAgendar = useAgendarStore((s) => s.abrir);
+  const navigate = useNavigate();
+  const { hoy } = useAhora();
+  // desde la ficha de la clienta: "Vender paquete" (vender) o "Registrar abono" (pagos)
+  const pedido = useLocation().state as { vender?: string; pagos?: string } | null;
 
   useEffect(() => { fetchAll(); fetchClients(); }, [fetchAll, fetchClients]);
 
-  const [activeTab, setActiveTab] = useState<'packages' | 'sold'>('sold');
-  const [showModalPkg, setShowModalPkg] = useState(false);
-  const [showModalSell, setShowModalSell] = useState(false);
-  const [showModalEdit, setShowModalEdit] = useState(false);
-  const [search, setSearch] = useState('');
-  
-  // Menu Dropdown
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [vista, setVista] = useState<'clientas' | 'tipos'>('clientas');
+  const [filtro, setFiltro] = useState<FiltroPaquetes>('activos');
+  const [texto, setTexto] = useState('');
+  const [vendiendo, setVendiendo] = useState<{ clienta?: string; tipo?: string } | null>(() => (pedido?.vender ? { clienta: pedido.vender } : null));
+  const [abonando, setAbonando] = useState<string | null>(() => pedido?.pagos ?? null);
+  const [editando, setEditando] = useState<ClientPackage | null>(null);
+  const [tipo, setTipo] = useState<SessionPackage | 'nuevo' | null>(null);
+  const [pregunta, setPregunta] = useState<Pregunta | null>(null);
+  const [ocupado, setOcupado] = useState(false);
 
-  // Close menus when clicking outside
-  useEffect(() => {
-    const closeMenu = () => setOpenMenu(null);
-    document.addEventListener('click', closeMenu);
-    return () => document.removeEventListener('click', closeMenu);
-  }, []);
+  const vendidos = useMemo(() => paquetesVendidos(clientPackages, appointments, hoy), [clientPackages, appointments, hoy]);
+  const resumen = useMemo(() => resumenPaquetes(vendidos), [vendidos]);
+  const lista = useMemo(() => filtrarPaquetes(vendidos, filtro, texto), [vendidos, filtro, texto]);
+  const tipos = useMemo(() => catalogoDePaquetes(packages, services, clientPackages), [packages, services, clientPackages]);
+  const cuantos = (f: FiltroPaquetes) => filtrarPaquetes(vendidos, f, '').length;
+  const cuando = (fecha: string) => (fecha === hoy ? 'hoy' : fecha === sumarDias(hoy, 1) ? 'mañana' : fechaCorta(fecha).toLowerCase());
 
-  // Package type form
-  const [pkgForm, setPkgForm] = useState({ name: '', serviceId: '', active: true });
-  const [pkgSessionsStr, setPkgSessionsStr] = useState('5');
-  const [pkgPriceStr, setPkgPriceStr] = useState('');
-  const [editingPkgId, setEditingPkgId] = useState<string | null>(null);
-  const [pkgErrors, setPkgErrors] = useState<{ name?: string; serviceId?: string; sessions?: string; price?: string }>({});
-
-  // Sell form
-  const [sellForm, setSellForm] = useState({ clientId: '', clientName: '', packageId: '', notes: '', amountPaid: 0 });
-
-  // Edit client package form
-  const [editingCp, setEditingCp] = useState<ClientPackage | null>(null);
-  const [editCpSessions, setEditCpSessions] = useState('0');
-  const [editCpNotes, setEditCpNotes] = useState('');
-
-  // Payments form
-  const [paymentCp, setPaymentCp] = useState<ClientPackage | null>(null);
-  const [paymentForm, setPaymentForm] = useState({ amount: 0, paymentMethod: 'cash' as 'cash'|'card'|'transfer', notes: '' });
-  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
-
-  const filteredClientPkgs = useMemo(() => {
-    if (!search) return clientPackages;
-    const q = search.toLowerCase();
-    return clientPackages.filter(
-      (cp) =>
-        cp.clientName.toLowerCase().includes(q) ||
-        cp.packageName.toLowerCase().includes(q) ||
-        cp.serviceName.toLowerCase().includes(q)
-    );
-  }, [clientPackages, search]);
-
-  const getProgress = (cp: ClientPackage) => {
-    const pct = (cp.usedSessions / cp.totalSessions) * 100;
-    const remaining = cp.totalSessions - cp.usedSessions;
-    return { pct, remaining, done: remaining === 0 };
-  };
-
-  const [submittingPkg, setSubmittingPkg] = useState(false);
-  const [submittingSell, setSubmittingSell] = useState(false);
-
-  // ── Sell package ───────────────────────────────────────────────
-  const handleSellSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!sellForm.clientId) {
-      toast.error('Por favor selecciona una clienta de la lista');
-      return;
+  const responder = async () => {
+    if (!pregunta) return;
+    setOcupado(true);
+    let ok = false;
+    if (pregunta.que === 'descontar') {
+      ok = await descontarSesion(pregunta.v.paquete.id);
+      if (ok) toast.success(`Sesión descontada: le quedan ${pregunta.v.quedan - 1}`);
+    } else if (pregunta.que === 'borrarVendido') {
+      ok = await deleteClientPackage(pregunta.v.paquete.id);
+      if (ok) toast.success('Paquete eliminado');
+    } else {
+      ok = await deletePackage(pregunta.tipo.id);
+      if (ok) toast.success(`${pregunta.tipo.name} eliminado`);
     }
-    const pkg = packages.find((p) => p.id === sellForm.packageId);
-    const client = clients.find((c) => c.id === sellForm.clientId);
-    if (!pkg || !client) return;
-    setSubmittingSell(true);
-    try {
-      await sellPackage({
-        clientId: client.id, clientName: client.name,
-        packageId: pkg.id, packageName: pkg.name,
-        serviceName: pkg.serviceName, totalSessions: pkg.sessions,
-        usedSessions: 0, purchasedAt: todayStr(), notes: sellForm.notes,
-        totalPrice: pkg.price, amountPaid: sellForm.amountPaid, status: 'active',
-      });
-      toast.success('Venta de paquete registrada');
-      setShowModalSell(false);
-      setSellForm({ clientId: '', clientName: '', packageId: '', notes: '', amountPaid: 0 });
-      setActiveTab('sold');
-    } catch (err) {
-      toast.error('Error al vender el paquete');
-    } finally {
-      setSubmittingSell(false);
-    }
+    setOcupado(false);
+    if (ok) setPregunta(null);
   };
 
-  // ── Create/Edit package type ───────────────────────────────────
-  const handlePkgSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const errs: typeof pkgErrors = {};
-    if (!pkgForm.name.trim()) errs.name = 'El nombre es requerido';
-    if (!pkgForm.serviceId) errs.serviceId = 'Selecciona un servicio';
-    const sessions = Number(pkgSessionsStr);
-    if (!pkgSessionsStr || sessions < 2 || sessions > 50) errs.sessions = 'Entre 2 y 50 sesiones';
-    const price = Number(pkgPriceStr);
-    if (pkgPriceStr === '' || price < 0) errs.price = 'Precio inválido';
-    if (Object.keys(errs).length > 0) { setPkgErrors(errs); return; }
-
-    const svc = services.find((s) => s.id === pkgForm.serviceId);
-    if (!svc) return;
-    const finalPkg = { ...pkgForm, sessions, price, serviceName: svc.name };
-    setSubmittingPkg(true);
-    try {
-      if (editingPkgId) {
-        await updatePackage(editingPkgId, finalPkg);
-        toast.success('Paquete actualizado');
-      } else {
-        await addPackage(finalPkg);
-        toast.success('Nuevo tipo de paquete creado');
-      }
-      setShowModalPkg(false);
-      setEditingPkgId(null);
-      setPkgForm({ name: '', serviceId: '', active: true });
-      setPkgSessionsStr('5');
-      setPkgPriceStr('');
-      setPkgErrors({});
-    } catch {
-      toast.error('Error al guardar el paquete');
-    } finally {
-      setSubmittingPkg(false);
-    }
+  const activarTipo = async (t: SessionPackage) => {
+    if (await updatePackage(t.id, { active: !t.active })) toast.success(t.active ? `${t.name}: ya no se vende` : `${t.name}: se vende otra vez`);
   };
 
-  // ── Edit client package ────────────────────────────────────────
-  const openEditCp = (cp: ClientPackage) => {
-    setEditingCp(cp);
-    setEditCpSessions(String(cp.usedSessions));
-    setEditCpNotes(cp.notes || '');
-    setShowModalEdit(true);
+  const accionesDe = (v: PaqueteVendido): ItemMenu[] => {
+    const p = v.paquete;
+    const items: ItemMenu[] = [
+      { id: 'abonos', etiqueta: 'Pagos y abonos', icono: <Wallet size={16} />, onSelect: () => setAbonando(p.id) },
+      { id: 'ficha', etiqueta: 'Ver su ficha', icono: <User size={16} />, onSelect: () => navigate(`/admin/clientes/${p.clientId}`) },
+      { id: 'editar', etiqueta: 'Corregir sesiones o notas', icono: <Pencil size={16} />, onSelect: () => setEditando(p) },
+    ];
+    if (sigueActivo(v)) items.push({ id: 'descontar', etiqueta: 'Descontar una sesión a mano', icono: <MinusCircle size={16} />, onSelect: () => setPregunta({ que: 'descontar', v }) });
+    if (esAdmin) items.push({ id: 'borrar', etiqueta: 'Eliminar', icono: <Trash2 size={16} />, peligro: true, onSelect: () => setPregunta({ que: 'borrarVendido', v }) });
+    return items;
   };
-
-  const handleEditCpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCp) return;
-    const used = Number(editCpSessions);
-    if (isNaN(used) || used < 0 || used > editingCp.totalSessions) {
-      toast.error(`Sesiones usadas debe estar entre 0 y ${editingCp.totalSessions}`);
-      return;
-    }
-    await updateClientPackage(editingCp.id, { usedSessions: used, notes: editCpNotes });
-    toast.success('Paquete actualizado');
-    setShowModalEdit(false);
-    setEditingCp(null);
-  };
-
-  // ── Descontar una sesión a mano ────────────────────────────────
-  // Al completar la cita la sesión se descuenta sola; esto es solo para una sesión que no quedó como cita en el panel.
-  const descontarAMano = (cp: ClientPackage) => {
-    const quedan = cp.totalSessions - cp.usedSessions;
-    if (!window.confirm(
-      `Las sesiones se descuentan solas al completar la cita de ${cp.clientName}.\n\n` +
-      `Descuenta a mano solo una sesión que NO quedó como cita en el panel. ¿Descontar 1 sesión de ${cp.packageName}? ` +
-      `(le quedarían ${quedan - 1} de ${cp.totalSessions})`,
-    )) return;
-    descontarSesion(cp.id);
-  };
-
-  // ── Payments ───────────────────────────────────────────────────
-  const openPayments = (cp: ClientPackage) => {
-    setPaymentCp(cp);
-    setPaymentForm({ amount: 0, paymentMethod: 'cash', notes: '' });
-    fetchPayments(cp.id);
-  };
-
-  const handlePaymentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!paymentCp || paymentForm.amount <= 0) return;
-    
-    // Balance check
-    const balance = paymentCp.totalPrice - paymentCp.amountPaid;
-    if (paymentForm.amount > balance) {
-      toast.error(`El monto no puede ser mayor al balance (RD$ ${balance.toLocaleString()})`);
-      return;
-    }
-
-    setPaymentSubmitting(true);
-    try {
-      await addPayment({
-        clientId: paymentCp.clientId,
-        packageId: paymentCp.id,
-        amount: paymentForm.amount,
-        paymentMethod: paymentForm.paymentMethod,
-        notes: paymentForm.notes,
-      });
-      setPaymentForm({ amount: 0, paymentMethod: 'cash', notes: '' });
-    } finally {
-      setPaymentSubmitting(false);
-    }
-  };
-
-  // Stats
-  const stats = useMemo(() => ({
-    total: clientPackages.length,
-    active: clientPackages.filter((cp) => cp.usedSessions < cp.totalSessions).length,
-    completed: clientPackages.filter((cp) => cp.usedSessions >= cp.totalSessions).length,
-    aboutToExpire: clientPackages.filter((cp) => {
-      const r = cp.totalSessions - cp.usedSessions;
-      return r === 1 && r > 0;
-    }).length,
-  }), [clientPackages]);
 
   return (
-    <div className="spa-pkgs">
-      <div className="spa-pkgs__header-wrapper">
+    <div className="neg paqs">
+      <header className="neg__cabeza">
         <div>
-          <h1 className="clients__title">Paquetes</h1>
-          <p className="clients__subtitle">Administra los paquetes y sesiones de tus clientas</p>
+          <h1 className="neg__titulo">Paquetes</h1>
+          <p className="neg__sub">
+            {resumen.activos === 1 ? '1 activo' : `${resumen.activos} activos`}
+            {resumen.porCobrar > 0 && ` · ${rd(resumen.porCobrar)} por cobrar`}
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          {user?.role === 'admin' && (
-            <>
-              <button
-                className="btn-secondary"
-                style={{ padding: '10px 20px', fontSize: '0.85rem' }}
-                onClick={() => setShowModalPkg(true)}
-                id="btn-new-package"
-              >
-                <Package size={16} /> Nuevo tipo
-              </button>
-              <button 
-                className="btn-primary" 
-                style={{ padding: '10px 24px', fontSize: '0.85rem' }}
-                onClick={() => setShowModalSell(true)} 
-                id="btn-sell-package"
-              >
-                <Plus size={16} /> Vender paquete
-              </button>
-            </>
+        <div className="neg__botones">
+          {esAdmin && vista === 'tipos' && (
+            <button type="button" className="neg__btn" onClick={() => setTipo('nuevo')}>
+              <Plus size={18} aria-hidden="true" /> Nuevo tipo
+            </button>
           )}
-        </div>
-      </div>
-
-      {/* Stats Dashboard */}
-      <div className="spa-pkgs__stats">
-        <div className="spa-pkgs__stat">
-          <span className="spa-pkgs__stat-val">{stats.total}</span>
-          <span className="spa-pkgs__stat-lbl">Vendidos en total</span>
-        </div>
-        <div className="spa-pkgs__stat spa-pkgs__stat--green">
-          <span className="spa-pkgs__stat-val">{stats.active}</span>
-          <span className="spa-pkgs__stat-lbl">Con sesiones activas</span>
-        </div>
-        <div className="spa-pkgs__stat spa-pkgs__stat--amber">
-          <span className="spa-pkgs__stat-val">{stats.aboutToExpire}</span>
-          <span className="spa-pkgs__stat-lbl">Última Sesión</span>
-        </div>
-        <div className="spa-pkgs__stat spa-pkgs__stat--gray">
-          <span className="spa-pkgs__stat-val">{stats.completed}</span>
-          <span className="spa-pkgs__stat-lbl">Completados</span>
-        </div>
-      </div>
-
-      {/* Toolbar */}
-      <div className="spa-pkgs__toolbar">
-        <div className="spa-pkgs__tabs">
-          <button className={`spa-pkgs__tab ${activeTab === 'sold' ? 'spa-pkgs__tab--active' : ''}`} onClick={() => setActiveTab('sold')}>
-            <Users size={16} /> Clientas
-          </button>
-          <button className={`spa-pkgs__tab ${activeTab === 'packages' ? 'spa-pkgs__tab--active' : ''}`} onClick={() => setActiveTab('packages')}>
-            <Package size={16} /> Catálogo
+          <button type="button" className="neg__btn neg__btn--principal" onClick={() => setVendiendo({})}>
+            <ShoppingBag size={18} aria-hidden="true" /> Vender paquete
           </button>
         </div>
-        {activeTab === 'sold' && (
-          <div className="appts__search" style={{ minWidth: 280, margin: 0 }}>
-            <Search size={16} />
-            <input placeholder="Buscar clienta, servicio..." value={search} onChange={(e) => setSearch(e.target.value)} id="pkgs-search" />
+      </header>
+
+      <div className="paqs__vistas" role="tablist" aria-label="Qué ver">
+        <button type="button" role="tab" aria-selected={vista === 'clientas'} className={vista === 'clientas' ? 'is-on' : ''} onClick={() => setVista('clientas')}>
+          De las clientas
+        </button>
+        <button type="button" role="tab" aria-selected={vista === 'tipos'} className={vista === 'tipos' ? 'is-on' : ''} onClick={() => setVista('tipos')}>
+          Tipos de paquete <b>{packages.filter((p) => p.active).length}</b>
+        </button>
+      </div>
+
+      {vista === 'clientas' ? (
+        <>
+          <div className="neg__resumen">
+            <button type="button" className={`neg__dato ${filtro === 'activos' ? 'is-on' : ''}`} onClick={() => setFiltro('activos')} aria-pressed={filtro === 'activos'}>
+              <b>{resumen.activos}</b><span>Activos</span>
+            </button>
+            <button type="button" className={`neg__dato ${resumen.sinAgendar ? 'neg__dato--alerta' : ''} ${filtro === 'sinAgendar' ? 'is-on' : ''}`}
+              onClick={() => setFiltro('sinAgendar')} aria-pressed={filtro === 'sinAgendar'}>
+              <b>{resumen.sinAgendar}</b><span>Sin la próxima agendada</span>
+            </button>
+            <button type="button" className={`neg__dato ${resumen.conSaldo ? 'neg__dato--alerta' : ''} ${filtro === 'conSaldo' ? 'is-on' : ''}`}
+              onClick={() => setFiltro('conSaldo')} aria-pressed={filtro === 'conSaldo'}>
+              <b>{rd(resumen.porCobrar)}</b><span>Por cobrar ({resumen.conSaldo})</span>
+            </button>
+            <button type="button" className={`neg__dato ${filtro === 'completados' ? 'is-on' : ''}`} onClick={() => setFiltro('completados')} aria-pressed={filtro === 'completados'}>
+              <b>{resumen.completados}</b><span>Completados</span>
+            </button>
           </div>
-        )}
-      </div>
 
-      {/* ── Tab: Sold (Client Packages) ── */}
-      {activeTab === 'sold' && (
-        <div className="spa-pkgs__list">
-          {filteredClientPkgs.length === 0 ? (
-            <div className="appts__empty"><Package size={40} /><p>No hay paquetes vendidos aún</p></div>
+          <div className="neg__barra">
+            <label className="neg__buscar">
+              <Search size={18} aria-hidden="true" />
+              <span className="neg__oculto">Buscar paquete</span>
+              <input type="search" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Buscar clienta, paquete o servicio" />
+              {texto && <button type="button" className="neg__borrar" onClick={() => setTexto('')} aria-label="Borrar la búsqueda"><X size={18} /></button>}
+            </label>
+            <div className="neg__chips" role="group" aria-label="Mostrar">
+              {FILTROS.map(([f, nombre]) => (
+                <button key={f} type="button" className={`neg__chip ${filtro === f ? 'is-on' : ''}`} aria-pressed={filtro === f} onClick={() => setFiltro(f)}>
+                  {nombre} <b>{cuantos(f)}</b>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {lista.length === 0 ? (
+            <div className="neg__vacio">
+              <Package size={32} aria-hidden="true" />
+              <p>{texto ? `Nada con «${texto}».` : filtro === 'sinAgendar' ? 'Todas tienen su próxima sesión agendada.' : filtro === 'conSaldo' ? 'Nadie debe nada.' : 'No hay paquetes aquí.'}</p>
+            </div>
           ) : (
-            filteredClientPkgs.map((cp) => {
-              const { pct, remaining, done } = getProgress(cp);
-              const isMenuOpen = openMenu === cp.id;
-              
-              return (
-                <div className={`client-pkg-card ${done ? 'client-pkg-card--done' : remaining === 1 ? 'client-pkg-card--alert' : ''}`} key={cp.id}>
-                  
-                  {/* Header */}
-                  <div className="client-pkg__header">
-                    <div className="client-pkg__avatar-wrap">
-                      <div className="client-pkg__avatar">
-                        {cp.clientName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+            <ul className="neg__grilla paqs__lista">
+              {lista.map((v) => {
+                const p = v.paquete;
+                const activo = sigueActivo(v);
+                return (
+                  <li key={p.id} className={`neg__tarjeta paq ${activo ? '' : 'is-apagada'}`}>
+                    <div className="paq__cabeza">
+                      <span className="paq__ini" aria-hidden="true">{iniciales(p.clientName)}</span>
+                      <div className="paq__quien">
+                        <button type="button" className="paq__nombre" onClick={() => navigate(`/admin/clientes/${p.clientId}`)}>{p.clientName}</button>
+                        <span>{p.packageName}{p.serviceName && p.serviceName !== p.packageName && ` · ${p.serviceName}`}</span>
                       </div>
+                      <MenuAcciones etiqueta={`Más acciones para el paquete de ${p.clientName}`} items={accionesDe(v)} />
                     </div>
-                    <div className="client-pkg__info">
-                      <h3>{cp.clientName}</h3>
-                      <p>{cp.packageName}</p>
-                      <span className="client-pkg__service-badge">{cp.serviceName}</span>
-                    </div>
-                    
-                    {/* Tooltip Menu for Secondary Actions */}
-                    <div className="client-pkg__menu">
-                      <button 
-                        className="client-pkg__btn client-pkg__btn--icon" 
-                        onClick={(e) => { e.stopPropagation(); setOpenMenu(isMenuOpen ? null : cp.id); }}
-                      >
-                        <MoreVertical size={16} />
-                      </button>
-                      
-                      {isMenuOpen && (
-                        <div className="client-pkg__menu-content" onClick={(e) => e.stopPropagation()}>
-                          <button className="client-pkg__menu-item" onClick={() => { setOpenMenu(null); openPayments(cp); }}>
-                            <DollarSign size={15} /> Pagos / Abonos
-                          </button>
-                          <button className="client-pkg__menu-item" onClick={() => { setOpenMenu(null); openEditCp(cp); }}>
-                            <Edit2 size={15} /> Editar
-                          </button>
-                          {!done && (
-                            <button className="client-pkg__menu-item" onClick={() => { setOpenMenu(null); descontarAMano(cp); }}>
-                              <CheckCircle2 size={15} /> Descontar sesión a mano
-                            </button>
-                          )}
-                          {user?.role === 'admin' && (
-                             <button className="client-pkg__menu-item client-pkg__menu-item--danger" onClick={() => { if (window.confirm(`¿Estás seguro de eliminar el paquete activo "${cp.packageName}" de "${cp.clientName}"?`)) { setOpenMenu(null); deleteClientPackage(cp.id); } }}>
-                               <Trash2 size={15} /> Eliminar
-                             </button>
-                           )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Progress Area */}
-                  <div className="client-pkg__progress-area">
-                    <div className="client-pkg__progress-stats">
-                      <span>Sesiones completadas</span>
-                      <strong>{cp.usedSessions} / {cp.totalSessions}</strong>
-                    </div>
-                    <div className="client-pkg__dots">
-                      {Array.from({ length: cp.totalSessions }).map((_, i) => (
-                        <div
-                          key={i}
-                          className={`client-pkg__dot ${i < cp.usedSessions ? 'client-pkg__dot--used' : ''}`}
-                        />
-                      ))}
-                    </div>
-                    {cp.notes && (
-                      <div style={{ marginTop: 12, fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'flex', gap: 6 }}>
-                        <FileText size={12} style={{ flexShrink: 0 }} />
-                        <span>{cp.notes}</span>
+                    <div className="paq__sesiones">
+                      <div className="paq__puntos" aria-hidden="true">
+                        {Array.from({ length: Math.min(p.totalSessions, 50) }, (_, i) => (
+                          <i key={i} className={i < p.usedSessions ? 'is-hecha' : i < p.usedSessions + v.agendadas ? 'is-agendada' : ''} />
+                        ))}
                       </div>
-                    )}
-                  </div>
+                      <p>
+                        <b>{p.usedSessions} de {p.totalSessions}</b> sesiones hechas
+                        {activo && <> · le {v.quedan === 1 ? 'queda 1' : `quedan ${v.quedan}`}</>}
+                      </p>
+                    </div>
 
-                  {/* Footer Actions */}
-                  <div className="client-pkg__footer">
-                    <span className="client-pkg__date">{new Date(cp.purchasedAt + 'T12:00:00').toLocaleDateString('es-DO')}</span>
-                    <div className="client-pkg__primary-actions">
-                      {!done && (
-                        <button
-                          className="client-pkg__btn client-pkg__btn--schedule"
-                          onClick={() => abrirAgendar({ modo: 'paquete', paquete: cp })}
-                          title="Agendar la próxima sesión con las horas libres"
-                        >
-                          <CalendarPlus size={14} /> Agendar sesión
-                        </button>
-                      )}
-                      {done && (
-                        <span style={{ color: '#4ade80', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <CheckCircle2 size={16} /> Completado
+                    <div className="paq__etiquetas">
+                      {v.estado !== 'activo' && (
+                        <span className={`neg__etiqueta ${v.estado === 'ultima' ? 'neg__etiqueta--alerta' : v.estado === 'completado' ? 'neg__etiqueta--bien' : ''}`}>
+                          {v.estado === 'completado' && <CheckCircle2 size={12} aria-hidden="true" />} {ETIQUETA_PAQUETE[v.estado]}
                         </span>
                       )}
+                      {p.totalPrice > 0 && (v.saldo > 0
+                        ? <span className="neg__etiqueta neg__etiqueta--alerta">Debe {rd(v.saldo)}</span>
+                        : <span className="neg__etiqueta neg__etiqueta--bien">Pagado</span>)}
                     </div>
-                  </div>
 
-                </div>
-              );
-            })
+                    {activo && (
+                      <p className={`paq__proxima ${v.proxima ? '' : 'is-falta'}`}>
+                        <CalendarClock size={16} aria-hidden="true" />
+                        {v.proxima
+                          ? <>Próxima: <b>{cuando(v.proxima.date)}, {format12h(v.proxima.time)}</b>{v.agendadas > 1 && ` (+${v.agendadas - 1})`}</>
+                          : 'Sin la próxima sesión agendada'}
+                      </p>
+                    )}
+                    {p.notes && <p className="paq__notas">{p.notes}</p>}
+
+                    <div className="neg__acciones">
+                      {activo && v.agendadas < v.quedan && (
+                        <button type="button" className={`neg__btn neg__btn--chico ${v.proxima ? '' : 'neg__btn--principal'}`}
+                          onClick={() => abrirAgendar({ modo: 'paquete', paquete: p })}>
+                          <CalendarPlus size={16} aria-hidden="true" /> Agendar sesión
+                        </button>
+                      )}
+                      {v.saldo > 0 && (
+                        <button type="button" className="neg__btn neg__btn--chico" onClick={() => setAbonando(p.id)}>
+                          <Wallet size={16} aria-hidden="true" /> Abonar
+                        </button>
+                      )}
+                      <span className="neg__espacio" />
+                      <small className="paq__fecha">Desde el {fechaCorta(p.purchasedAt).toLowerCase()}</small>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
+        </>
+      ) : tipos.length === 0 ? (
+        <div className="neg__vacio">
+          <Package size={32} aria-hidden="true" />
+          <p>Todavía no hay tipos de paquete.</p>
+          {esAdmin && <button type="button" className="neg__btn neg__btn--principal" onClick={() => setTipo('nuevo')}><Plus size={18} aria-hidden="true" /> Nuevo tipo</button>}
         </div>
-      )}
-
-      {/* ── Tab: Package Types (VIP Cards) ── */}
-      {activeTab === 'packages' && (
-        <div className="spa-pkgs__types-grid">
-          {packages.map((p) => (
-            <div className="vip-card" key={p.id}>
-              <div className="vip-card__sessions">{p.sessions}</div>
-              <h3>{p.name}</h3>
-              <p>{p.serviceName}</p>
-              
-              <div className="vip-card__price-box">
-                <div className="vip-card__price">
-                  <DollarSign size={20} /> {p.price.toLocaleString('es-DO')}
+      ) : (
+        <ul className="neg__grilla paqs__lista">
+          {tipos.map((t) => (
+            <li key={t.tipo.id} className={`neg__tarjeta ptipo ${t.tipo.active ? '' : 'is-apagada'}`}>
+              <div className="paq__cabeza">
+                <span className="ptipo__n" aria-hidden="true">{t.tipo.sessions}</span>
+                <div className="paq__quien">
+                  <h3 className="ptipo__nombre">{t.tipo.name}</h3>
+                  <span>{t.tipo.serviceName} · {t.tipo.sessions} sesiones</span>
                 </div>
-                <div className="vip-card__per-session">
-                  {Math.round(p.price / p.sessions).toLocaleString('es-DO')} RD$ por sesión
-                </div>
+                {esAdmin && (
+                  <MenuAcciones etiqueta={`Más acciones para ${t.tipo.name}`} items={[
+                    { id: 'editar', etiqueta: 'Editar', icono: <Pencil size={16} />, onSelect: () => setTipo(t.tipo) },
+                    { id: 'activar', etiqueta: t.tipo.active ? 'Dejar de venderlo' : 'Venderlo otra vez', icono: <Power size={16} />, onSelect: () => activarTipo(t.tipo) },
+                    { id: 'borrar', etiqueta: 'Eliminar', icono: <Trash2 size={16} />, peligro: true, onSelect: () => setPregunta({ que: 'borrarTipo', tipo: t.tipo }) },
+                  ]} />
+                )}
               </div>
-
-              {user?.role === 'admin' && (
-                <div className="vip-card__actions">
-                  <button
-                    className="vip-card__btn vip-card__btn--sell"
-                    onClick={() => { setSellForm({ clientId: '', clientName: '', packageId: p.id, notes: '', amountPaid: 0 }); setShowModalSell(true); }}
-                  >
-                    Vender
+              <div className="ptipo__precio">
+                <b>{rd(t.tipo.price)}</b>
+                <span>{rd(t.porSesion)} por sesión</span>
+                {t.ahorro && <span className="neg__etiqueta neg__etiqueta--bien">Ahorra {t.ahorro} %</span>}
+              </div>
+              <p className="ptipo__vendidos">
+                {!t.tipo.active && <span className="neg__etiqueta">No se vende</span>}{' '}
+                {t.vendidos === 0 ? 'Todavía no se ha vendido' : `Vendido ${t.vendidos === 1 ? '1 vez' : `${t.vendidos} veces`} · ${t.activos} activo${t.activos === 1 ? '' : 's'}`}
+              </p>
+              {t.tipo.active && (
+                <div className="neg__acciones">
+                  <button type="button" className="neg__btn neg__btn--chico neg__btn--principal" onClick={() => setVendiendo({ tipo: t.tipo.id })}>
+                    <ShoppingBag size={16} aria-hidden="true" /> Vender
                   </button>
-                  <button
-                    className="vip-card__btn vip-card__btn--secondary"
-                    onClick={() => {
-                      setEditingPkgId(p.id);
-                      setPkgForm({ name: p.name, serviceId: p.serviceId, active: p.active });
-                      setPkgSessionsStr(String(p.sessions));
-                      setPkgPriceStr(String(p.price));
-                      setPkgErrors({});
-                      setShowModalPkg(true);
-                    }}
-                  >
-                    <Edit2 size={14} />
-                  </button>
-                  <button 
-                    className="vip-card__btn vip-card__btn--secondary" 
-                    onClick={() => { if (window.confirm(`¿Estás seguro de eliminar el paquete "${p.name}"?`)) deletePackage(p.id); }}
-                    style={{ flex: '0 0 auto' }}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  {esAdmin && (
+                    <button type="button" className="neg__btn neg__btn--chico" onClick={() => setTipo(t.tipo)}>
+                      <Pencil size={16} aria-hidden="true" /> Editar
+                    </button>
+                  )}
                 </div>
               )}
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
-      {/* ── Modal: New/Edit Package Type ── */}
-      {showModalPkg && (
-        <div className="modal-overlay" onClick={() => { setShowModalPkg(false); setPkgErrors({}); }}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h2>{editingPkgId ? 'Editar paquete' : 'Nuevo tipo de paquete'}</h2>
-              <button className="modal__close" onClick={() => { setShowModalPkg(false); setPkgErrors({}); }}><X size={20} /></button>
-            </div>
-            <form onSubmit={handlePkgSubmit} className="modal__form" noValidate>
-              <div className="modal__field">
-                <label>Nombre del paquete *</label>
-                <input
-                  placeholder="Ej: Láser Premium x5"
-                  value={pkgForm.name}
-                  className={pkgErrors.name ? 'input--error' : ''}
-                  onChange={(e) => { setPkgForm({ ...pkgForm, name: e.target.value }); setPkgErrors({ ...pkgErrors, name: undefined }); }}
-                />
-                {pkgErrors.name && <span className="field-error"><AlertCircle size={12} /> {pkgErrors.name}</span>}
-              </div>
-              <div className="modal__field">
-                <label>Servicio incluido *</label>
-                <select
-                  value={pkgForm.serviceId}
-                  className={pkgErrors.serviceId ? 'input--error' : ''}
-                  onChange={(e) => { setPkgForm({ ...pkgForm, serviceId: e.target.value }); setPkgErrors({ ...pkgErrors, serviceId: undefined }); }}
-                >
-                  <option value="">Seleccionar servicio</option>
-                  {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-                {pkgErrors.serviceId && <span className="field-error"><AlertCircle size={12} /> {pkgErrors.serviceId}</span>}
-              </div>
-              <div className="modal__row">
-                <div className="modal__field">
-                  <label># Sesiones *</label>
-                  <input type="number" min={2} max={50} value={pkgSessionsStr} className={pkgErrors.sessions ? 'input--error' : ''} onChange={(e) => { setPkgSessionsStr(e.target.value); setPkgErrors({ ...pkgErrors, sessions: undefined }); }} />
-                  {pkgErrors.sessions && <span className="field-error"><AlertCircle size={12} /> {pkgErrors.sessions}</span>}
-                </div>
-                <div className="modal__field">
-                  <label>Precio total (RD$) *</label>
-                  <input type="number" min={0} value={pkgPriceStr} placeholder="Ej: 5000" className={pkgErrors.price ? 'input--error' : ''} onChange={(e) => { setPkgPriceStr(e.target.value); setPkgErrors({ ...pkgErrors, price: undefined }); }} />
-                  {pkgErrors.price && <span className="field-error"><AlertCircle size={12} /> {pkgErrors.price}</span>}
-                </div>
-              </div>
-              <div className="modal__actions">
-                <div style={{ flex: 1 }} />
-                <button type="button" className="modal__cancel-btn" onClick={() => { setShowModalPkg(false); setPkgErrors({}); }}>Cancelar</button>
-                <button type="submit" className="modal__submit-btn" disabled={submittingPkg}>
-                  {submittingPkg ? 'Guardando...' : editingPkgId ? 'Guardar cambios' : 'Crear paquete'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {vendiendo && <VenderPaquete clienta={vendiendo.clienta} tipo={vendiendo.tipo} onCerrar={() => setVendiendo(null)} />}
+      {abonando && <AbonosPaquete id={abonando} onCerrar={() => setAbonando(null)} />}
+      {editando && <EditarVendido paquete={editando} onCerrar={() => setEditando(null)} />}
+      {tipo && <EditarTipoPaquete tipo={tipo === 'nuevo' ? null : tipo} onCerrar={() => setTipo(null)} />}
+
+      {pregunta?.que === 'descontar' && (
+        <Confirmar titulo="¿Descontar una sesión a mano?" boton="Descontar 1 sesión" ocupado={ocupado} onSi={responder} onNo={() => setPregunta(null)}>
+          <p>Las sesiones se descuentan solas al completar la cita. Descuenta a mano solo una sesión de {pregunta.v.paquete.clientName} que
+            no quedó como cita en el panel.</p>
+          <p>Le quedarían {pregunta.v.quedan - 1} de {pregunta.v.paquete.totalSessions}.</p>
+        </Confirmar>
       )}
-
-      {/* ── Modal: Sell Package ── */}
-      {showModalSell && (
-        <div className="modal-overlay" onClick={() => setShowModalSell(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h2>Vender paquete</h2>
-              <button className="modal__close" onClick={() => setShowModalSell(false)}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleSellSubmit} className="modal__form">
-              <div className="modal__field">
-                <label><Users size={14} /> Clienta</label>
-                <ClientAutocomplete 
-                  clients={clients}
-                  value={sellForm.clientName}
-                  onChange={(text) => setSellForm({ ...sellForm, clientName: text, clientId: '' })}
-                  onSelect={(client) => setSellForm({ ...sellForm, clientName: client.name, clientId: client.id })}
-                  required
-                />
-              </div>
-              <div className="modal__field">
-                <label><Package size={14} /> Paquete</label>
-                <select required value={sellForm.packageId} onChange={(e) => setSellForm({ ...sellForm, packageId: e.target.value })}>
-                  <option value="">Seleccionar paquete</option>
-                  {packages.filter(p => p.active).map((p) => (
-                    <option key={p.id} value={p.id}>{p.name} — {fmtPrice(p.price)}</option>
-                  ))}
-                </select>
-              </div>
-              {sellForm.packageId && (() => {
-                const pkg = packages.find(p => p.id === sellForm.packageId);
-                if (!pkg) return null;
-                return (
-                  <div className="sell-modal__summary">
-                    <div><span>Sesiones:</span><strong>{pkg.sessions}</strong></div>
-                    <div><span>Servicio:</span><strong>{pkg.serviceName}</strong></div>
-                    <div><span>Precio:</span><strong>{fmtPrice(pkg.price)}</strong></div>
-                    <div><span>Por sesión:</span><strong>{fmtPrice(Math.round(pkg.price / pkg.sessions))}</strong></div>
-                  </div>
-                );
-              })()}
-              <div className="modal__field">
-                <label>Abono inicial (RD$)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max={(() => {
-                    const pkg = packages.find(p => p.id === sellForm.packageId);
-                    return pkg ? pkg.price : undefined;
-                  })()}
-                  value={sellForm.amountPaid}
-                  onChange={(e) => setSellForm({ ...sellForm, amountPaid: Number(e.target.value) })}
-                />
-              </div>
-              <div className="modal__field">
-                <label>Notas</label>
-                <textarea placeholder="Observaciones..." rows={2} value={sellForm.notes} onChange={(e) => setSellForm({ ...sellForm, notes: e.target.value })} />
-              </div>
-              <div className="modal__actions">
-                <div style={{ flex: 1 }} />
-                <button type="button" className="modal__cancel-btn" onClick={() => setShowModalSell(false)}>Cancelar</button>
-                <button type="submit" className="modal__submit-btn" disabled={submittingSell}>
-                  {submittingSell ? 'Confirmando...' : 'Confirmar venta'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {pregunta?.que === 'borrarVendido' && (
+        <Confirmar titulo="¿Eliminar este paquete?" boton="Eliminar paquete" peligro ocupado={ocupado} onSi={responder} onNo={() => setPregunta(null)}>
+          <p>Se borra el {pregunta.v.paquete.packageName} de {pregunta.v.paquete.clientName}, con sus sesiones. No se puede deshacer.</p>
+        </Confirmar>
       )}
-
-      {/* ── Modal: Edit Client Package ── */}
-      {showModalEdit && editingCp && (
-        <div className="modal-overlay" onClick={() => setShowModalEdit(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h2>Editar paquete — {editingCp.clientName}</h2>
-              <button className="modal__close" onClick={() => setShowModalEdit(false)}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleEditCpSubmit} className="modal__form">
-              <div className="modal__field">
-                <label>Sesiones Usadas (de {editingCp.totalSessions})</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={editingCp.totalSessions}
-                  value={editCpSessions}
-                  onChange={(e) => setEditCpSessions(e.target.value)}
-                />
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted, rgba(255,255,255,0.4))', marginTop: 4, display: 'block' }}>
-                  Sesiones restantes: {editingCp.totalSessions - Number(editCpSessions)}
-                </span>
-              </div>
-
-              {/* Session dots preview */}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '4px 0 12px' }}>
-                {Array.from({ length: editingCp.totalSessions }).map((_, i) => (
-                  <div
-                    key={i}
-                    onClick={() => setEditCpSessions(String(i < Number(editCpSessions) ? i : i + 1))}
-                    style={{
-                      width: 24, height: 24, borderRadius: '50%', cursor: 'pointer',
-                      background: i < Number(editCpSessions) ? 'var(--rose)' : 'rgba(255,255,255,0.1)',
-                      border: '2px solid',
-                      borderColor: i < Number(editCpSessions) ? 'var(--rose)' : 'rgba(255,255,255,0.15)',
-                      transition: 'all 0.15s',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.65rem', color: 'var(--text-muted, rgba(255,255,255,0.6))',
-                    }}
-                  >
-                    {i + 1}
-                  </div>
-                ))}
-              </div>
-
-              <div className="modal__field">
-                <label><FileText size={14} /> Notas</label>
-                <textarea rows={2} placeholder="Observaciones..." value={editCpNotes} onChange={(e) => setEditCpNotes(e.target.value)} />
-              </div>
-              <div className="modal__actions">
-                <div style={{ flex: 1 }} />
-                <button type="button" className="modal__cancel-btn" onClick={() => setShowModalEdit(false)}>Cancelar</button>
-                <button type="submit" className="modal__submit-btn">Guardar cambios</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── Modal: Payments ── */}
-      {paymentCp && (
-        <div className="modal-overlay" onClick={() => setPaymentCp(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h2>Pagos — {paymentCp.clientName}</h2>
-              <button className="modal__close" onClick={() => setPaymentCp(null)}><X size={20} /></button>
-            </div>
-            
-            <div style={{ padding: '0 0 16px', margin: '0 0 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ color: 'var(--text-muted, rgba(255,255,255,0.6))' }}>Paquete:</span>
-                <strong style={{ color: 'var(--text-main, white)' }}>{paymentCp.packageName}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ color: 'var(--text-muted, rgba(255,255,255,0.6))' }}>Precio total:</span>
-                <strong style={{ color: 'var(--text-main, white)' }}>{fmtPrice(paymentCp.totalPrice)}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ color: 'var(--text-muted, rgba(255,255,255,0.6))' }}>Pagado:</span>
-                <strong style={{ color: 'var(--emerald)' }}>{fmtPrice(paymentCp.amountPaid)}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
-                <span style={{ color: 'var(--text-muted, rgba(255,255,255,0.6))' }}>Balance pendiente:</span>
-                <strong style={{ color: 'var(--amber)' }}>{fmtPrice(paymentCp.totalPrice - paymentCp.amountPaid)}</strong>
-              </div>
-            </div>
-
-            {paymentCp.totalPrice - paymentCp.amountPaid > 0 && (
-              <form onSubmit={handlePaymentSubmit} className="modal__form" style={{ marginBottom: 24 }}>
-                <h3 style={{ fontSize: '1rem', marginBottom: 12, color: 'var(--text-main, white)' }}>Registrar abono</h3>
-                <div className="modal__row">
-                  <div className="modal__field">
-                    <label>Monto (RD$)</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={paymentCp.totalPrice - paymentCp.amountPaid}
-                      value={paymentForm.amount || ''}
-                      onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })}
-                      required
-                    />
-                  </div>
-                  <div className="modal__field">
-                    <label>Método de pago</label>
-                    <select
-                      value={paymentForm.paymentMethod}
-                      onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value as any })}
-                    >
-                      <option value="cash">Efectivo</option>
-                      <option value="transfer">Transferencia</option>
-                      <option value="card">Tarjeta</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="modal__field">
-                  <label>Notas del pago</label>
-                  <input
-                    type="text"
-                    placeholder="Referencia de transferencia, banco..."
-                    value={paymentForm.notes}
-                    onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
-                  />
-                </div>
-                <button type="submit" className="modal__submit-btn" disabled={paymentSubmitting || paymentForm.amount <= 0}>
-                  {paymentSubmitting ? 'Registrando...' : 'Registrar pago'}
-                </button>
-              </form>
-            )}
-
-            <h3 style={{ fontSize: '1rem', marginBottom: 12, color: 'var(--text-main, white)' }}>Historial de pagos</h3>
-            {payments.filter(p => p.packageId === paymentCp.id).length === 0 ? (
-              <p style={{ color: 'var(--text-muted, rgba(255,255,255,0.4))', fontSize: '0.9rem' }}>No hay abonos registrados.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 200, overflowY: 'auto' }}>
-                {payments.filter(p => p.packageId === paymentCp.id).map(p => (
-                  <div key={p.id} style={{ background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <strong style={{ display: 'block', fontSize: '0.95rem', color: 'var(--text-main, white)' }}>
-                        {fmtPrice(p.amount)}
-                      </strong>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, rgba(255,255,255,0.5))' }}>
-                        {new Date(p.createdAt).toLocaleDateString('es-DO')} · {
-                          p.paymentMethod === 'cash' ? 'Efectivo' :
-                          p.paymentMethod === 'card' ? 'Tarjeta' : 'Transferencia'
-                        }
-                      </span>
-                    </div>
-                    {p.notes && (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, rgba(255,255,255,0.4))', fontStyle: 'italic', maxWidth: '40%', textAlign: 'right' }}>
-                        {p.notes}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+      {pregunta?.que === 'borrarTipo' && (
+        <Confirmar titulo={`¿Eliminar ${pregunta.tipo.name}?`} boton="Eliminar tipo" peligro ocupado={ocupado} onSi={responder} onNo={() => setPregunta(null)}>
+          <p>Si ya se vendió a alguna clienta no se puede borrar: déjalo de vender y sus paquetes siguen igual.</p>
+        </Confirmar>
       )}
     </div>
   );

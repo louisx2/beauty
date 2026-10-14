@@ -12,7 +12,7 @@ import { format12h } from '../../../lib/timeFormat';
 import { quienPuede, minutesToTime, type Elegido } from '../../../site/reservar/disponibilidad';
 import { duracionTexto, rangoHoras } from '../../../site/reservar/resumen';
 import { especialistasDeAgenda, lineasDelPlan, primerNombre } from '../citas/proximaCita';
-import type { ClientaAgenda } from '../agendar/agendar';
+import type { ClientaAgenda } from '../agendar/reglas';
 import ElegirClienta, { type ErroresNueva, type NuevaClienta } from '../agendar/ElegirClienta';
 import ServiciosElegidos from '../agendar/ServiciosElegidos';
 import {

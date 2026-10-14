@@ -1,515 +1,148 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { AlertTriangle, ChevronRight, Package, Plus, Search, Users } from 'lucide-react';
 import { useClientStore, type Client } from '../../store/clientStore';
 import { useAppointmentStore } from '../../store/appointmentStore';
 import { useServiceStore } from '../../store/serviceStore';
-import {
-  Plus, Search, User, Phone, Mail, FileText,
-  X, Edit2, Trash2, Heart, Shield, MessageCircle, AlertCircle, Calendar,
-  Package,
-} from 'lucide-react';
-import toast from 'react-hot-toast';
-import { format12h } from '../../lib/timeFormat';
-import { capitalizarNombre } from '../../lib/nombres';
-import { ETIQUETA_ESTADO } from '../../lib/estadosCita';
-import HistorialAnterior from './clientes/HistorialAnterior';
+import { fechaLocal } from '../../lib/fechas';
+import FichaClienta from './clientes/FichaClienta';
+import EditarClienta from './clientes/EditarClienta';
+import { iniciales, listaDeClientas, resumenesPorClienta, type Filtro, type Orden } from './clientes/ficha';
 import './Clients.css';
 
-const SKIN_TYPES = ['Normal', 'Seca', 'Grasa', 'Mixta', 'Sensible'];
+const FILTROS: [Filtro, string][] = [['todas', 'Todas'], ['cita', 'Con cita'], ['paquete', 'Con paquete'], ['alergia', 'Con alergias']];
+const diaCorto = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('es-DO', { day: 'numeric', month: 'short' });
 
-const emptyForm = {
-  name: '', cedula: '', phone: '', email: '', skin_type: '', allergies: '', notes: '', source: 'manual' as string,
-};
-
-// ── Formatters ──────────────────────────────────────────────
-/** RD phone format: 3 digits, dash, 3 digits, dash, 4 digits → 829-000-0000 */
-function formatPhone(raw: string): string {
-  let digits = raw.replace(/\D/g, '');
-  // con más de 10 dígitos que empiezan con 1 (+1 …), se quita el 1 del país
-  if (digits.length > 10 && digits[0] === '1') digits = digits.slice(1);
-  digits = digits.slice(0, 10);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
-
-/** RD cédula format: 001-0000000-0 */
-function formatCedula(raw: string): string {
-  const digits = raw.replace(/\D/g, '').slice(0, 11);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 10) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 10)}-${digits.slice(10)}`;
-}
-
-// ── Validators ───────────────────────────────────────────────
-function validateForm(form: typeof emptyForm) {
-  const errors: Partial<typeof emptyForm> = {};
-  if (!form.name.trim()) errors.name = 'El nombre es requerido';
-  if (!form.phone.trim()) {
-    errors.phone = 'El teléfono es requerido';
-  } else if (form.phone.replace(/\D/g, '').length < 10) {
-    errors.phone = 'Teléfono inválido (10 dígitos)';
-  }
-  if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    errors.email = 'Correo electrónico inválido';
-  }
-  if (form.cedula && form.cedula.replace(/\D/g, '').length !== 11) {
-    errors.cedula = 'Cédula inválida (11 dígitos)';
-  }
-  return errors;
-}
-
+/**
+ * Clientas: la lista y la ficha de cada una. En la tableta acostada (y la computadora) van lado a lado: se toca una y
+ * su ficha se abre a la derecha. En el celular y la tableta parada, la ficha ocupa la pantalla y "Clientas" vuelve.
+ */
 export default function Clients() {
-  const { clients, fetchClients, addClient, updateClient, deleteClient } = useClientStore();
-  const { appointments, fetchAppointments } = useAppointmentStore();
-  const { clientPackages, fetchAll: fetchPackages } = useServiceStore();
-
-  useEffect(() => { 
-    fetchClients(); 
-    fetchAppointments();
-    fetchPackages().catch((err) => console.warn('Error loading packages for clients CRM:', err));
-  }, [fetchClients, fetchAppointments, fetchPackages]);
-
+  const { id } = useParams<{ id?: string }>();
+  const navigate = useNavigate();
   const location = useLocation();
-  const [search, setSearch] = useState(() => {
-    return (location.state as any)?.searchName || '';
-  });
+  const { clients, loading, fetchClients } = useClientStore();
+  const appointments = useAppointmentStore((s) => s.appointments);
+  const clientPackages = useServiceStore((s) => s.clientPackages);
 
-  useEffect(() => {
-    if ((location.state as any)?.searchName) {
-      setSearch((location.state as any).searchName);
-    }
-  }, [location.state]);
-  const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm);
-  const [errors, setErrors] = useState<Partial<typeof emptyForm>>({});
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  // desde otra pantalla puede llegar con el nombre ya buscado
+  const [texto, setTexto] = useState<string>(() => (location.state as { searchName?: string } | null)?.searchName ?? '');
+  const [filtro, setFiltro] = useState<Filtro>('todas');
+  const [orden, setOrden] = useState<Orden>('recientes');
+  /** la clienta cuyos datos se editan; 'nueva' para crear una */
+  const [editando, setEditando] = useState<Client | 'nueva' | null>(null);
 
-  const filtered = useMemo(() => {
-    if (!search) return clients;
-    const q = search.toLowerCase();
-    return clients.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.phone.includes(q) || (c.cedula || '').includes(q) || (c.email || '').toLowerCase().includes(q)
-    );
-  }, [clients, search]);
+  useEffect(() => { fetchClients(); }, [fetchClients]);
 
-  const openCreate = () => {
-    setEditingId(null);
-    setForm(emptyForm);
-    setErrors({});
-    setShowModal(true);
-  };
+  const hoy = fechaLocal();
+  const resumenes = useMemo(() => resumenesPorClienta(appointments, hoy), [appointments, hoy]);
+  const conPaquete = useMemo(
+    () => new Set(clientPackages.filter((p) => p.status === 'active' && p.usedSessions < p.totalSessions).map((p) => p.clientId)),
+    [clientPackages],
+  );
+  const lista = useMemo(
+    () => listaDeClientas(clients, texto, filtro, orden, resumenes, conPaquete),
+    [clients, texto, filtro, orden, resumenes, conPaquete],
+  );
+  const elegida = id ? clients.find((c) => c.id === id) : undefined;
 
-  const openEdit = (c: Client) => {
-    setEditingId(c.id);
-    setForm({ name: c.name, cedula: c.cedula || '', phone: c.phone, email: c.email || '', skin_type: c.skin_type || '', allergies: c.allergies || '', notes: c.notes || '', source: c.source });
-    setErrors({});
-    setShowModal(true);
-    setSelectedClient(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const errs = validateForm(form);
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const payload = {
-        ...form,
-        name: form.name.trim(),
-        email: form.email.trim() || null,
-        cedula: form.cedula.trim() || null,
-        allergies: form.allergies.trim() || null,
-        notes: form.notes.trim() || null,
-        skin_type: form.skin_type || null,
-      };
-      if (editingId) {
-        await updateClient(editingId, payload);
-        toast.success('Clienta actualizada correctamente');
-      } else {
-        await addClient(payload);
-        toast.success('Clienta creada correctamente');
-      }
-      setShowModal(false);
-    } catch (error) {
-      console.error(error);
-      toast.error('Ocurrió un error al guardar');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleWhatsApp = (c: Client) => {
-    const phone = c.phone.replace(/[^0-9]/g, '');
-    window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(`Hola ${c.name}, te escribimos de Anadsll Beauty Esthetic.`)}`, '_blank');
-  };
-
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const abrir = (c: Client) => navigate(`/admin/clientes/${c.id}`);
+  const volver = () => navigate('/admin/clientes');
 
   return (
-    <div className="clients-page">
-      <div className="clients-page__header">
-        <div>
-          <h1 className="clients-page__title">Clientas</h1>
-          <p className="clients-page__subtitle">{clients.length} clientas registradas</p>
-        </div>
-        <button className="clients-page__add-btn" onClick={openCreate} id="btn-new-client">
-          <Plus size={18} /> Nueva clienta
-        </button>
-      </div>
-
-      {/* Search */}
-      <div className="clients-filters">
-        <div className="clients-filters__search">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, cédula, teléfono..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            id="clients-search"
-          />
-        </div>
-      </div>
-
-      <div className="clients-grid">
-        {filtered.length === 0 ? (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', color: 'rgba(255,255,255,0.4)' }}>
-            <User size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
-            <p>No se encontraron clientas</p>
+    <div className={`clientas ${id ? 'clientas--con-ficha' : ''}`}>
+      <div className="clientas__marco">
+        <aside className="clientas__lista" aria-label="Lista de clientas">
+          <div className="clientas__cabeza">
+            <h1 className="clientas__titulo">Clientas</h1>
+            <button type="button" className="ficha__btn ficha__btn--principal" onClick={() => setEditando('nueva')}>
+              <Plus size={18} aria-hidden="true" /> Nueva
+            </button>
           </div>
-        ) : (
-          filtered.map((c) => {
-            const clientAppts = appointments.filter((a) => a.client_id === c.id);
-            const completedAppts = clientAppts.filter(a => a.status === 'completed').length;
-            const pendingAppts = clientAppts.filter(a => a.status === 'pending' || a.status === 'confirmed').length;
 
-            const activePkgs = clientPackages.filter(
-              (cp) => cp.clientId === c.id && cp.status === 'active' && cp.usedSessions < cp.totalSessions
-            );
+          <label className="clientas__buscar">
+            <Search size={18} aria-hidden="true" />
+            <span className="clientas__oculto">Buscar clienta</span>
+            <input type="search" value={texto} placeholder="Nombre, teléfono o cédula" autoComplete="off" onChange={(e) => setTexto(e.target.value)} />
+          </label>
 
-            return (
-              <div className="client-card" key={c.id}>
-                <div className="client-card__header">
-                  <div className="client-card__avatar">
-                    {c.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-                  </div>
-                  <div className="client-card__info">
-                    <h3 className="client-card__name">{c.name}</h3>
-                    <div className="client-card__role">
-                      <Calendar size={12} />
-                      Desde {new Date(c.created_at).toLocaleDateString('es-DO', { month: 'short', year: 'numeric' })}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="client-card__stats">
-                  <div className="client-card__stat">
-                    <span className="client-card__stat-label">Total de citas</span>
-                    <span className="client-card__stat-value">{clientAppts.length}</span>
-                  </div>
-                  <div className="client-card__stat">
-                    <span className="client-card__stat-label">Completadas</span>
-                    <span className="client-card__stat-value" style={{ color: '#4ade80' }}>{completedAppts}</span>
-                  </div>
-                  <div className="client-card__stat">
-                    <span className="client-card__stat-label">Pendientes</span>
-                    <span className="client-card__stat-value" style={{ color: '#fbbf24' }}>{pendingAppts}</span>
-                  </div>
-                </div>
-
-                <div className="client-card__details">
-                  <div className="client-card__detail-item">
-                    <Phone size={14} /> {c.phone}
-                  </div>
-                  {c.email && (
-                    <div className="client-card__detail-item">
-                      <Mail size={14} /> {c.email}
-                    </div>
-                  )}
-                  {c.skin_type && (
-                    <div className="client-card__detail-item">
-                      <Heart size={14} /> Piel: {c.skin_type}
-                    </div>
-                  )}
-                </div>
-
-                {activePkgs.length > 0 && (
-                  <div className="client-card__active-packages">
-                    <div className="client-card__packages-title">
-                      <Package size={13} />
-                      <span>Paquetes activos ({activePkgs.length})</span>
-                    </div>
-                    <div className="client-card__packages-list">
-                      {activePkgs.map((pkg) => (
-                        <div key={pkg.id} className="client-card__package-row">
-                          <span className="pkg-name" title={`${pkg.packageName} - ${pkg.serviceName}`}>
-                            {pkg.packageName}
-                          </span>
-                          <span className="pkg-sessions">
-                            {pkg.usedSessions}/{pkg.totalSessions} ses.
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                 <div className="client-card__actions">
-                  <button onClick={() => openEdit(c)} className="client-card__btn" style={{ padding: '8px 10px' }}>
-                    <Edit2 size={13} /> Editar
-                  </button>
-                  <button onClick={() => setSelectedClient(c)} className="client-card__btn client-card__btn--primary" style={{ padding: '8px 10px' }}>
-                    <FileText size={13} /> Historial
-                  </button>
-                  <button onClick={() => handleWhatsApp(c)} className="client-card__btn client-card__btn--wa" style={{ padding: '8px 10px' }}>
-                    <MessageCircle size={13} /> WhatsApp
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (window.confirm(`¿Estás segura de que deseas eliminar a la clienta "${c.name}"? Se perderá permanentemente todo su historial de citas y paquetes.`)) {
-                        try {
-                          await deleteClient(c.id);
-                          toast.success('Clienta eliminada correctamente');
-                        } catch (err) {
-                          console.error(err);
-                          toast.error('Ocurrió un error al eliminar a la clienta');
-                        }
-                      }
-                    }}
-                    className="client-card__btn"
-                    style={{ flex: 0, padding: '8px 10px', color: '#f87171' }}
-                    title="Eliminar clienta"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-
-      {/* Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h2>{editingId ? 'Editar clienta' : 'Nueva clienta'}</h2>
-              <button className="modal__close" onClick={closeModal}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleSubmit} className="modal__form" id="client-form" noValidate>
-              <div className="modal__row">
-                <div className="modal__field">
-                  <label><User size={14} /> Nombre completo *</label>
-                  <input
-                    type="text"
-                    placeholder="Nombre de la clienta"
-                    value={form.name}
-                    onChange={(e) => {
-                      setForm({ ...form, name: capitalizarNombre(e.target.value) });
-                      setErrors({ ...errors, name: undefined });
-                    }}
-                    className={errors.name ? 'input--error' : ''}
-                  />
-                  {errors.name && <span className="field-error"><AlertCircle size={12} /> {errors.name}</span>}
-                </div>
-                <div className="modal__field">
-                  <label><Shield size={14} /> Cédula</label>
-                  <input
-                    type="text"
-                    placeholder="001-0000000-0"
-                    value={form.cedula}
-                    onChange={(e) => {
-                      setForm({ ...form, cedula: formatCedula(e.target.value) });
-                      setErrors({ ...errors, cedula: undefined });
-                    }}
-                    className={errors.cedula ? 'input--error' : ''}
-                    maxLength={13}
-                  />
-                  {errors.cedula && <span className="field-error"><AlertCircle size={12} /> {errors.cedula}</span>}
-                </div>
-              </div>
-              <div className="modal__row">
-                <div className="modal__field">
-                  <label><Phone size={14} /> Teléfono *</label>
-                  <input
-                    type="tel"
-                    placeholder="829-000-0000"
-                    value={form.phone}
-                    onChange={(e) => {
-                      setForm({ ...form, phone: formatPhone(e.target.value) });
-                      setErrors({ ...errors, phone: undefined });
-                    }}
-                    className={errors.phone ? 'input--error' : ''}
-                    maxLength={12}
-                  />
-                  {errors.phone && <span className="field-error"><AlertCircle size={12} /> {errors.phone}</span>}
-                </div>
-                <div className="modal__field">
-                  <label><Mail size={14} /> Email</label>
-                  <input
-                    type="email"
-                    placeholder="correo@email.com"
-                    value={form.email}
-                    onChange={(e) => {
-                      setForm({ ...form, email: e.target.value.toLowerCase().trim() });
-                      setErrors({ ...errors, email: undefined });
-                    }}
-                    className={errors.email ? 'input--error' : ''}
-                  />
-                  {errors.email && <span className="field-error"><AlertCircle size={12} /> {errors.email}</span>}
-                </div>
-              </div>
-              <div className="modal__row">
-                <div className="modal__field">
-                  <label><Heart size={14} /> Tipo de piel</label>
-                  <select value={form.skin_type} onChange={(e) => setForm({ ...form, skin_type: e.target.value })}>
-                    <option value="">Seleccionar</option>
-                    {SKIN_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="modal__field">
-                <label><FileText size={14} /> Notas</label>
-                <textarea
-                  placeholder="Observaciones importantes..."
-                  rows={3}
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                />
-              </div>
-              <div className="modal__actions">
-                <div style={{ flex: 1 }} />
-                <button type="button" className="modal__cancel-btn" onClick={closeModal}>Cancelar</button>
-                <button type="submit" className="modal__submit-btn" id="client-submit" disabled={submitting}>
-                  {submitting ? 'Guardando...' : editingId ? 'Guardar' : 'Crear clienta'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Client Detail / History Modal */}
-      {selectedClient && (
-        <div className="modal-overlay" onClick={() => setSelectedClient(null)}>
-          <div className="modal modal--wide client-history-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h2><FileText size={18} /> Historial de {selectedClient.name}</h2>
-              <button className="modal__close" onClick={() => setSelectedClient(null)}>
-                <X size={20} />
+          <div className="clientas__chips" role="group" aria-label="Filtrar">
+            {FILTROS.map(([f, nombre]) => (
+              <button key={f} type="button" aria-pressed={filtro === f} className={filtro === f ? 'is-on' : ''} onClick={() => setFiltro(f)}>
+                {nombre}
               </button>
-            </div>
-            
-            <div className="client-history-modal__content">
-              {/* Left Column: Client Profile Summary */}
-              <div className="client-history-modal__profile">
-                <div className="client-history-modal__avatar">
-                  {selectedClient.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                </div>
-                <h3>{selectedClient.name}</h3>
-                <p className="client-history-profile__phone">{selectedClient.phone}</p>
-                {selectedClient.email && <p className="client-history-profile__email">{selectedClient.email}</p>}
-                
-                <div className="client-history-profile__section">
-                  <strong>Tipo de piel:</strong>
-                  <span>{selectedClient.skin_type || 'No especificado'}</span>
-                </div>
-                
-                <div className="client-history-profile__section">
-                  <strong>Alergias:</strong>
-                  <span className={selectedClient.allergies ? 'text-danger' : ''}>
-                    {selectedClient.allergies || 'Ninguna'}
-                  </span>
-                </div>
-
-                <div className="client-history-profile__section">
-                  <strong>Notas / Observaciones:</strong>
-                  <p style={{ whiteSpace: 'pre-wrap' }}>{selectedClient.notes || 'Sin observaciones'}</p>
-                </div>
-              </div>
-              
-              {/* Right Column: History Timeline & Active Packages */}
-              <div className="client-history-modal__timeline-section">
-                {/* Active Packages list */}
-                <div className="client-history-modal__section-block" style={{ marginBottom: 24 }}>
-                  <h4 className="section-title"><Package size={14} /> Paquetes de citas</h4>
-                  {clientPackages.filter(cp => cp.clientId === selectedClient.id).length === 0 ? (
-                    <p className="empty-text">No tiene paquetes registrados.</p>
-                  ) : (
-                    <div className="history-packages-grid">
-                      {clientPackages.filter(cp => cp.clientId === selectedClient.id).map(cp => {
-                        const pct = (cp.usedSessions / cp.totalSessions) * 100;
-                        return (
-                          <div key={cp.id} className="history-package-card">
-                            <div className="history-package-card__header">
-                              <h5>{cp.packageName}</h5>
-                              <span className={`status-badge status-badge--${cp.status}`}>
-                                {cp.status === 'active' ? 'Activo' : cp.status === 'completed' ? 'Completado' : 'Cancelado'}
-                              </span>
-                            </div>
-                            <p className="history-package-card__svc">Servicio: {cp.serviceName}</p>
-                            <div className="history-package-card__progress">
-                              <div className="progress-bar">
-                                <div className="progress-bar__fill" style={{ width: `${pct}%` }} />
-                              </div>
-                              <span className="progress-bar__text">{cp.usedSessions} / {cp.totalSessions} Sesiones</span>
-                            </div>
-                            {cp.notes && <p className="history-package-card__notes">Notas: {cp.notes}</p>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* Timeline of appointments */}
-                <div className="client-history-modal__section-block">
-                  <h4 className="section-title"><Calendar size={14} /> Historial de visitas</h4>
-                  {appointments.filter(a => a.client_id === selectedClient.id).length === 0 ? (
-                    <p className="empty-text">No registra visitas en la agenda todavía.</p>
-                  ) : (
-                    <div className="history-timeline">
-                      {appointments
-                        .filter(a => a.client_id === selectedClient.id)
-                        .sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time))
-                        .map(a => (
-                          <div key={a.id} className="history-timeline__item">
-                            <div className={`history-timeline__dot history-timeline__dot--${a.status}`} />
-                            <div className="history-timeline__date">
-                              {new Date(a.date + 'T12:00:00').toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' })}
-                            </div>
-                            <div className="history-timeline__details">
-                              <div className="history-timeline__title-row">
-                                <h5 className="history-timeline__service">{a.service}</h5>
-                                <span className={`timeline-status timeline-status--${a.status}`}>
-                                  {ETIQUETA_ESTADO[a.status]}
-                                </span>
-                              </div>
-                              <p className="history-timeline__meta">
-                                <span>Especialista: <strong>{a.employee}</strong></span>
-                                <span>Hora: {format12h(a.time)}</span>
-                              </p>
-                              {a.notes && <p className="history-timeline__notes">Nota: {a.notes}</p>}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Lo que se le hizo antes de usar el sistema: se agrega, se edita y se borra aquí */}
-                <HistorialAnterior key={selectedClient.id} clientId={selectedClient.id} />
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
+
+          <div className="clientas__filtros">
+            <p className="clientas__cuenta" aria-live="polite">
+              {lista.length === clients.length ? `${clients.length} registradas` : `${lista.length} de ${clients.length}`}
+            </p>
+            <label className="clientas__orden">
+              <span className="clientas__oculto">Ordenar</span>
+              <select value={orden} onChange={(e) => setOrden(e.target.value as Orden)}>
+                <option value="recientes">Las más nuevas</option>
+                <option value="nombre">Por nombre</option>
+                <option value="visita">Última visita</option>
+              </select>
+            </label>
+          </div>
+
+          {lista.length === 0 ? (
+            <p className="clientas__nada">
+              {loading && clients.length === 0 ? 'Cargando…' : texto ? `Ninguna clienta con “${texto.trim()}”.` : 'No hay clientas con ese filtro.'}
+            </p>
+          ) : (
+            <ul className="clientas__filas">
+              {lista.map((c) => {
+                const r = resumenes.get(c.id);
+                const linea = r?.enSala ? 'En sala ahora'
+                  : r?.proxima ? `Próxima: ${r.proxima.date === hoy ? 'hoy' : diaCorto(r.proxima.date)}`
+                  : r?.ultima ? `Última visita: ${diaCorto(r.ultima.date)}`
+                  : 'Sin visitas todavía';
+                return (
+                  <li key={c.id}>
+                    <button type="button" className={`clientas__fila ${c.id === id ? 'is-on' : ''}`} aria-current={c.id === id ? 'true' : undefined} onClick={() => abrir(c)}>
+                      <span className="clientas__ini" aria-hidden="true">{iniciales(c.name)}</span>
+                      <span className="clientas__fila-txt">
+                        <b>{c.name}</b>
+                        <span>{c.phone}</span>
+                        <small>
+                          {linea}
+                          {conPaquete.has(c.id) && <span className="clientas__marca"><Package size={12} aria-hidden="true" /> Paquete</span>}
+                          {c.allergies?.trim() && <span className="clientas__marca clientas__marca--alerta"><AlertTriangle size={12} aria-hidden="true" /> Alergias</span>}
+                        </small>
+                      </span>
+                      <ChevronRight size={18} aria-hidden="true" className="clientas__flecha" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </aside>
+
+        <section className="clientas__detalle">
+          {elegida ? (
+            <FichaClienta key={elegida.id} clienta={elegida} onVolver={volver} onEditar={() => setEditando(elegida)} />
+          ) : id ? (
+            <p className="clientas__nada">{loading || clients.length === 0 ? 'Cargando…' : 'No encontramos esa clienta.'}</p>
+          ) : (
+            <div className="clientas__elige">
+              <Users size={36} aria-hidden="true" />
+              <p>Toca una clienta para ver su ficha: sus citas, sus paquetes y todo su historial.</p>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {editando && (
+        <EditarClienta
+          clienta={editando === 'nueva' ? null : editando}
+          onCerrar={() => setEditando(null)}
+          onGuardada={(c) => { setEditando(null); abrir(c); }}
+          onVerOtra={(c) => { setEditando(null); abrir(c); }}
+        />
       )}
     </div>
   );

@@ -108,8 +108,7 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
-.prox__servicio select,
-.prox__agregar select {
+.prox__servicio select {
   font-family: 'Outfit', sans-serif;
   font-size: 0.84rem;
   color: inherit;
@@ -126,8 +125,7 @@
   color: #fff;
 }
 
-.prox__servicio select option,
-.prox__agregar select option {
+.prox__servicio select option {
   background: #352820;
   color: #fff;
 }
@@ -151,33 +149,123 @@
   color: #f87171;
 }
 
-.prox__agregar {
+/* Buscar un servicio para agregarlo: la caja y, debajo, la lista (en el flujo, para que nada la tape) */
+.busv {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.busv__oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.busv__caja {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 46px;
-  box-sizing: border-box;
-  padding: 9px 14px;
-  border: 1px dashed rgba(178, 150, 125, 0.45);
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 6px 0 14px;
+  border: 1px dashed rgba(178, 150, 125, 0.5);
   border-radius: 12px;
   color: var(--camel);
+  cursor: text;
+}
+
+.busv__caja svg { flex-shrink: 0; }
+
+.busv__caja:focus-within,
+.busv__caja.is-abierta {
+  border-style: solid;
+  border-color: var(--camel);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.busv__caja input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  outline: none;
+}
+
+.busv__caja input::placeholder {
+  color: var(--camel);
+  opacity: 0.85;
+}
+
+.busv__borrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
 }
 
-.prox__agregar svg {
-  flex-shrink: 0;
+.busv__lista {
+  max-height: 300px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: #2c211b;
 }
 
-.prox__agregar select {
-  flex: 1;
-  min-width: 0;
-  width: 100%;
-  text-overflow: ellipsis;
-  border: none;
-  background: transparent;
-  color: var(--camel);
+.busv__grupo {
+  padding: 10px 10px 4px;
+  font-size: 0.7rem;
   font-weight: 600;
-  outline: none;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.busv__opcion {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-height: 48px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.busv__opcion b {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.busv__opcion span {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.busv__opcion.is-on { background: rgba(178, 150, 125, 0.18); }
+
+.busv__nada {
+  padding: 14px 10px;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 /* Calendario */
@@ -543,17 +631,27 @@
   color: var(--espresso);
 }
 
-[data-theme="light"] .prox__servicio select option,
-[data-theme="light"] .prox__agregar select option {
+[data-theme="light"] .prox__servicio select option {
   background: #fff;
   color: var(--espresso);
 }
 
-[data-theme="light"] .prox__agregar,
-[data-theme="light"] .prox__agregar select,
 [data-theme="light"] .prox__cal-mes small {
   color: var(--cocoa);
 }
+
+[data-theme="light"] .busv__caja { border-color: #CDBBA8; color: var(--cocoa); }
+[data-theme="light"] .busv__caja:focus-within,
+[data-theme="light"] .busv__caja.is-abierta { border-color: var(--cocoa); background: #fff; }
+[data-theme="light"] .busv__caja input { color: var(--espresso); }
+[data-theme="light"] .busv__caja input::placeholder { color: var(--cocoa); }
+[data-theme="light"] .busv__borrar,
+[data-theme="light"] .busv__grupo,
+[data-theme="light"] .busv__opcion span,
+[data-theme="light"] .busv__nada { color: var(--muted); }
+[data-theme="light"] .busv__lista { background: #fff; border-color: rgba(74, 52, 42, 0.12); box-shadow: 0 8px 24px rgba(74, 52, 42, 0.08); }
+[data-theme="light"] .busv__opcion b { color: var(--espresso); }
+[data-theme="light"] .busv__opcion.is-on { background: #F1E4D8; }
 
 [data-theme="light"] .prox__quitar {
   color: var(--muted);

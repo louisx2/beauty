@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { PedidoAgendar } from '../pages/admin/agendar/agendar';
+import type { PedidoAgendar } from '../pages/admin/agendar/reglas';
 
 /** La ventana Agendar es una sola para todo el panel (vive en AdminLayout): cualquier pantalla la abre con lo que
  *  ya sabe (la clienta, el día, el hueco, la cita a mover, el paquete). */

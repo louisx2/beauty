@@ -19,7 +19,6 @@ import {
   Clock,
   AlertCircle,
   CheckCircle2,
-  Scissors,
   Zap,
   Volume2,
   Check,
@@ -52,11 +51,11 @@ const AHORA = 'ahora';
 // Hoy reemplaza a Inicio y a Recepción: es lo primero que se ve al entrar (Inicio y Recepción siguen en su dirección)
 const hoy: ItemNav = { to: '/admin/hoy', icono: <Sun size={20} />, etiqueta: 'Hoy' };
 const ahora: ItemNav = { to: AHORA, icono: <Zap size={20} />, etiqueta: 'Atender ahora', corto: 'Atender' };
-const citas: ItemNav = { to: '/admin/citas', icono: <CalendarDays size={20} />, etiqueta: 'Citas' };
+const citas: ItemNav = { to: '/admin/citas', icono: <CalendarDays size={20} />, etiqueta: 'Agenda' };
 const clientas: ItemNav = { to: '/admin/clientes', icono: <Users size={20} />, etiqueta: 'Clientas' };
 const paquetes: ItemNav = { to: '/admin/paquetes', icono: <Package size={20} />, etiqueta: 'Paquetes' };
-const miTurno: ItemNav = { to: '/admin/mi-turno', icono: <Scissors size={20} />, etiqueta: 'Mi turno' };
-const misCitas: ItemNav = { to: '/admin/citas', icono: <CalendarDays size={20} />, etiqueta: 'Mis citas' };
+const miTurno: ItemNav = { to: '/admin/mi-turno', icono: <Sun size={20} />, etiqueta: 'Mi día' };
+const misCitas: ItemNav = { to: '/admin/citas', icono: <CalendarDays size={20} />, etiqueta: 'Mi agenda' };
 const misReportes: ItemNav = { to: '/admin/reportes', icono: <BarChart3 size={20} />, etiqueta: 'Mis reportes', corto: 'Reportes' };
 
 // Cada rol ve solo lo suyo. Los nombres del menú son los mismos títulos de cada pantalla.
@@ -130,13 +129,16 @@ export default function AdminLayout() {
 
   // Redirect non-admin roles to their home pages
   useEffect(() => {
+    // la ruta o algo dentro de ella (/admin/clientes/123 es de /admin/clientes); /admin solo cuenta exacta
+    const dentroDe = (rutas: string[]) =>
+      rutas.some((r) => location.pathname === r || (r !== '/admin' && location.pathname.startsWith(`${r}/`)));
     if (user?.role === 'specialist') {
       const adminOnly = ['/admin', '/admin/hoy', '/admin/dashboard', '/admin/clientes', '/admin/servicios', '/admin/paquetes', '/admin/equipo', '/admin/ajustes', '/admin/suscripcion'];
-      if (adminOnly.includes(location.pathname)) navigate('/admin/mi-turno', { replace: true });
+      if (dentroDe(adminOnly)) navigate('/admin/mi-turno', { replace: true });
     }
     if (user?.role === 'receptionist') {
       const receptionistForbidden = ['/admin', '/admin/dashboard', '/admin/reportes', '/admin/ajustes', '/admin/equipo', '/admin/suscripcion'];
-      if (receptionistForbidden.includes(location.pathname)) navigate('/admin/hoy', { replace: true });
+      if (dentroDe(receptionistForbidden)) navigate('/admin/hoy', { replace: true });
     }
   }, [user?.role, location.pathname, navigate]);
 

@@ -574,7 +574,7 @@ export default function ReceptionistDashboard() {
             {clientSearch.length >= 2 && clientMatches.length > 0 && (
               <div className="rec__search-results">
                 {clientMatches.map(c => (
-                  <div key={c.id} className="rec__search-result" onClick={() => navigate('/admin/clientes')}>
+                  <div key={c.id} className="rec__search-result" onClick={() => navigate(`/admin/clientes/${c.id}`)}>
                     <strong>{c.name}</strong>
                     <span>{c.phone}</span>
                   </div>

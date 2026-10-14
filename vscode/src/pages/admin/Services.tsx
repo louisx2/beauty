@@ -1,255 +1,218 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
+import { AlertTriangle, Clock, Package, Pencil, Plus, Power, Search, Trash2, Users, X } from 'lucide-react';
 import { useServiceStore, type Service, type ServiceCategory } from '../../store/serviceStore';
+import { useStaffStore } from '../../store/staffStore';
+import { useAppointmentStore } from '../../store/appointmentStore';
 import { useAuthStore } from '../../store/authStore';
-import { Plus, Search, Edit2, Trash2, X, Clock, DollarSign, Sparkles, Zap, Heart, Scissors, Syringe, Package } from 'lucide-react';
+import { useAhora } from '../../lib/useAhora';
+import { duracionTexto } from '../../site/reservar/resumen';
+import MenuAcciones from '../../components/MenuAcciones';
+import Confirmar from '../../components/Confirmar';
+import { CATEGORIAS } from './agendar/reglas';
+import { primerNombre } from './citas/proximaCita';
+import { ORDEN_CATEGORIAS, catalogoAgrupado, conItbis, quienLoHace, usoDeServicios } from './negocio/catalogo';
+import EditarServicio from './negocio/EditarServicio';
+import './negocio/Negocio.css';
 import './Services.css';
 
-const CATEGORIES: { key: ServiceCategory | 'all'; label: string; icon: React.ReactNode }[] = [
-  { key: 'all', label: 'Todos', icon: <Sparkles size={15} /> },
-  { key: 'laser', label: 'Láser', icon: <Zap size={15} /> },
-  { key: 'facial', label: 'Facial', icon: <Heart size={15} /> },
-  { key: 'corporal', label: 'Corporal', icon: <Sparkles size={15} /> },
-  { key: 'belleza', label: 'Belleza', icon: <Scissors size={15} /> },
-  { key: 'medicina', label: 'Medicina estética', icon: <Syringe size={15} /> },
-];
+const rd = (n: number) => `RD$ ${n.toLocaleString('es-DO')}`;
 
-const CAT_COLORS: Record<ServiceCategory, string> = {
-  laser: '#a78bfa',
-  facial: '#f9a8d4',
-  corporal: '#6ee7b7',
-  belleza: '#fcd34d',
-  medicina: '#7D5A44',
-};
-
-const emptyForm: Omit<Service, 'id'> = {
-  // sin ITBIS por defecto: el salón no lo cobra (se puede marcar servicio por servicio)
-  name: '', category: 'facial', description: '', duration: 45, price: 0, taxable: false, hasSession: false, active: true,
-};
-
-function fmtPrice(p: number) {
-  return `RD$ ${p.toLocaleString('es-DO')}`;
-}
-
+/**
+ * Servicios: el catálogo del salón por categoría. De cada uno, cuánto dura y cuesta, quién lo hace (un servicio que
+ * nadie hace no se puede agendar), cuánto se usa y en qué paquetes está. Se busca escribiendo, sin tildes.
+ */
 export default function Services() {
-  const { services, packages, clientPackages, fetchAll, addService, updateService, deleteService } = useServiceStore();
-  const { user } = useAuthStore();
+  const { services, packages, clientPackages, fetchAll, updateService, deleteService } = useServiceStore();
+  const staff = useStaffStore((s) => s.staff);
+  const appointments = useAppointmentStore((s) => s.appointments);
+  const esAdmin = useAuthStore((s) => s.user?.role) === 'admin';
+  const { hoy } = useAhora();
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
-  const [catFilter, setCatFilter] = useState<ServiceCategory | 'all'>('all');
-  const [search, setSearch] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm);
-  const [priceStr, setPriceStr] = useState('');
 
-  const filtered = useMemo(() => {
-    let list = catFilter === 'all' ? services : services.filter((s) => s.category === catFilter);
-    if (search) list = list.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()));
-    return list;
-  }, [services, catFilter, search]);
+  const [categoria, setCategoria] = useState<ServiceCategory | 'todas'>('todas');
+  const [texto, setTexto] = useState('');
+  const [verInactivos, setVerInactivos] = useState(false);
+  // null: cerrado; 'nuevo' o el servicio que se edita
+  const [editando, setEditando] = useState<Service | 'nuevo' | null>(null);
+  const [borrando, setBorrando] = useState<Service | null>(null);
+  const [ocupado, setOcupado] = useState(false);
 
-  const openCreate = () => { setEditingId(null); setForm(emptyForm); setPriceStr(''); setShowModal(true); };
-  const openEdit = (s: Service) => {
-    setEditingId(s.id);
-    setForm({ name: s.name, category: s.category, description: s.description, duration: s.duration, price: s.price, taxable: s.taxable, hasSession: s.hasSession, active: s.active });
-    setPriceStr(String(s.price));
-    setShowModal(true);
-  };
+  const grupos = useMemo(() => catalogoAgrupado(services, texto, categoria, verInactivos), [services, texto, categoria, verInactivos]);
+  const uso = useMemo(() => usoDeServicios(appointments, services, hoy), [appointments, services, hoy]);
+  const activos = services.filter((s) => s.active);
+  const inactivos = services.length - activos.length;
+  const cuantos = (c: ServiceCategory | 'todas') =>
+    services.filter((s) => (verInactivos || s.active) && (c === 'todas' || s.category === c)).length;
+  const sinNadie = activos.filter((s) => quienLoHace(s.id, staff).length === 0).length;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const finalForm = { ...form, price: Number(priceStr) || 0 };
-    if (editingId) {
-      await updateService(editingId, finalForm);
-    } else {
-      await addService(finalForm);
+  const activar = async (s: Service) => {
+    if (await updateService(s.id, { active: !s.active })) {
+      toast.success(s.active ? `${s.name}: desactivado, ya no sale para agendar` : `${s.name}: activo otra vez`);
     }
-    setShowModal(false);
   };
 
-  const priceWithTax = (price: number, taxable: boolean) =>
-    taxable ? price * 1.18 : price;
+  const eliminar = async () => {
+    if (!borrando) return;
+    setOcupado(true);
+    const ok = await deleteService(borrando.id);
+    setOcupado(false);
+    if (ok) {
+      toast.success(`${borrando.name} eliminado`);
+      setBorrando(null);
+    }
+  };
+
+  const usoDe = (s: Service) => uso.get(s.id) ?? { hechos: 0, agendados: 0 };
 
   return (
-    <div className="services-page">
-      <div className="services-page__header">
+    <div className="neg servs">
+      <header className="neg__cabeza">
         <div>
-          <h1 className="clients__title">Servicios</h1>
-          <p className="clients__subtitle">{services.filter(s => s.active).length} servicios activos</p>
+          <h1 className="neg__titulo">Servicios</h1>
+          <p className="neg__sub">
+            {activos.length === 1 ? '1 servicio activo' : `${activos.length} servicios activos`}
+            {inactivos > 0 && ` · ${inactivos} inactivo${inactivos === 1 ? '' : 's'}`}
+          </p>
         </div>
-        {user?.role === 'admin' && (
-          <button className="appts__add-btn" onClick={openCreate} id="btn-new-service">
-            <Plus size={18} /> Nuevo servicio
-          </button>
+        {esAdmin && (
+          <div className="neg__botones">
+            <button type="button" className="neg__btn neg__btn--principal" onClick={() => setEditando('nuevo')}>
+              <Plus size={18} aria-hidden="true" /> Nuevo servicio
+            </button>
+          </div>
+        )}
+      </header>
+
+      {sinNadie > 0 && (
+        <p className="neg__aviso" role="status">
+          <AlertTriangle size={16} aria-hidden="true" />
+          {sinNadie === 1 ? 'Hay 1 servicio activo que nadie del equipo hace' : `Hay ${sinNadie} servicios activos que nadie del equipo hace`}: no se
+          pueden agendar hasta que alguien lo haga. Búscalos con la etiqueta «Nadie lo hace».
+        </p>
+      )}
+
+      <div className="neg__barra">
+        <label className="neg__buscar">
+          <Search size={18} aria-hidden="true" />
+          <span className="neg__oculto">Buscar servicio</span>
+          <input type="search" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Buscar servicio (cejas, láser…)" />
+          {texto && (
+            <button type="button" className="neg__borrar" onClick={() => setTexto('')} aria-label="Borrar la búsqueda"><X size={18} /></button>
+          )}
+        </label>
+        {inactivos > 0 && (
+          <label className="neg__ver">
+            <input type="checkbox" checked={verInactivos} onChange={(e) => setVerInactivos(e.target.checked)} />
+            Ver también los inactivos
+          </label>
         )}
       </div>
 
-      {/* Category Tabs + Search */}
-      <div className="services-page__controls">
-        <div className="services-page__cats">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.key}
-              className={`services-page__cat-btn ${catFilter === c.key ? 'services-page__cat-btn--active' : ''}`}
-              onClick={() => setCatFilter(c.key as ServiceCategory | 'all')}
-            >
-              {c.icon} {c.label}
-              <span className="services-page__cat-count">
-                {c.key === 'all' ? services.length : services.filter(s => s.category === c.key).length}
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="appts__search" style={{ maxWidth: 280 }}>
-          <Search size={16} />
-          <input
-            type="text"
-            placeholder="Buscar servicio..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            id="services-search"
-          />
-        </div>
-      </div>
-
-      {/* Services Grid */}
-      <div className="services-page__grid">
-        {filtered.map((s) => (
-          <div className={`service-item ${!s.active ? 'service-item--inactive' : ''}`} key={s.id}>
-            <div className="service-item__top">
-              <span className="service-item__cat-tag" style={{ background: `${CAT_COLORS[s.category]}18`, color: CAT_COLORS[s.category] }}>
-                {CATEGORIES.find(c => c.key === s.category)?.icon}
-                {CATEGORIES.find(c => c.key === s.category)?.label}
-              </span>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                {s.hasSession && (
-                  <span className="service-item__session-badge">
-                    <Package size={11} /> Con sesiones
-                  </span>
-                )}
-                {!s.active && <span className="service-item__inactive-badge">Inactivo</span>}
-              </div>
-            </div>
-
-            <h3 className="service-item__name">{s.name}</h3>
-            <p className="service-item__desc">{s.description}</p>
-
-            {/* Session tracking for this service */}
-            {s.hasSession && (() => {
-              const pkgs = packages.filter(p => p.serviceId === s.id);
-              const activeCp = clientPackages.filter(cp => {
-                const pkg = packages.find(p => p.id === cp.packageId);
-                return pkg?.serviceId === s.id && cp.usedSessions < cp.totalSessions;
-              });
-              return pkgs.length > 0 ? (
-                <div className="service-item__session-info">
-                  <span><Package size={12} /> {pkgs.length} paquete{pkgs.length > 1 ? 's' : ''}</span>
-                  <span className="service-item__session-active">{activeCp.length} activo{activeCp.length !== 1 ? 's' : ''}</span>
-                </div>
-              ) : null;
-            })()}
-
-            <div className="service-item__meta">
-              <span><Clock size={13} /> {s.duration} min</span>
-              <span><DollarSign size={13} /> {fmtPrice(s.price)}</span>
-              {s.taxable && <span className="service-item__tax">+ITBIS 18%</span>}
-            </div>
-
-            {s.taxable && (
-              <div className="service-item__total">
-                Total con ITBIS: <strong>{fmtPrice(Math.round(priceWithTax(s.price, s.taxable)))}</strong>
-              </div>
-            )}
-
-            {user?.role === 'admin' && (
-              <div className="service-item__actions">
-                <button onClick={() => updateService(s.id, { active: !s.active })} className={`service-item__toggle ${s.active ? 'service-item__toggle--on' : 'service-item__toggle--off'}`}>
-                  {s.active ? 'Activo' : 'Inactivo'}
-                </button>
-                <div style={{ flex: 1 }} />
-                <button className="appt-card__action-btn" onClick={() => openEdit(s)}><Edit2 size={15} /></button>
-                <button className="appt-card__action-btn" onClick={() => { if (window.confirm(`¿Estás seguro de eliminar el servicio "${s.name}"?`)) deleteService(s.id); }} style={{ '--hover-color': '#f87171' } as React.CSSProperties}><Trash2 size={15} /></button>
-              </div>
-            )}
-          </div>
+      <div className="neg__chips" role="group" aria-label="Categoría">
+        {(['todas', ...ORDEN_CATEGORIAS] as const).map((c) => (
+          <button key={c} type="button" className={`neg__chip ${categoria === c ? 'is-on' : ''}`} aria-pressed={categoria === c}
+            onClick={() => setCategoria(c)}>
+            {c === 'todas' ? 'Todas' : CATEGORIAS[c]} <b>{cuantos(c)}</b>
+          </button>
         ))}
       </div>
 
-      {/* Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h2>{editingId ? 'Editar servicio' : 'Nuevo servicio'}</h2>
-              <button className="modal__close" onClick={() => setShowModal(false)}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleSubmit} className="modal__form" id="service-form">
-              <div className="modal__field">
-                <label>Nombre del servicio</label>
-                <input required placeholder="Ej: Depilación Láser - Piernas" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </div>
-              <div className="modal__row">
-                <div className="modal__field">
-                  <label>Categoría</label>
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as ServiceCategory })}>
-                    <option value="laser">Láser</option>
-                    <option value="facial">Facial</option>
-                    <option value="corporal">Corporal</option>
-                    <option value="belleza">Belleza</option>
-                  </select>
-                </div>
-                <div className="modal__field">
-                  <label><Clock size={14} /> Duración (min)</label>
-                  <select value={form.duration} onChange={(e) => setForm({ ...form, duration: Number(e.target.value) })}>
-                    {[15, 30, 45, 60, 75, 90, 120].map(d => <option key={d} value={d}>{d} min</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="modal__field">
-                <label>Descripción</label>
-                <input placeholder="Descripción breve del servicio" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-              </div>
-              <div className="modal__row">
-                <div className="modal__field">
-                  <label><DollarSign size={14} /> Precio (RD$)</label>
-                  <input type="number" min={0} value={priceStr} onChange={(e) => setPriceStr(e.target.value)} placeholder="Ej: 2500" />
-                </div>
-                <div className="modal__field" style={{ justifyContent: 'flex-end', paddingBottom: '4px' }}>
-                  <label style={{ marginBottom: 16 }}>ITBIS 18%</label>
-                  <label className="toggle-switch">
-                    <input type="checkbox" checked={form.taxable} onChange={(e) => setForm({ ...form, taxable: e.target.checked })} />
-                    <span className="toggle-slider" />
-                    <span style={{ marginLeft: 8, fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>
-                      {form.taxable ? 'Aplica ITBIS' : 'Exento'}
-                    </span>
-                  </label>
-                </div>
-              </div>
-              {Number(priceStr) > 0 && form.taxable && (
-                <div className="service-modal__total">
-                  Total con ITBIS: <strong>{fmtPrice(Math.round(form.taxable ? Number(priceStr) * 1.18 : Number(priceStr)))}</strong>
-                </div>
-              )}
-              <div className="modal__row">
-                <div className="modal__field" style={{ paddingBottom: '4px' }}>
-                  <label>¿Servicio con sesiones?</label>
-                  <label className="toggle-switch">
-                    <input type="checkbox" checked={form.hasSession} onChange={(e) => setForm({ ...form, hasSession: e.target.checked })} />
-                    <span className="toggle-slider" />
-                    <span style={{ marginLeft: 8, fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>
-                      {form.hasSession ? 'Sí (Configura la cantidad de sesiones en la pestaña Paquetes)' : 'No — Solo servicio individual'}
-                    </span>
-                  </label>
-                </div>
-              </div>
-              <div className="modal__actions">
-                <div style={{ flex: 1 }} />
-                <button type="button" className="modal__cancel-btn" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="modal__submit-btn" id="service-submit">{editingId ? 'Guardar' : 'Crear servicio'}</button>
-              </div>
-            </form>
-          </div>
+      {grupos.length === 0 ? (
+        <div className="neg__vacio">
+          <Search size={32} aria-hidden="true" />
+          <p>{texto ? `No hay servicios con «${texto}».` : 'No hay servicios en esta categoría.'}</p>
+          {esAdmin && !texto && (
+            <button type="button" className="neg__btn neg__btn--principal" onClick={() => setEditando('nuevo')}>
+              <Plus size={18} aria-hidden="true" /> Nuevo servicio
+            </button>
+          )}
         </div>
+      ) : grupos.map((g) => (
+        <section key={g.categoria} className="servs__grupo" aria-labelledby={`cat-${g.categoria}`}>
+          <h2 id={`cat-${g.categoria}`} className="neg__seccion-tit">{g.titulo} · {g.servicios.length}</h2>
+          <ul className="neg__grilla servs__lista">
+            {g.servicios.map((s) => {
+              const quien = quienLoHace(s.id, staff);
+              const u = usoDe(s);
+              const paquetes = packages.filter((p) => p.serviceId === s.id);
+              const paquetesActivos = clientPackages.filter((cp) =>
+                paquetes.some((p) => p.id === cp.packageId) && cp.status === 'active' && cp.usedSessions < cp.totalSessions).length;
+              return (
+                <li key={s.id} className={`neg__tarjeta serv ${s.active ? '' : 'is-apagada'}`}>
+                  <div className="serv__cabeza">
+                    <h3 className="serv__nombre">{s.name}</h3>
+                    {esAdmin && (
+                      <MenuAcciones etiqueta={`Más acciones para ${s.name}`} items={[
+                        { id: 'activar', etiqueta: s.active ? 'Desactivar (no se agenda más)' : 'Activar', icono: <Power size={16} />, onSelect: () => activar(s) },
+                        { id: 'eliminar', etiqueta: 'Eliminar', icono: <Trash2 size={16} />, peligro: true, onSelect: () => setBorrando(s) },
+                      ]} />
+                    )}
+                  </div>
+
+                  <div className="serv__etiquetas">
+                    {!s.active && <span className="neg__etiqueta">Inactivo</span>}
+                    {s.active && quien.length === 0 && <span className="neg__etiqueta neg__etiqueta--alerta">Nadie lo hace</span>}
+                    {s.hasSession && <span className="neg__etiqueta neg__etiqueta--suave"><Package size={12} aria-hidden="true" /> Por sesiones</span>}
+                    {s.taxable && <span className="neg__etiqueta neg__etiqueta--suave">+ ITBIS</span>}
+                  </div>
+
+                  {s.description && <p className="serv__desc">{s.description}</p>}
+
+                  <div className="serv__precio">
+                    <b>{rd(s.price)}</b>
+                    {s.taxable && <small>{rd(conItbis(s.price))} con ITBIS</small>}
+                    <span><Clock size={14} aria-hidden="true" /> {duracionTexto(s.duration)}</span>
+                  </div>
+
+                  <dl className="serv__datos">
+                    <div>
+                      <dt><Users size={14} aria-hidden="true" /> Lo hacen</dt>
+                      <dd>{quien.length === 0 ? 'Nadie todavía' : quien.length > 3
+                        ? `${quien.slice(0, 3).map((m) => primerNombre(m.name)).join(', ')} y ${quien.length - 3} más`
+                        : quien.map((m) => primerNombre(m.name)).join(', ')}</dd>
+                    </div>
+                    <div>
+                      <dt>Últimos 30 días</dt>
+                      <dd>{u.hechos === 1 ? '1 vez' : `${u.hechos} veces`}{u.agendados > 0 && ` · ${u.agendados} agendado${u.agendados === 1 ? '' : 's'}`}</dd>
+                    </div>
+                    {paquetes.length > 0 && (
+                      <div>
+                        <dt><Package size={14} aria-hidden="true" /> Paquetes</dt>
+                        <dd>{paquetes.length === 1 ? '1 tipo' : `${paquetes.length} tipos`}{paquetesActivos > 0 && ` · ${paquetesActivos} activo${paquetesActivos === 1 ? '' : 's'}`}</dd>
+                      </div>
+                    )}
+                  </dl>
+
+                  {esAdmin && (
+                    <div className="neg__acciones">
+                      <button type="button" className="neg__btn neg__btn--chico" onClick={() => setEditando(s)}>
+                        <Pencil size={16} aria-hidden="true" /> Editar
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+
+      {editando && (
+        <EditarServicio servicio={editando === 'nuevo' ? null : editando} categoria={categoria === 'todas' ? null : categoria}
+          onCerrar={() => setEditando(null)} />
+      )}
+
+      {borrando && (
+        <Confirmar titulo={`¿Eliminar ${borrando.name}?`} boton="Eliminar servicio" peligro ocupado={ocupado}
+          onSi={eliminar} onNo={() => setBorrando(null)}>
+          {usoDe(borrando).agendados > 0 && (
+            <p>Tiene {usoDe(borrando).agendados === 1 ? '1 cita agendada' : `${usoDe(borrando).agendados} citas agendadas`}: esas citas
+              se quedan como están.</p>
+          )}
+          <p>Si solo quieres dejar de ofrecerlo, mejor desactívalo: no se pierde nada y se puede volver a activar.</p>
+        </Confirmar>
       )}
     </div>
   );

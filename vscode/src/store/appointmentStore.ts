@@ -358,10 +358,15 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
     }));
 
     try {
-      const { error } = await supabase
+      // Completar descuenta la sesión del paquete: solo lo hace quien de verdad la pasó a completada. Si dos equipos
+      // la completan a la vez (la tableta y el celular de la especialista), el segundo no cambia nada y no descuenta.
+      let cambio = supabase
         .from('appointments')
         .update({ status, ...extra })
         .eq('id', id);
+      if (status === 'completed') cambio = cambio.neq('status', 'completed');
+      const { data: cambiadas, error } = await cambio.select('id');
+      const laCompleteYo = status === 'completed' && (cambiadas?.length ?? 0) > 0;
 
       if (error) {
         // Rollback — re-fetch to restore correct state
@@ -392,7 +397,7 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
       if (status === 'completed') {
         const appt = get().appointments.find(a => a.id === id);
 
-        if (appt) {
+        if (appt && laCompleteYo) {
           try {
             await descontarSesionesDePaquete(appt);
           } catch (pkgErr) {

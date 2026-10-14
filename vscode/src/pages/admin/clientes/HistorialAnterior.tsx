@@ -109,12 +109,13 @@ function Formulario({ inicial, guardando, onGuardar, onCancelar }: FormularioPro
  * Historial anterior de la clienta, dentro de Clientas → Historial: lo que se le hizo antes de usar el sistema
  * (libreta, otro programa). Se agrega, se edita y se borra aquí mismo.
  */
-export default function HistorialAnterior({ clientId }: { clientId: string }) {
+/** `abrirNueva`: empieza con el formulario para anotar algo nuevo (desde "Anotar algo de antes" en la ficha). */
+export default function HistorialAnterior({ clientId, abrirNueva = false }: { clientId: string; abrirNueva?: boolean }) {
   const { porClienta, fetchHistorial, addEntrada, updateEntrada, deleteEntrada } = useClientHistoryStore();
   const services = useServiceStore((s) => s.services);
   const staff = useStaffStore((s) => s.staff);
   const [falloCarga, setFalloCarga] = useState(false);
-  const [editando, setEditando] = useState<string | null>(null);
+  const [editando, setEditando] = useState<string | null>(abrirNueva ? NUEVA : null);
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
