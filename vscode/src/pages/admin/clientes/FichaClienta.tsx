@@ -49,7 +49,7 @@ interface Props {
 /**
  * La ficha de la clienta: todo lo suyo en un solo lugar. Arriba quién es (con sus alergias a la vista) y lo que se hace
  * con ella: agendar, escribirle, llamarla. Debajo, sus citas por venir, sus paquetes (lo que le queda y lo que falta
- * pagar), sus notas y su historial completo: lo del sistema y lo anotado de antes.
+ * pagar), sus notas y su historial completo: lo del sistema y el historial previo.
  */
 export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
   const navigate = useNavigate();
@@ -135,7 +135,7 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
           <div className="history-timeline__details">
             <div className="history-timeline__title-row">
               <h5 className="history-timeline__service">{e.servicio}</h5>
-              <span className="timeline-status ficha__de-antes">De antes</span>
+              <span className="timeline-status ficha__de-antes">Previo</span>
             </div>
             {e.especialista && <p className="history-timeline__meta"><span>con <strong>{e.especialista}</strong></span></p>}
             {e.notas && <p className="history-timeline__notes">{e.notas}</p>}
@@ -310,7 +310,7 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
           <div className="ficha__tit-fila">
             <h3 id="ficha-historial" className="ficha__tit"><History size={15} aria-hidden="true" /> Historial</h3>
             <div className="ficha__pestanas" role="tablist" aria-label="Qué mostrar del historial">
-              {([['todo', 'Todo'], ['sistema', 'En el sistema'], ['antes', 'De antes']] as const).map(([id, nombre]) => (
+              {([['todo', 'Todo'], ['sistema', 'En el sistema'], ['antes', 'Previo']] as const).map(([id, nombre]) => (
                 <button key={id} type="button" role="tab" aria-selected={pestana === id} className={pestana === id ? 'is-on' : ''}
                   onClick={() => { setPestana(id); setAnotarDeAntes(false); }}>
                   {nombre}
@@ -334,7 +334,7 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
                 </button>
               )}
               <button type="button" className="ficha__enlace" onClick={() => { setPestana('antes'); setAnotarDeAntes(true); }}>
-                <Plus size={16} aria-hidden="true" /> Anotar algo de antes (de la libreta u otro sistema)
+                <Plus size={16} aria-hidden="true" /> Agregar historial previo
               </button>
             </>
           )}
