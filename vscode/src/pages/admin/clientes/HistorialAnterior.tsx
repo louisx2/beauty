@@ -106,10 +106,10 @@ function Formulario({ inicial, guardando, onGuardar, onCancelar }: FormularioPro
 }
 
 /**
- * Historial anterior de la clienta, dentro de Clientas → Historial: lo que se le hizo antes de usar el sistema
+ * Historial previo de la clienta, dentro de Clientas → Historial: lo que se le hizo antes de usar el sistema
  * (libreta, otro programa). Se agrega, se edita y se borra aquí mismo.
  */
-/** `abrirNueva`: empieza con el formulario para anotar algo nuevo (desde "Anotar algo de antes" en la ficha). */
+/** `abrirNueva`: empieza con el formulario para agregar algo nuevo (desde "Agregar historial previo" en la ficha). */
 export default function HistorialAnterior({ clientId, abrirNueva = false }: { clientId: string; abrirNueva?: boolean }) {
   const { porClienta, fetchHistorial, addEntrada, updateEntrada, deleteEntrada } = useClientHistoryStore();
   const services = useServiceStore((s) => s.services);
@@ -122,7 +122,7 @@ export default function HistorialAnterior({ clientId, abrirNueva = false }: { cl
     fetchHistorial(clientId).catch((err) => {
       console.error(err);
       setFalloCarga(true);
-      toast.error('No se pudo cargar el historial anterior');
+      toast.error('No se pudo cargar el historial previo');
     });
   }, [clientId, fetchHistorial]);
 
@@ -148,7 +148,7 @@ export default function HistorialAnterior({ clientId, abrirNueva = false }: { cl
         toast.success('Historial actualizado');
       } else {
         await addEntrada(clientId, cambios);
-        toast.success('Agregado al historial anterior');
+        toast.success('Agregado al historial previo');
       }
       setEditando(null);
     } catch (err) {
@@ -160,7 +160,7 @@ export default function HistorialAnterior({ clientId, abrirNueva = false }: { cl
   };
 
   const borrar = async (entrada: EntradaHistorial) => {
-    if (!window.confirm(`¿Borrar "${entrada.servicio}" (${fechaVisible(entrada.fecha)}) del historial anterior?`)) return;
+    if (!window.confirm(`¿Borrar "${entrada.servicio}" (${fechaVisible(entrada.fecha)}) del historial previo?`)) return;
     try {
       await deleteEntrada(entrada);
       toast.success('Borrado del historial');
@@ -173,7 +173,7 @@ export default function HistorialAnterior({ clientId, abrirNueva = false }: { cl
   return (
     <div className="client-history-modal__section-block hist-ant">
       <h4 className="section-title">
-        <History size={14} /> Historial anterior
+        <History size={14} /> Historial previo
         {editando !== NUEVA && (
           <button type="button" className="hist-ant__agregar" onClick={() => setEditando(NUEVA)}>
             <Plus size={14} /> Agregar
@@ -198,11 +198,11 @@ export default function HistorialAnterior({ clientId, abrirNueva = false }: { cl
       )}
 
       {entradas === undefined ? (
-        <p className="empty-text">{falloCarga ? 'No se pudo cargar el historial anterior.' : 'Cargando…'}</p>
+        <p className="empty-text">{falloCarga ? 'No se pudo cargar el historial previo.' : 'Cargando…'}</p>
       ) : lista.length === 0 ? (
         editando !== NUEVA && (
           <p className="empty-text">
-            Todavía no tiene historial anterior. Toca "Agregar" para anotar lo que se le hizo antes de usar el sistema.
+            Todavía no tiene historial previo. Toca "Agregar" para registrar lo que se le hizo antes de usar el sistema.
           </p>
         )
       ) : (
