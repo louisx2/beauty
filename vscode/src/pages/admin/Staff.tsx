@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
-import { enlaceLlamar, enlaceWhatsApp } from '../../lib/enlaces';
+import { destinoWhatsApp, enlaceLlamar, enlaceWhatsApp } from '../../lib/enlaces';
 import { useAhora } from '../../lib/useAhora';
 import { textoONull } from '../../site/landing/equipo';
 import { sinTildes } from '../../site/reservar/servicios';
@@ -530,7 +530,7 @@ export default function Staff() {
                   {m.phone && (
                     <>
                       <a className="neg__icono" href={enlaceLlamar(m.phone)} aria-label={`Llamar a ${m.name}`}><Phone size={18} /></a>
-                      <a className="neg__icono" href={enlaceWhatsApp(m.phone, `Hola ${primerNombre(m.name)}`)} target="_blank" rel="noopener noreferrer"
+                      <a className="neg__icono" href={enlaceWhatsApp(m.phone, `Hola ${primerNombre(m.name)}`)} target={destinoWhatsApp()} rel="noopener noreferrer"
                         aria-label={`Escribirle a ${m.name} por WhatsApp`}><MessageCircle size={18} /></a>
                     </>
                   )}

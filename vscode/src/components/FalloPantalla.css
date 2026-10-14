@@ -1,0 +1,43 @@
+/* El aviso cuando una pantalla falla (en lugar de quedar en blanco). */
+.fallo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 520px;
+  margin: 48px auto;
+  padding: 28px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  font-family: 'Outfit', sans-serif;
+  color: #fff;
+  text-align: center;
+}
+
+.fallo svg { color: #fbbf24; }
+.fallo h1 { margin: 0; font-family: var(--panel-titulo); font-size: 1.5rem; font-weight: 500; }
+.fallo p { margin: 0; font-size: 0.92rem; line-height: 1.45; color: rgba(255, 255, 255, 0.75); }
+.fallo small { font-size: 0.75rem; color: rgba(255, 255, 255, 0.4); word-break: break-word; }
+
+.fallo button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  margin-top: 6px;
+  padding: 0 20px;
+  border: 1px solid var(--cocoa);
+  border-radius: 12px;
+  background: var(--cocoa);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+[data-theme="light"] .fallo { border-color: rgba(74, 52, 42, 0.12); background: #fff; color: var(--espresso); }
+[data-theme="light"] .fallo svg { color: #A15C00; }
+[data-theme="light"] .fallo p { color: var(--muted); }
+[data-theme="light"] .fallo small { color: rgba(74, 52, 42, 0.45); }

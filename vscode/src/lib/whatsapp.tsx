@@ -2,6 +2,7 @@ import toast from 'react-hot-toast';
 import { MessageCircle } from 'lucide-react';
 import type { Appointment, AppointmentStatus } from '../store/appointmentStore';
 import { format12h } from './timeFormat';
+import { destinoWhatsApp, enlaceWhatsApp } from './enlaces';
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00');
@@ -19,20 +20,20 @@ export function notifyStatusChange(appt: Appointment, status: AppointmentStatus)
   switch (status) {
     case 'confirmed':
       title = 'Cita confirmada';
-      msg = `Hola ${appt.clientName}\n\nTu cita ha sido *confirmada*.\n\nFecha: ${dateLabel}\nHora: ${format12h(appt.time)}\nServicio: ${appt.service}\nEspecialista: ${appt.employee}\n\nTe esperamos en Anadsll Beauty Esthetic. Gracias!`;
+      msg = `Hola ${appt.clientName}\n\nTu cita ha sido *confirmada*.\n\nFecha: ${dateLabel}\nHora: ${format12h(appt.time)}\nServicio: ${appt.service}\nEspecialista: ${appt.employee}\n\nTe esperamos en Anadsll Beauty Esthetic. ¡Gracias!`;
       break;
     case 'cancelled':
       title = 'Cita cancelada';
-      msg = `Hola ${appt.clientName},\n\nTe informamos que tu cita del ${dateLabel} a las ${format12h(appt.time)} ha sido *cancelada*.\n\nSi deseas reprogramar, por favor contactanos. Gracias!`;
+      msg = `Hola ${appt.clientName},\n\nTe informamos que tu cita del ${dateLabel} a las ${format12h(appt.time)} ha sido *cancelada*.\n\nSi deseas reprogramarla, por favor contáctanos. ¡Gracias!`;
       color = '#ef4444'; // red
       break;
     case 'completed':
       title = 'Cita completada';
-      msg = `Hola ${appt.clientName}\n\nGracias por visitarnos hoy!\nEsperamos que hayas disfrutado tu servicio de ${appt.service}.\n\nNos encantaria volver a verte pronto.`;
+      msg = `Hola ${appt.clientName}\n\n¡Gracias por visitarnos hoy!\nEsperamos que hayas disfrutado tu servicio de ${appt.service}.\n\nNos encantaría volver a verte pronto.`;
       break;
     case 'no_show':
-      title = 'No asistio';
-      msg = `Hola ${appt.clientName},\n\nTe extranamos hoy en tu cita de las ${format12h(appt.time)}.\n\nPor favor contactanos para reprogramar.`;
+      title = 'No asistió';
+      msg = `Hola ${appt.clientName},\n\nTe extrañamos hoy en tu cita de las ${format12h(appt.time)}.\n\nPor favor contáctanos para reprogramarla.`;
       color = '#f59e0b'; // amber
       break;
     default:
@@ -44,12 +45,12 @@ export function notifyStatusChange(appt: Appointment, status: AppointmentStatus)
 
 /** Al mover una cita: el mensaje con el nuevo día y la nueva hora, listo para mandarle. */
 export function notifyRescheduled(appt: Appointment) {
-  const msg = `Hola ${appt.clientName}\n\nTu cita se *movió* a:\n\nFecha: ${formatDate(appt.date)}\nHora: ${format12h(appt.time)}\nServicio: ${appt.service}\nEspecialista: ${appt.employee}\n\nTe esperamos en Anadsll Beauty Esthetic. Gracias!`;
+  const msg = `Hola ${appt.clientName}\n\nTu cita se *movió* a:\n\nFecha: ${formatDate(appt.date)}\nHora: ${format12h(appt.time)}\nServicio: ${appt.service}\nEspecialista: ${appt.employee}\n\nTe esperamos en Anadsll Beauty Esthetic. ¡Gracias!`;
   avisoWhatsApp(appt.clientPhone.replace(/[^0-9]/g, ''), 'Cita movida', msg, '#25D366');
 }
 
 function avisoWhatsApp(phone: string, title: string, msg: string, color: string) {
-  const waUrl = `https://wa.me/1${phone}?text=${encodeURIComponent(msg)}`;
+  const waUrl = enlaceWhatsApp(phone, msg);
 
   toast(
     (t) => (
@@ -59,7 +60,7 @@ function avisoWhatsApp(phone: string, title: string, msg: string, color: string)
         </span>
         <a
           href={waUrl}
-          target="_blank"
+          target={destinoWhatsApp()}
           rel="noopener noreferrer"
           onClick={() => toast.dismiss(t.id)}
           style={{
@@ -69,7 +70,7 @@ function avisoWhatsApp(phone: string, title: string, msg: string, color: string)
             textDecoration: 'none',
           }}
         >
-          <MessageCircle size={14} /> Enviar notificacion por WhatsApp
+          <MessageCircle size={14} /> Avisarle por WhatsApp
         </a>
       </div>
     ),

@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSettingsStore, type BankAccount, type Settings as Ajustes } from '../../store/settingsStore';
 import { supabase } from '../../lib/supabase';
 import { paquetesSinSello, type EstiloPaquetes } from '../../site/landing/paquetes';
-import { Save, AlertCircle, CheckCircle2, Building2, CreditCard, DollarSign, User as UserIcon, Phone, Plus, Trash2, LayoutDashboard, Palette, ExternalLink } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle2, Building2, CreditCard, DollarSign, User as UserIcon, Phone, Plus, Trash2, LayoutDashboard, Palette, ExternalLink, MessageCircle } from 'lucide-react';
+import { modoWhatsApp } from '../../lib/enlaces';
+import ElegirWhatsApp from '../../components/ElegirWhatsApp';
 import './Settings.css';
 
 // estilos de la sección de paquetes de la página principal (spec §6.4)
@@ -44,6 +46,7 @@ function formDesde(a: Ajustes) {
 export default function Settings() {
   const { settings, fetchSettings, updateSettings, cargado, loading: cargando } = useSettingsStore();
   const [loading, setLoading] = useState(false);
+  const [modoWa, setModoWa] = useState(modoWhatsApp);
   const [successMsg, setSuccessMsg] = useState('');
   const [intentado, setIntentado] = useState(false); // ya terminó el primer intento de cargar la configuración
 
@@ -373,8 +376,15 @@ export default function Settings() {
       {/* ── Preferencias del panel ── */}
       <section id="ajustes-preferencias" className="settings-seccion" aria-labelledby="ajustes-preferencias-t">
         <h2 id="ajustes-preferencias-t" className="settings-seccion__titulo">Preferencias</h2>
-        <p className="settings-seccion__desc">Qué se ve al entrar al panel.</p>
+        <p className="settings-seccion__desc">Qué se ve al entrar al panel y cómo se abre WhatsApp en este equipo.</p>
         <div className="settings-grid">
+          <div className="settings-card">
+            <div className="settings-card__header">
+              <h3 className="settings-card__title"><MessageCircle size={20} /> WhatsApp</h3>
+              <p className="settings-card__desc">Se guarda en este equipo (no hace falta «Guardar cambios»): cada computadora o tableta elige lo suyo.</p>
+            </div>
+            <ElegirWhatsApp modo={modoWa} onCambio={setModoWa} />
+          </div>
           <div className="settings-card">
             <div className="settings-card__header">
               <h3 className="settings-card__title"><LayoutDashboard size={20} /> Pantalla de inicio</h3>

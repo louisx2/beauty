@@ -29,6 +29,7 @@ import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import Agendar from './admin/agendar/Agendar';
 import AtenderAhora from './admin/atender/AtenderAhora';
 import AvisoSuscripcion from '../components/AvisoSuscripcion';
+import FalloPantalla from '../components/FalloPantalla';
 import { useServiceStore } from '../store/serviceStore';
 import { useStaffStore } from '../store/staffStore';
 import toast, { Toaster, resolveValue } from 'react-hot-toast';
@@ -458,7 +459,10 @@ export default function AdminLayout() {
         {/* Page Content */}
         <div className="admin__content">
           {user?.role === 'admin' && <AvisoSuscripcion />}
-          <Outlet />
+          {/* si una pantalla falla, se ve un aviso y no todo en blanco; al cambiar de ruta se intenta de nuevo */}
+          <FalloPantalla ruta={location.pathname}>
+            <Outlet />
+          </FalloPantalla>
         </div>
       </div>
       {/* Barra inferior (solo en el teléfono): lo diario a un toque y "Más" para el menú completo */}

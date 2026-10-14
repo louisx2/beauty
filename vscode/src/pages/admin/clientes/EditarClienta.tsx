@@ -1,9 +1,13 @@
 import { useState } from 'react';
-import { AlertCircle, AlertTriangle, FileText, Heart, Mail, Phone, Shield, User, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Cake, FileText, Heart, Mail, Phone, Shield, User, X } from 'lucide-react';
 import { useClientStore, type Client } from '../../../store/clientStore';
 import { capitalizarNombre } from '../../../lib/nombres';
+import { fechaLocal } from '../../../lib/fechas';
+import { MESES } from '../../../site/reservar/calendario';
 import { formatoTelefono, telefonoClave } from '../atender/atender';
+import { fechaDeCumple, partesDeCumple } from './cumples';
 import '../atender/AtenderAhora.css';
+import './EditarClienta.css';
 
 const TIPOS_DE_PIEL = ['Normal', 'Seca', 'Grasa', 'Mixta', 'Sensible'];
 
@@ -15,12 +19,17 @@ function formatoCedula(raw: string): string {
   return `${d.slice(0, 3)}-${d.slice(3, 10)}-${d.slice(10)}`;
 }
 
-interface Form { name: string; phone: string; cedula: string; email: string; skin_type: string; allergies: string; notes: string }
+interface Form {
+  name: string; phone: string; cedula: string; email: string; skin_type: string; allergies: string; notes: string;
+  /** cumpleaños: día, mes y año (opcional) */
+  cdia: string; cmes: string; canio: string;
+}
 type Errores = Partial<Record<keyof Form, string>>;
 
 const deClienta = (c: Client | null): Form => ({
   name: c?.name ?? '', phone: c?.phone ?? '', cedula: c?.cedula ?? '', email: c?.email ?? '',
   skin_type: c?.skin_type ?? '', allergies: c?.allergies ?? '', notes: c?.notes ?? '',
+  ...(({ dia, mes, anio }) => ({ cdia: dia, cmes: mes, canio: anio }))(partesDeCumple(c?.birthday)),
 });
 
 function validar(f: Form): Errores {
@@ -29,6 +38,8 @@ function validar(f: Form): Errores {
   if (f.phone.replace(/\D/g, '').length !== 10) e.phone = 'Teléfono de 10 dígitos';
   if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = 'Correo no válido';
   if (f.cedula && f.cedula.replace(/\D/g, '').length !== 11) e.cedula = 'Cédula de 11 dígitos';
+  const cumple = fechaDeCumple({ dia: f.cdia, mes: f.cmes, anio: f.canio }, fechaLocal());
+  if (cumple.error) e.cdia = cumple.error;
   return e;
 }
 
@@ -56,6 +67,11 @@ export default function EditarClienta({ clienta, onCerrar, onGuardada, onVerOtra
     setForm({ ...form, [campo]: valor });
     setErrores({ ...errores, [campo]: undefined });
   };
+  // el error del cumpleaños (día, mes o año) se muestra en uno solo
+  const cambiarCumple = (campo: 'cdia' | 'cmes' | 'canio', valor: string) => {
+    setForm({ ...form, [campo]: valor });
+    setErrores({ ...errores, cdia: undefined });
+  };
 
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +88,7 @@ export default function EditarClienta({ clienta, onCerrar, onGuardada, onVerOtra
         skin_type: form.skin_type || null,
         allergies: form.allergies.trim() || null,
         notes: form.notes.trim() || null,
+        birthday: fechaDeCumple({ dia: form.cdia, mes: form.cmes, anio: form.canio }, fechaLocal()).fecha,
       };
       if (clienta) {
         if (await updateClient(clienta.id, datos)) onGuardada({ ...clienta, ...datos });
@@ -135,6 +152,22 @@ export default function EditarClienta({ clienta, onCerrar, onGuardada, onVerOtra
               {errores.cedula && <span className="field-error"><AlertCircle size={12} /> {errores.cedula}</span>}
             </div>
           </div>
+          <fieldset className="modal__field edc__cumple">
+            <legend><Cake size={14} aria-hidden="true" /> Cumpleaños <span>(opcional; el año, si lo quiere dar)</span></legend>
+            <div className="edc__cumple-campos">
+              <select aria-label="Día" value={form.cdia} className={errores.cdia ? 'input--error' : ''} onChange={(e) => cambiarCumple('cdia', e.target.value)}>
+                <option value="">Día</option>
+                {Array.from({ length: 31 }, (_, i) => <option key={i} value={String(i + 1)}>{i + 1}</option>)}
+              </select>
+              <select aria-label="Mes" value={form.cmes} className={errores.cdia ? 'input--error' : ''} onChange={(e) => cambiarCumple('cmes', e.target.value)}>
+                <option value="">Mes</option>
+                {MESES.map((m, i) => <option key={m} value={String(i + 1)}>{m[0].toUpperCase() + m.slice(1)}</option>)}
+              </select>
+              <input aria-label="Año (opcional)" inputMode="numeric" maxLength={4} placeholder="Año" value={form.canio}
+                className={errores.cdia ? 'input--error' : ''} onChange={(e) => cambiarCumple('canio', e.target.value.replace(/\D/g, ''))} />
+            </div>
+            {errores.cdia && <span className="field-error"><AlertCircle size={12} /> {errores.cdia}</span>}
+          </fieldset>
           <div className="modal__field">
             <label htmlFor="edc-correo"><Mail size={14} aria-hidden="true" /> Correo</label>
             <input id="edc-correo" type="email" inputMode="email" placeholder="correo@ejemplo.com" value={form.email}

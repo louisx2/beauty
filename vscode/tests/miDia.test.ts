@@ -97,7 +97,7 @@ test('recordatorios: las de mañana en orden de hora; la siguiente, primero las 
   assert.equal(siguienteParaAvisar(lista, { [lista[1].id]: { dia: HOY, hora: '15:00' } })?.time, '09:00');
   assert.equal(siguienteParaAvisar(lista, { [lista[0].id]: { dia: HOY, hora: '15:00' }, [lista[1].id]: { dia: HOY, hora: '15:00' } }), null);
   const m = mensajeRecordatorio(lista[1]);
-  assert.match(m, /^Hola Yokasta 👋 Te recordamos tu cita de mañana viernes 16 de octubre a las 11:00 AM: Diseño de cejas con Dra\. Melissa\./);
+  assert.match(m, /^Hola Yokasta, te recordamos tu cita de mañana viernes 16 de octubre a las 11:00 AM: Diseño de cejas con Dra\. Melissa\./);
   assert.match(m, /¿Nos confirmas que vienes\?/);
   assert.match(mensajeRecordatorio(lista[0]), /con Ana\. ¡Te esperamos!/);
   const marcas = marcasDeHoy({ [lista[0].id]: { dia: HOY, hora: '15:40' }, viejo: { dia: '2026-10-10', hora: '09:00' } }, HOY);

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import ClientAutocomplete from '../../components/ClientAutocomplete';
 import './Billing.css';
+import { abrirWhatsApp } from '../../lib/enlaces';
 
 function fmtPrice(p: number) { return `RD$ ${p.toLocaleString('es-DO')}`; }
 
@@ -145,8 +146,8 @@ export default function Billing() {
     const client = clients.find((c) => c.id === inv.clientId);
     const phone = client?.phone.replace(/[^0-9]/g, '') || '';
     const itemsText = inv.items.map((i) => `  • ${i.description} — ${fmtPrice(i.total)}`).join('\n');
-    const msg = `📄 *Factura*\nNCF: ${inv.ncf}\n\n${itemsText}\n\nSubtotal: ${fmtPrice(inv.subtotal)}\nITBIS 18%: ${fmtPrice(inv.totalItbis)}\n*Total: ${fmtPrice(inv.total)}*\n\n¡Gracias por su preferencia!\nAnadsll Beauty Esthetic`;
-    window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    const msg = `*Factura*\nNCF: ${inv.ncf}\n\n${itemsText}\n\nSubtotal: ${fmtPrice(inv.subtotal)}\nITBIS 18%: ${fmtPrice(inv.totalItbis)}\n*Total: ${fmtPrice(inv.total)}*\n\n¡Gracias por su preferencia!\nAnadsll Beauty Esthetic`;
+    abrirWhatsApp(phone, msg);
   };
 
   return (

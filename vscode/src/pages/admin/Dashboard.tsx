@@ -18,6 +18,7 @@ import { accionPrincipal } from './citas/acciones';
 import { useAccionesCita } from './citas/useAccionesCita';
 import './Dashboard.css';
 import { fechaLocal } from '../../lib/fechas';
+import { abrirWhatsApp } from '../../lib/enlaces';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -78,10 +79,7 @@ export default function Dashboard() {
   }, [clientPackages]);
 
   // Actions formatting
-  const handleWhatsApp = (phoneRaw: string, message: string) => {
-    const phone = phoneRaw.replace(/[^0-9]/g, '');
-    window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(message)}`, '_blank');
-  };
+  const handleWhatsApp = (phoneRaw: string, message: string) => abrirWhatsApp(phoneRaw, message);
 
   return (
     <div className="dashboard">

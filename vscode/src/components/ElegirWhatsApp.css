@@ -1,0 +1,49 @@
+/* Cómo se abre WhatsApp en este equipo (Recordatorios y Ajustes). */
+.ewa {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: 'Outfit', sans-serif;
+}
+
+.ewa__tit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.ewa__opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ewa__opciones button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ewa__opciones button.is-on { border-color: var(--cocoa); background: var(--cocoa); }
+.ewa__opciones button:focus-visible { outline: 2px solid var(--camel); outline-offset: 2px; }
+
+.ewa__nota {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="light"] .ewa__tit { color: var(--espresso); }
+[data-theme="light"] .ewa__opciones button { border-color: rgba(74, 52, 42, 0.16); background: #fff; color: var(--espresso); }
+[data-theme="light"] .ewa__opciones button.is-on { border-color: var(--cocoa); background: var(--cocoa); color: #fff; }
+[data-theme="light"] .ewa__nota { color: var(--muted); }

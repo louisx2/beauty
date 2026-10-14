@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
+import { soloFecha } from '../lib/fechas';
 
 export type ServiceCategory = 'laser' | 'facial' | 'corporal' | 'belleza' | 'medicina';
 
@@ -78,7 +79,8 @@ function mapClientPkg(r: any): ClientPackage {
     serviceName: r.session_packages?.services?.name || '',
     totalSessions: r.total_sessions,
     usedSessions: r.used_sessions,
-    purchasedAt: r.purchased_at,
+    // en la base es fecha con hora: aquí solo el día (en la hora del salón)
+    purchasedAt: soloFecha(r.purchased_at),
     notes: r.notes || '',
     totalPrice: Number(r.total_price || 0),
     amountPaid: Number(r.amount_paid || 0),

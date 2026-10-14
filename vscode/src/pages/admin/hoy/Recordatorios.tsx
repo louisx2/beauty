@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Check, CheckCircle2, MessageCircle, X } from 'lucide-react';
 import { useAppointmentStore, type Appointment } from '../../../store/appointmentStore';
 import { useAgendarStore } from '../../../store/agendarStore';
 import { format12h } from '../../../lib/timeFormat';
 import { ETIQUETA_ESTADO } from '../../../lib/estadosCita';
-import { enlaceWhatsApp } from '../../../lib/enlaces';
+import { destinoWhatsApp, enlaceWhatsApp, modoWhatsApp } from '../../../lib/enlaces';
+import ElegirWhatsApp from '../../../components/ElegirWhatsApp';
 import { fechaTitulo } from '../../../site/reservar/resumen';
 import MenuAcciones from '../../../components/MenuAcciones';
 import { primerNombre } from '../citas/proximaCita';
@@ -32,6 +34,7 @@ export default function Recordatorios({ manana, citas, marcas, onMarcar, onCerra
     reprogramar: (c) => abrirAgendar({ modo: 'reprogramar', cita: c }),
     guardarClienta: () => {},
   });
+  const [modo, setModo] = useState(modoWhatsApp);
   const r = resumenRecordatorios(citas, marcas);
   const siguiente = siguienteParaAvisar(citas, marcas);
 
@@ -40,7 +43,7 @@ export default function Recordatorios({ manana, citas, marcas, onMarcar, onCerra
   };
 
   const recordar = (c: Appointment, texto: string, clase: string) => (
-    <a className={clase} href={enlaceWhatsApp(c.clientPhone, mensajeRecordatorio(c))} target="_blank" rel="noopener noreferrer"
+    <a className={clase} href={enlaceWhatsApp(c.clientPhone, mensajeRecordatorio(c), modo)} target={destinoWhatsApp(modo)} rel="noopener noreferrer"
       onClick={() => onMarcar(c.id)} aria-label={`${texto} a ${c.clientName} por WhatsApp`}>
       <MessageCircle size={17} aria-hidden="true" /> {texto}
     </a>
@@ -108,6 +111,7 @@ export default function Recordatorios({ manana, citas, marcas, onMarcar, onCerra
                 })}
               </ul>
               <p className="recor__nota">Se anota en este equipo a quién ya se le escribió hoy.</p>
+              <ElegirWhatsApp modo={modo} onCambio={setModo} />
             </>
           )}
         </div>

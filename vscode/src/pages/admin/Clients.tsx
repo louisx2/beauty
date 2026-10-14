@@ -10,7 +10,7 @@ import EditarClienta from './clientes/EditarClienta';
 import { iniciales, listaDeClientas, resumenesPorClienta, type Filtro, type Orden } from './clientes/ficha';
 import './Clients.css';
 
-const FILTROS: [Filtro, string][] = [['todas', 'Todas'], ['cita', 'Con cita'], ['paquete', 'Con paquete'], ['alergia', 'Con alergias']];
+const FILTROS: [Filtro, string][] = [['todas', 'Todas'], ['cita', 'Con cita'], ['paquete', 'Con paquete'], ['alergia', 'Con alergias'], ['cumple', 'Cumplen este mes']];
 const diaCorto = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('es-DO', { day: 'numeric', month: 'short' });
 
 /**
@@ -41,8 +41,8 @@ export default function Clients() {
     [clientPackages],
   );
   const lista = useMemo(
-    () => listaDeClientas(clients, texto, filtro, orden, resumenes, conPaquete),
-    [clients, texto, filtro, orden, resumenes, conPaquete],
+    () => listaDeClientas(clients, texto, filtro, orden, resumenes, conPaquete, hoy),
+    [clients, texto, filtro, orden, resumenes, conPaquete, hoy],
   );
   const elegida = id ? clients.find((c) => c.id === id) : undefined;
 

@@ -7,6 +7,7 @@ import type { ClientPackage } from '../../../store/serviceStore';
 import type { EntradaHistorial } from '../../../lib/historialAnterior';
 import { sinTildes } from '../../../site/reservar/servicios.ts';
 import { telefonoClave } from '../atender/atender.ts';
+import { cumpleDe } from './cumples.ts';
 
 const POR_VENIR = new Set<AppointmentStatus>(['pending', 'confirmed']);
 const cuando = (c: Appointment) => `${c.date} ${c.time}`;
@@ -60,7 +61,7 @@ export function proximasCitas(citas: Appointment[], hoy: string): Appointment[] 
   return citas.filter((c) => POR_VENIR.has(c.status) && c.date >= hoy).sort((a, b) => cuando(a).localeCompare(cuando(b)));
 }
 
-export type Filtro = 'todas' | 'paquete' | 'cita' | 'alergia';
+export type Filtro = 'todas' | 'paquete' | 'cita' | 'alergia' | 'cumple';
 export type Orden = 'recientes' | 'nombre' | 'visita';
 
 /** ¿Coincide con lo escrito? Todas las palabras en el nombre (sin tildes), o el teléfono o la cédula con 3 dígitos o
@@ -75,21 +76,25 @@ export function coincide(c: Client, texto: string): boolean {
   return !!c.email && c.email.toLowerCase().includes(texto.trim().toLowerCase());
 }
 
-/** La lista como se pidió: lo que coincide con lo escrito y el filtro, en el orden elegido. */
+/** La lista como se pidió: lo que coincide con lo escrito y el filtro, en el orden elegido. Las que cumplen años este
+ *  mes (el de `hoy`) van por el día de su cumpleaños. */
 export function listaDeClientas(
   clientas: Client[], texto: string, filtro: Filtro, orden: Orden,
-  resumenes: Map<string, ResumenClienta>, conPaquete: Set<string>,
+  resumenes: Map<string, ResumenClienta>, conPaquete: Set<string>, hoy = '',
 ): Client[] {
+  const mes = Number(hoy.slice(5, 7));
   const pasa = (c: Client) => {
     switch (filtro) {
       case 'paquete': return conPaquete.has(c.id);
       case 'cita': return !!resumenes.get(c.id)?.proxima;
       case 'alergia': return !!c.allergies?.trim();
+      case 'cumple': return cumpleDe(c.birthday)?.mes === mes;
       default: return true;
     }
   };
   const ultima = (c: Client) => resumenes.get(c.id)?.ultima;
   return clientas.filter((c) => pasa(c) && coincide(c, texto)).sort((a, b) => {
+    if (filtro === 'cumple') return (cumpleDe(a.birthday)?.dia ?? 0) - (cumpleDe(b.birthday)?.dia ?? 0) || a.name.localeCompare(b.name, 'es');
     if (orden === 'nombre') return a.name.localeCompare(b.name, 'es');
     if (orden === 'visita') {
       const ua = ultima(a);
