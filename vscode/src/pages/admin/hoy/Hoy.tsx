@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, MessageCircle, Plus } from 'lucide-react';
+import { Cake, Check, ChevronRight, MessageCircle, Plus } from 'lucide-react';
 import { useAgendarStore } from '../../../store/agendarStore';
 import { useAppointmentStore, type Appointment } from '../../../store/appointmentStore';
 import { useBlockStore } from '../../../store/blockStore';
+import { useClientStore } from '../../../store/clientStore';
 import { useStaffStore } from '../../../store/staffStore';
 import { format12h } from '../../../lib/timeFormat';
 import { ETIQUETA_ESTADO } from '../../../lib/estadosCita';
@@ -14,6 +15,8 @@ import SaveClientModal from '../../../components/SaveClientModal';
 import { destinoWhatsApp, enlaceWhatsApp } from '../../../lib/enlaces';
 import { useAhora } from '../../../lib/useAhora';
 import HojaCita from '../citas/HojaCita';
+import { fechaCorta } from '../agenda/reglas';
+import { cumpleanosProximos, mensajeCumple } from '../clientes/cumples';
 import Recordatorios from './Recordatorios';
 import { citasParaRecordar, guardarMarcas, leerMarcas, marcasDeHoy, resumenRecordatorios, type Marcas } from './avisos';
 import { accionPrincipal } from '../citas/acciones';
@@ -23,6 +26,9 @@ import {
   type BloqueCita, type Columna, type Tramo,
 } from './dia';
 import './Hoy.css';
+
+/** Dónde se anota, en este equipo, a quién ya se felicitó hoy por su cumpleaños. */
+const FELICITADAS = 'anadsll-cumples';
 
 /** Alto de una hora en la agenda. */
 const HORA = 64;
@@ -48,13 +54,15 @@ export default function Hoy() {
   const abrirAgendar = useAgendarStore((s) => s.abrir);
   const { staff } = useStaffStore();
   const { blocks, fetchBlocks } = useBlockStore();
+  const { clients, fetchClients } = useClientStore();
   const ahora = useAhora();
   const [abierta, setAbierta] = useState<string | null>(null);
   const [guardandoClienta, setGuardandoClienta] = useState<Appointment | null>(null);
 
   useEffect(() => {
     fetchBlocks().catch((e) => console.error('[hoy] bloqueos:', e));
-  }, [fetchBlocks]);
+    fetchClients(); // para los cumpleaños
+  }, [fetchBlocks, fetchClients]);
 
   const hoy = ahora.hoy;
   const manana = sumarDias(hoy, 1);
@@ -73,6 +81,15 @@ export default function Hoy() {
     const nuevas = { ...marcas, [id]: { dia: hoy, hora: aHora(ahora.minutos) } };
     setMarcas(nuevas);
     guardarMarcas(nuevas);
+  };
+  // quién cumple años hoy y esta semana; a quién ya se felicitó hoy (en este equipo)
+  const cumples = useMemo(() => cumpleanosProximos(clients, hoy), [clients, hoy]);
+  const [todasFelicitadas, setFelicitadas] = useState<Marcas>(() => leerMarcas(FELICITADAS));
+  const felicitadas = marcasDeHoy(todasFelicitadas, hoy);
+  const felicitar = (id: string) => {
+    const nuevas = { ...felicitadas, [id]: { dia: hoy, hora: aHora(ahora.minutos) } };
+    setFelicitadas(nuevas);
+    guardarMarcas(nuevas, FELICITADAS);
   };
   const totalHoy = resumenDe(appointments, hoy).citas;
   const proxima = appointments
@@ -192,6 +209,37 @@ export default function Hoy() {
               <button type="button" className="hoy__enlace" onClick={() => navigate('/admin/citas')}>Y {confirmar.length - 5} más en la Agenda</button>
             )}
           </section>
+
+          {cumples.length > 0 && (
+            <section className="hoy__tarjeta hoy__cumples" aria-labelledby="hoy-cumples">
+              <h2 id="hoy-cumples" className="hoy__tarjeta-tit"><Cake size={15} aria-hidden="true" /> Cumpleaños</h2>
+              <ul className="hoy__cumples-lista">
+                {cumples.slice(0, 6).map((x) => {
+                  const felicitada = felicitadas[x.clienta.id];
+                  return (
+                    <li key={x.clienta.id} className={x.enDias === 0 ? 'is-hoy' : ''}>
+                      <button type="button" className="hoy__confirmar-nom" onClick={() => navigate(`/admin/clientes/${x.clienta.id}`)}>
+                        <b>{x.clienta.name}</b>
+                        <span>
+                          {x.enDias === 0 ? 'Hoy' : x.enDias === 1 ? 'Mañana' : fechaCorta(x.fecha)}
+                          {x.cumple && ` · cumple ${x.cumple}`}
+                          {felicitada && <> · <Check size={12} aria-hidden="true" /> felicitada</>}
+                        </span>
+                      </button>
+                      {x.enDias === 0 && x.clienta.phone && (
+                        <a className={`hoy__btn hoy__btn--chico ${felicitada ? '' : 'hoy__btn--principal'}`} href={enlaceWhatsApp(x.clienta.phone, mensajeCumple(x.clienta))}
+                          target={destinoWhatsApp()} rel="noopener noreferrer" onClick={() => felicitar(x.clienta.id)}
+                          aria-label={`Felicitar a ${x.clienta.name} por WhatsApp`}>
+                          <MessageCircle size={16} aria-hidden="true" /> {felicitada ? 'Otra vez' : 'Felicitar'}
+                        </a>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              {cumples.length > 6 && <p className="hoy__vacio">Y {cumples.length - 6} más esta semana.</p>}
+            </section>
+          )}
 
           <section className="hoy__tarjeta hoy__manana" aria-labelledby="hoy-manana">
             <h2 id="hoy-manana" className="hoy__tarjeta-tit">Mañana · {fechaTitulo(manana).toLowerCase()}</h2>

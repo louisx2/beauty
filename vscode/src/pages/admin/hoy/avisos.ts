@@ -54,10 +54,11 @@ export function resumenRecordatorios(citas: Appointment[], marcas: Marcas): { to
 const MARCAS = 'anadsll-recordatorios';
 
 /** A quién ya se le escribió, guardado en este equipo (si el navegador no deja, empieza vacío). */
-export function leerMarcas(): Marcas {
-  try { return JSON.parse(localStorage.getItem(MARCAS) ?? '{}'); } catch { return {}; }
+/** Lo anotado en este equipo (recordatorios; con otra `clave`, p. ej. las felicitaciones de cumpleaños). */
+export function leerMarcas(clave = MARCAS): Marcas {
+  try { return JSON.parse(localStorage.getItem(clave) ?? '{}'); } catch { return {}; }
 }
 
-export function guardarMarcas(m: Marcas) {
-  try { localStorage.setItem(MARCAS, JSON.stringify(m)); } catch { /* sin guardar */ }
+export function guardarMarcas(m: Marcas, clave = MARCAS) {
+  try { localStorage.setItem(clave, JSON.stringify(m)); } catch { /* sin guardar */ }
 }

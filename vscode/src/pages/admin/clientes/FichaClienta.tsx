@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  AlertTriangle, ArrowLeft, CalendarPlus, ChevronDown, Edit2, History, MessageCircle, Package, Phone, Plus, ShoppingBag, Trash2,
+  AlertTriangle, ArrowLeft, Cake, CalendarPlus, ChevronDown, Edit2, History, MessageCircle, Package, Phone, Plus, ShoppingBag, Trash2,
 } from 'lucide-react';
 import { useAgendarStore } from '../../../store/agendarStore';
 import { useAppointmentStore, type Appointment } from '../../../store/appointmentStore';
@@ -22,6 +22,7 @@ import {
   citasDeClienta, historialCompleto, iniciales, paquetesDeClienta, proximasCitas, resumenDeClienta, type Renglon,
 } from './ficha';
 import { destinoWhatsApp, enlaceWhatsApp } from '../../../lib/enlaces';
+import { cumpleanosProximos, mensajeCumple, textoCumple } from './cumples';
 import './Ficha.css';
 
 type Pestana = 'todo' | 'sistema' | 'antes';
@@ -88,6 +89,8 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
 
   const telefono = clienta.phone.replace(/\D/g, '').slice(-10);
   const whatsapp = enlaceWhatsApp(telefono, `Hola ${primerNombre(clienta.name)}, te escribimos de Anadsll Beauty Esthetic.`);
+  // si cumple años en estos días
+  const cumple = cumpleanosProximos([clienta], hoy)[0];
   const agendar = () => abrirAgendar({ modo: 'nueva', clienta: clientaDe(clienta) });
 
   const eliminar = async () => {
@@ -179,6 +182,16 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
                 ? <span className="ficha__chip ficha__chip--alerta"><AlertTriangle size={14} aria-hidden="true" /> Alergias: {clienta.allergies}</span>
                 : <span className="ficha__chip">Sin alergias anotadas</span>}
               {clienta.skin_type && <span className="ficha__chip">Piel {clienta.skin_type.toLowerCase()}</span>}
+              {cumple && (cumple.enDias === 0 && telefono.length === 10 ? (
+                <a className="ficha__chip ficha__chip--cumple" href={enlaceWhatsApp(telefono, mensajeCumple(clienta))} target={destinoWhatsApp()}
+                  rel="noopener noreferrer" aria-label={`Hoy cumple años: felicitar a ${clienta.name} por WhatsApp`}>
+                  <Cake size={14} aria-hidden="true" /> Hoy cumple años · Felicitar
+                </a>
+              ) : (
+                <span className="ficha__chip ficha__chip--cumple">
+                  <Cake size={14} aria-hidden="true" /> {cumple.enDias === 0 ? 'Hoy cumple años' : cumple.enDias === 1 ? 'Cumple años mañana' : `Cumple años el ${fechaCorta(cumple.fecha)}`}
+                </span>
+              ))}
             </div>
           </div>
         </div>
@@ -284,6 +297,7 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
             </div>
             <p className={clienta.notes ? 'ficha__notas' : 'ficha__vacio'}>{clienta.notes || 'Sin notas.'}</p>
             <dl className="ficha__datos">
+              <div><dt>Cumpleaños</dt><dd>{textoCumple(clienta.birthday, hoy) || 'Sin anotar'}</dd></div>
               {clienta.cedula && <div><dt>Cédula</dt><dd>{clienta.cedula}</dd></div>}
               {clienta.email && <div><dt>Correo</dt><dd>{clienta.email}</dd></div>}
               <div><dt>Llegó por</dt><dd>{clienta.source === 'web' ? 'La página web' : 'El salón'}</dd></div>

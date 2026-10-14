@@ -237,6 +237,7 @@ export type Database = {
       clients: {
         Row: {
           allergies: string | null
+          birthday: string | null
           cedula: string | null
           created_at: string
           email: string | null
@@ -249,6 +250,7 @@ export type Database = {
         }
         Insert: {
           allergies?: string | null
+          birthday?: string | null
           cedula?: string | null
           created_at?: string
           email?: string | null
@@ -261,6 +263,7 @@ export type Database = {
         }
         Update: {
           allergies?: string | null
+          birthday?: string | null
           cedula?: string | null
           created_at?: string
           email?: string | null

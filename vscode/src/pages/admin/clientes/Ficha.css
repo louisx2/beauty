@@ -167,6 +167,15 @@
   color: rgba(255, 255, 255, 0.75);
 }
 
+/* cumple años en estos días */
+.ficha__chip--cumple {
+  background: rgba(244, 114, 182, 0.16);
+  color: #fbcfe8;
+  text-decoration: none;
+}
+
+a.ficha__chip--cumple { min-height: 32px; }
+
 /* las alergias, que no se pasen por alto */
 .ficha__chip--alerta {
   background: rgba(251, 191, 36, 0.16);
@@ -544,6 +553,11 @@
 [data-theme="light"] .ficha__chip {
   background: #EFE9E2;
   color: var(--espresso);
+}
+
+[data-theme="light"] .ficha__chip--cumple {
+  background: #FBE7F1;
+  color: #9D174D;
 }
 
 [data-theme="light"] .ficha__chip--alerta {
