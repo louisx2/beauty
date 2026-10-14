@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, ChevronRight, Package, Plus, Search, Users } from 'lucide-react';
+import { AlertTriangle, ChevronRight, Package, Plus, Search, Users, X } from 'lucide-react';
 import { useClientStore, type Client } from '../../store/clientStore';
 import { useAppointmentStore } from '../../store/appointmentStore';
 import { useServiceStore } from '../../store/serviceStore';
@@ -11,6 +11,8 @@ import { iniciales, listaDeClientas, resumenesPorClienta, type Filtro, type Orde
 import './Clients.css';
 
 const FILTROS: [Filtro, string][] = [['todas', 'Todas'], ['cita', 'Con cita'], ['paquete', 'Con paquete'], ['alergia', 'Con alergias'], ['cumple', 'Cumplen este mes']];
+/** Los de las fichas incompletas: se llega a ellos desde Reportes y se quitan con la X. */
+const FALTAN: Partial<Record<Filtro, string>> = { 'sin-telefono': 'Sin teléfono', 'sin-cumple': 'Sin cumpleaños', 'sin-direccion': 'Sin dirección' };
 const diaCorto = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('es-DO', { day: 'numeric', month: 'short' });
 
 /**
@@ -27,7 +29,7 @@ export default function Clients() {
 
   // desde otra pantalla puede llegar con el nombre ya buscado
   const [texto, setTexto] = useState<string>(() => (location.state as { searchName?: string } | null)?.searchName ?? '');
-  const [filtro, setFiltro] = useState<Filtro>('todas');
+  const [filtro, setFiltro] = useState<Filtro>(() => (location.state as { filtro?: Filtro } | null)?.filtro ?? 'todas');
   const [orden, setOrden] = useState<Orden>('recientes');
   /** la clienta cuyos datos se editan; 'nueva' para crear una */
   const [editando, setEditando] = useState<Client | 'nueva' | null>(null);
@@ -67,6 +69,11 @@ export default function Clients() {
           </label>
 
           <div className="clientas__chips" role="group" aria-label="Filtrar">
+            {FALTAN[filtro] && (
+              <button type="button" aria-pressed="true" className="is-on clientas__chip-quitar" onClick={() => setFiltro('todas')} aria-label={`Quitar el filtro ${FALTAN[filtro]}`}>
+                {FALTAN[filtro]} <X size={14} aria-hidden="true" />
+              </button>
+            )}
             {FILTROS.map(([f, nombre]) => (
               <button key={f} type="button" aria-pressed={filtro === f} className={filtro === f ? 'is-on' : ''} onClick={() => setFiltro(f)}>
                 {nombre}
@@ -106,7 +113,7 @@ export default function Clients() {
                       <span className="clientas__ini" aria-hidden="true">{iniciales(c.name)}</span>
                       <span className="clientas__fila-txt">
                         <b>{c.name}</b>
-                        <span>{c.phone}</span>
+                        <span>{c.phone || 'Sin teléfono'}</span>
                         <small>
                           {linea}
                           {conPaquete.has(c.id) && <span className="clientas__marca"><Package size={12} aria-hidden="true" /> Paquete</span>}

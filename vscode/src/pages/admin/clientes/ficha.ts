@@ -61,7 +61,29 @@ export function proximasCitas(citas: Appointment[], hoy: string): Appointment[] 
   return citas.filter((c) => POR_VENIR.has(c.status) && c.date >= hoy).sort((a, b) => cuando(a).localeCompare(cuando(b)));
 }
 
-export type Filtro = 'todas' | 'paquete' | 'cita' | 'alergia' | 'cumple';
+export type Filtro = 'todas' | 'paquete' | 'cita' | 'alergia' | 'cumple' | 'sin-telefono' | 'sin-cumple' | 'sin-direccion';
+
+const sinTelefono = (c: Pick<Client, 'phone'>) => telefonoClave(c.phone).length !== 10;
+const sinDireccion = (c: Pick<Client, 'address'>) => !c.address?.trim();
+
+/** Cuántas fichas no tienen cada dato: el teléfono (sin él no se le puede escribir ni recordar la cita), el
+ *  cumpleaños y la dirección. */
+export function datosQueFaltan(clientas: Client[]): { telefono: number; cumple: number; direccion: number } {
+  return {
+    telefono: clientas.filter(sinTelefono).length,
+    cumple: clientas.filter((c) => !c.birthday).length,
+    direccion: clientas.filter(sinDireccion).length,
+  };
+}
+
+/** El teléfono al guardar la ficha: de 10 dígitos para una clienta nueva (`anterior` null) y para la que ya tenía uno.
+ *  La que llegó sin teléfono (las del Excel de antes) se puede guardar sin él mientras se consigue. */
+export function errorDeTelefono(telefono: string, anterior: string | null): string | undefined {
+  const digitos = telefono.replace(/\D/g, '').length;
+  if (digitos === 10) return undefined;
+  if (digitos === 0 && anterior !== null && anterior.replace(/\D/g, '').length === 0) return undefined;
+  return 'Teléfono de 10 dígitos';
+}
 export type Orden = 'recientes' | 'nombre' | 'visita';
 
 /** ¿Coincide con lo escrito? Todas las palabras en el nombre (sin tildes), o el teléfono o la cédula con 3 dígitos o
@@ -89,6 +111,9 @@ export function listaDeClientas(
       case 'cita': return !!resumenes.get(c.id)?.proxima;
       case 'alergia': return !!c.allergies?.trim();
       case 'cumple': return cumpleDe(c.birthday)?.mes === mes;
+      case 'sin-telefono': return sinTelefono(c);
+      case 'sin-cumple': return !c.birthday;
+      case 'sin-direccion': return sinDireccion(c);
       default: return true;
     }
   };

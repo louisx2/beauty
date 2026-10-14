@@ -20,6 +20,8 @@ export interface Client {
   created_at: string;
   /** cumpleaños (opcional), "AAAA-MM-DD"; con el año 1904 si no se sabe el año (ver clientes/cumples.ts) */
   birthday?: string | null;
+  /** dirección (opcional): calle, sector o barrio */
+  address?: string | null;
 }
 
 interface ClientState {

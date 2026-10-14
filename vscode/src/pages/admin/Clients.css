@@ -480,3 +480,10 @@
 [data-theme="light"] .timeline-status--completed { background: #E3F0E7; color: #2F6B45; }
 [data-theme="light"] .timeline-status--cancelled,
 [data-theme="light"] .timeline-status--no_show { background: #EEEAE6; color: #5E5651; }
+
+/* filtro de fichas incompletas (llega desde Reportes): va primero y se quita con la X */
+.clientas__chips button.clientas__chip-quitar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}

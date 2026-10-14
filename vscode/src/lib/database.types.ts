@@ -236,12 +236,14 @@ export type Database = {
       }
       clients: {
         Row: {
+          address: string | null
           allergies: string | null
           birthday: string | null
           cedula: string | null
           created_at: string
           email: string | null
           id: string
+          import_key: string | null
           name: string
           notes: string | null
           phone: string
@@ -249,12 +251,14 @@ export type Database = {
           source: string
         }
         Insert: {
+          address?: string | null
           allergies?: string | null
           birthday?: string | null
           cedula?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          import_key?: string | null
           name: string
           notes?: string | null
           phone: string
@@ -262,12 +266,14 @@ export type Database = {
           source?: string
         }
         Update: {
+          address?: string | null
           allergies?: string | null
           birthday?: string | null
           cedula?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          import_key?: string | null
           name?: string
           notes?: string | null
           phone?: string

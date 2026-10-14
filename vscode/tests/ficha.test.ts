@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  citasDeClienta, coincide, historialCompleto, iniciales, listaDeClientas, paquetesDeClienta, proximasCitas,
-  resumenDeClienta, resumenesPorClienta,
+  citasDeClienta, coincide, datosQueFaltan, errorDeTelefono, historialCompleto, iniciales, listaDeClientas, paquetesDeClienta,
+  proximasCitas, resumenDeClienta, resumenesPorClienta,
 } from '../src/pages/admin/clientes/ficha.ts';
 import type { Appointment } from '../src/store/appointmentStore.ts';
 import type { Client } from '../src/store/clientStore.ts';
@@ -97,4 +97,38 @@ test('el historial completo: lo del sistema y lo de antes, lo más reciente prim
 test('iniciales', () => {
   assert.equal(iniciales('yokasta  ramírez peña'), 'YR');
   assert.equal(iniciales('Ana'), 'A');
+});
+
+test('fichas incompletas: cuántas no tienen teléfono, cumpleaños o dirección', () => {
+  const clientas = [
+    clienta('c1', 'Zoila', '829-555-1074', { birthday: '1904-03-21', address: 'Calle Duvergé #83' }),
+    clienta('c2', 'Ana', ''),
+    clienta('c3', 'Bea', '555-10', { address: '   ' }), // un teléfono a medias no sirve para escribirle
+  ];
+  assert.deepEqual(datosQueFaltan(clientas), { telefono: 2, cumple: 2, direccion: 2 });
+  assert.deepEqual(datosQueFaltan([]), { telefono: 0, cumple: 0, direccion: 0 });
+});
+
+test('la lista: las que no tienen teléfono, cumpleaños o dirección', () => {
+  const clientas = [
+    clienta('c1', 'Zoila', '829-555-1074', { birthday: '1990-03-21', address: 'Ocoa' }),
+    clienta('c2', 'Ana', '', { address: 'Ocoa' }),
+    clienta('c3', 'Bea', '809-555-0000'),
+  ];
+  const ids = (l: Client[]) => l.map((c) => c.id);
+  const res = resumenesPorClienta([], HOY);
+  assert.deepEqual(ids(listaDeClientas(clientas, '', 'sin-telefono', 'nombre', res, new Set())), ['c2']);
+  assert.deepEqual(ids(listaDeClientas(clientas, '', 'sin-cumple', 'nombre', res, new Set())), ['c2', 'c3']);
+  assert.deepEqual(ids(listaDeClientas(clientas, '', 'sin-direccion', 'nombre', res, new Set())), ['c3']);
+});
+
+test('el teléfono: obligatorio al crearla; la que llegó sin teléfono se puede editar sin él', () => {
+  assert.equal(errorDeTelefono('829-555-1074', null), undefined);
+  assert.equal(errorDeTelefono('', null), 'Teléfono de 10 dígitos');
+  assert.equal(errorDeTelefono('829-55', null), 'Teléfono de 10 dígitos');
+  // ya tenía teléfono: no se le puede borrar
+  assert.equal(errorDeTelefono('', '829-555-1074'), 'Teléfono de 10 dígitos');
+  // vino del Excel sin teléfono: se guardan sus otros datos aunque siga sin él
+  assert.equal(errorDeTelefono('', ''), undefined);
+  assert.equal(errorDeTelefono('829-5', ''), 'Teléfono de 10 dígitos');
 });

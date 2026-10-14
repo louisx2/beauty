@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  AlertTriangle, ArrowLeft, Cake, CalendarPlus, ChevronDown, Edit2, History, MessageCircle, Package, Phone, Plus, ShoppingBag, Trash2,
+  AlertTriangle, ArrowLeft, Cake, CalendarPlus, ChevronDown, Edit2, History, MapPin, MessageCircle, Package, Phone, Plus, ShoppingBag, Trash2,
 } from 'lucide-react';
 import { useAgendarStore } from '../../../store/agendarStore';
 import { useAppointmentStore, type Appointment } from '../../../store/appointmentStore';
@@ -182,6 +182,7 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
                 ? <span className="ficha__chip ficha__chip--alerta"><AlertTriangle size={14} aria-hidden="true" /> Alergias: {clienta.allergies}</span>
                 : <span className="ficha__chip">Sin alergias anotadas</span>}
               {clienta.skin_type && <span className="ficha__chip">Piel {clienta.skin_type.toLowerCase()}</span>}
+              {clienta.address?.trim() && <span className="ficha__chip"><MapPin size={14} aria-hidden="true" /> {clienta.address}</span>}
               {cumple && (cumple.enDias === 0 && telefono.length === 10 ? (
                 <a className="ficha__chip ficha__chip--cumple" href={enlaceWhatsApp(telefono, mensajeCumple(clienta))} target={destinoWhatsApp()}
                   rel="noopener noreferrer" aria-label={`Hoy cumple años: felicitar a ${clienta.name} por WhatsApp`}>
