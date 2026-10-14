@@ -243,7 +243,7 @@ export default function SessionPackages() {
                         </button>
                       )}
                       <span className="neg__espacio" />
-                      <small className="paq__fecha">Desde el {fechaCorta(p.purchasedAt).toLowerCase()}</small>
+                      {p.purchasedAt && <small className="paq__fecha">Desde el {fechaCorta(p.purchasedAt).toLowerCase()}</small>}
                     </div>
                   </li>
                 );

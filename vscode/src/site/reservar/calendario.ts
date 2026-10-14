@@ -18,9 +18,10 @@ export function isoLocal(d: Date): string {
   return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
 }
 
-/** "2026-09-29" → fecha a mediodía local: así sumar días nunca salta por un cambio de hora. */
+/** "2026-09-29" → fecha a mediodía local: así sumar días nunca salta por un cambio de hora. Si trae hora
+ *  ("2026-09-29T14:00:00Z"), cuenta solo el día. */
 export function deIso(iso: string): Date {
-  const [a, m, d] = iso.split('-').map(Number);
+  const [a, m, d] = iso.slice(0, 10).split('-').map(Number);
   return new Date(a, m - 1, d, 12);
 }
 

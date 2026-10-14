@@ -6,3 +6,12 @@ export function fechaLocal(d: Date = new Date()): string {
   const dia = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${mes}-${dia}`;
 }
+
+/** Lo que viene de la base como fecha con hora ("2026-09-05T02:10:00+00:00", p. ej. la compra de un paquete) →
+ *  el día "AAAA-MM-DD" en el reloj del salón. Una fecha sola se queda igual; lo que no es fecha, vacío. */
+export function soloFecha(valor: string | null | undefined): string {
+  if (!valor) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) return valor;
+  const d = new Date(valor);
+  return Number.isNaN(d.getTime()) ? '' : fechaLocal(d);
+}

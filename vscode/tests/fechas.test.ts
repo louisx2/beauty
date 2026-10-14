@@ -15,3 +15,13 @@ test('de madrugada también', () => {
 test('mes y día con dos cifras', () => {
   assert.equal(fechaLocal(new Date(2026, 0, 9, 12)), '2026-01-09');
 });
+
+test('la fecha con hora de la base queda en el día del salón; una fecha sola, igual', async () => {
+  const { soloFecha } = await import('../src/lib/fechas.ts');
+  assert.equal(soloFecha('2026-09-05'), '2026-09-05');
+  // la misma hora vista en el reloj del equipo
+  const d = new Date('2026-09-05T14:23:11.123+00:00');
+  assert.equal(soloFecha('2026-09-05T14:23:11.123+00:00'), fechaLocal(d));
+  assert.equal(soloFecha(null), '');
+  assert.equal(soloFecha('no es fecha'), '');
+});

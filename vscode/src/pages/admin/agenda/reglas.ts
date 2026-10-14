@@ -234,12 +234,14 @@ export function tituloDeRango(vista: Vista, fecha: string, dias: string[] = []):
 /** "Lun 12" para la cabeza de cada día. */
 export function diaCorto(fecha: string): string {
   const d = deIso(fecha);
+  if (Number.isNaN(d.getTime())) return '';
   return `${DIAS_CORTOS[d.getDay()]} ${d.getDate()}`;
 }
 
 /** "Jue 15 oct" para las listas. */
 export function fechaCorta(fecha: string): string {
   const d = deIso(fecha);
+  if (Number.isNaN(d.getTime())) return '';
   return `${DIAS_CORTOS[d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()].slice(0, 3)}`;
 }
 

@@ -112,3 +112,10 @@ test('títulos del rango y el toque en una columna vacía', () => {
   assert.equal(horaDelToque(8 * 60, 9 * 60, 18 * 60), 9 * 60);
   assert.equal(horaDelToque(18 * 60 - 5, 9 * 60, 18 * 60), 17 * 60 + 30);
 });
+
+test('una fecha con hora o rota no rompe la pantalla', async () => {
+  const { fechaCorta, diaCorto } = await import('../src/pages/admin/agenda/reglas.ts');
+  assert.equal(fechaCorta('2026-10-15T14:23:11.123+00:00'), 'Jue 15 oct');
+  assert.equal(fechaCorta('basura'), '');
+  assert.equal(diaCorto(''), '');
+});
