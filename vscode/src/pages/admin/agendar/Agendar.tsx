@@ -13,8 +13,8 @@ import { format12h } from '../../../lib/timeFormat';
 import { notifyRescheduled, notifyStatusChange } from '../../../lib/whatsapp';
 import { timeToMinutes, type Elegido, type Horario } from '../../../site/reservar/disponibilidad';
 import {
-  etiquetaMes, flechasMes, flechasSemana, lunesDe, mesDeSemana, mesEnCuadricula, semana, sumarDias, sumarMeses,
-  type Dia, type MesVisto,
+  etiquetaMes, flechasMes, flechasSemana, lunesDe, lunesParaMes, mesAcotado, mesDeSemana, mesEnCuadricula, semana, sumarDias,
+  sumarMeses, type Dia, type MesVisto,
 } from '../../../site/reservar/calendario';
 import { fechaLarga, fechaTitulo, rangoHoras } from '../../../site/reservar/resumen';
 import { cuposDelDia, elegidosDeCita, especialistasDeAgenda, horasDelDia, lineasDelPlan, primerNombre } from '../citas/proximaCita';
@@ -164,7 +164,6 @@ function Ventana({ pedido, cerrar }: { pedido: PedidoAgendar; cerrar: () => void
     setDia(iso);
     // al volver al día que tenía, vuelve a su hora; en otro día, se elige de nuevo
     setHora(iso === pedida.dia ? pedida.hora : '');
-    if (vista === 'mes') { setLunes(lunesDe(iso)); setVista('semana'); }
   };
   const comoEstaba = () => {
     setDia(pedida.dia);
@@ -175,8 +174,17 @@ function Ventana({ pedido, cerrar }: { pedido: PedidoAgendar; cerrar: () => void
 
   const flechas = vista === 'semana' ? flechasSemana(lunes, ahora.hoy) : flechasMes(mes, ahora.hoy);
   const mover = (n: -1 | 1) => (vista === 'semana' ? setLunes((l) => sumarDias(l, 7 * n)) : setMes((m) => sumarMeses(m, n)));
-  const alternarVista = () => {
-    if (vista === 'semana') { setMes(mesDeSemana(lunes)); setVista('mes'); } else { setVista('semana'); }
+  /** Semana o mes completo. El mes abre en el de la semana que se veía (nunca uno ya pasado); la semana, en la del día
+   *  elegido si es de ese mes, o en la primera de ese mes con días libres. */
+  const verVista = (v: 'semana' | 'mes') => {
+    if (v === vista) return;
+    if (v === 'mes') {
+      setMes(mesAcotado(mesDeSemana(lunes), ahora.hoy));
+    } else {
+      const delMes = !!dia && dia >= ahora.hoy && Number(dia.slice(0, 4)) === mes.anio && Number(dia.slice(5, 7)) - 1 === mes.mes;
+      setLunes(delMes ? lunesDe(dia) : lunesParaMes(mes, ahora.hoy));
+    }
+    setVista(v);
   };
 
   // sin tocar la hora ni los servicios se guarda aunque alguno ya no esté en el catálogo (se queda como estaba)
@@ -431,16 +439,21 @@ function Ventana({ pedido, cerrar }: { pedido: PedidoAgendar; cerrar: () => void
                 <section className="prox__paso" aria-labelledby="ag-cuando">
                   <div className="prox__cal-h">
                     <h3 id="ag-cuando" className="prox__paso-tit">Cuándo</h3>
-                    <div className="prox__cal-nav">
-                      <button type="button" onClick={() => mover(-1)} disabled={!flechas.anterior}
-                        aria-label={vista === 'semana' ? 'Semana anterior' : 'Mes anterior'}><ChevronLeft size={18} /></button>
-                      <button type="button" className="prox__cal-mes" onClick={alternarVista}>
-                        {etiquetaMes(vista === 'semana' ? mesDeSemana(lunes) : mes)}
-                        <small>{vista === 'semana' ? 'Ver mes' : 'Ver semana'}</small>
+                    <div className="prox__vista" role="group" aria-label="Ver el calendario por">
+                      <button type="button" className={vista === 'semana' ? 'is-on' : ''} aria-pressed={vista === 'semana'} onClick={() => verVista('semana')}>
+                        Semana
                       </button>
-                      <button type="button" onClick={() => mover(1)} disabled={!flechas.siguiente}
-                        aria-label={vista === 'semana' ? 'Semana siguiente' : 'Mes siguiente'}><ChevronRight size={18} /></button>
+                      <button type="button" className={vista === 'mes' ? 'is-on' : ''} aria-pressed={vista === 'mes'} onClick={() => verVista('mes')}>
+                        Mes
+                      </button>
                     </div>
+                  </div>
+                  <div className="prox__cal-nav">
+                    <button type="button" onClick={() => mover(-1)} disabled={!flechas.anterior}
+                      aria-label={vista === 'semana' ? 'Semana anterior' : 'Mes anterior'}><ChevronLeft size={18} /></button>
+                    <span className="prox__cal-mes" aria-live="polite">{etiquetaMes(vista === 'semana' ? mesDeSemana(lunes) : mes)}</span>
+                    <button type="button" onClick={() => mover(1)} disabled={!flechas.siguiente}
+                      aria-label={vista === 'semana' ? 'Semana siguiente' : 'Mes siguiente'}><ChevronRight size={18} /></button>
                   </div>
 
                   {vista === 'semana' ? (
@@ -466,7 +479,9 @@ function Ventana({ pedido, cerrar }: { pedido: PedidoAgendar; cerrar: () => void
                   )}
 
                   {!dia ? (
-                    <p className="prox__ayuda">Elige un día: debajo de cada uno dice cuántas horas libres tiene.</p>
+                    <p className="prox__ayuda">{vista === 'semana'
+                      ? 'Elige un día: debajo de cada uno dice cuántas horas libres tiene.'
+                      : 'Elige un día: el número pequeño es cuántas horas libres tiene.'}</p>
                   ) : (
                     <div className="prox__dia-horas">
                       <p className="prox__dia-tit">{fechaTitulo(dia)}</p>
