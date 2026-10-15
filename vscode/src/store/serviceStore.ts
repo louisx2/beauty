@@ -117,7 +117,9 @@ interface ServiceState {
   updatePackage: (id: string, data: Partial<SessionPackage>) => Promise<boolean>;
   deletePackage: (id: string) => Promise<boolean>;
 
-  sellPackage: (cp: Omit<ClientPackage, 'id' | 'status'>) => Promise<ClientPackage | null>;
+  /** Vende un paquete. Con `previo` es uno que compró antes de usar el sistema: se guarda con su fecha de compra, las
+   *  sesiones que ya se tomó y lo que ya pagó (sin abono con la fecha de hoy). */
+  sellPackage: (cp: Omit<ClientPackage, 'id' | 'status'>, previo?: boolean) => Promise<ClientPackage | null>;
   useSession: (clientPackageId: string) => Promise<boolean>;
   updateClientPackage: (id: string, data: { usedSessions?: number; notes?: string; status?: string }) => Promise<boolean>;
   deleteClientPackage: (id: string) => Promise<boolean>;
@@ -238,11 +240,14 @@ export const useServiceStore = create<ServiceState>()((set, get) => ({
     return true;
   },
 
-  sellPackage: async (cp) => {
+  sellPackage: async (cp, previo = false) => {
     const { data, error } = await supabase.from('client_packages').insert({
       client_id: cp.clientId, package_id: cp.packageId,
-      total_sessions: cp.totalSessions, used_sessions: 0, notes: cp.notes,
-      total_price: cp.totalPrice, amount_paid: cp.amountPaid, status: 'active',
+      total_sessions: cp.totalSessions, used_sessions: previo ? cp.usedSessions : 0, notes: cp.notes,
+      total_price: cp.totalPrice, amount_paid: cp.amountPaid,
+      status: previo && cp.usedSessions >= cp.totalSessions ? 'completed' : 'active',
+      // al mediodía de RD (UTC-4, sin horario de verano) para que la fecha no cambie al leerla
+      ...(previo ? { purchased_at: `${cp.purchasedAt}T12:00:00-04:00` } : {}),
     }).select('*, clients(name), session_packages(name, services(name))').single();
     if (!error && data) {
       const newCp = mapClientPkg(data);

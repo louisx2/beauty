@@ -268,7 +268,7 @@
   color: rgba(255, 255, 255, 0.55);
 }
 
-/* Calendario */
+/* Calendario: "Cuándo" con Semana · Mes, y debajo las flechas con el mes */
 .prox__cal-h {
   display: flex;
   align-items: center;
@@ -276,9 +276,35 @@
   gap: 12px;
 }
 
+.prox__vista {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.prox__vista button {
+  min-width: 64px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.prox__vista button.is-on { background: var(--cocoa); color: #fff; }
+
 .prox__cal-nav {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 4px;
 }
 
@@ -305,19 +331,13 @@
   cursor: default;
 }
 
-.prox__cal-nav .prox__cal-mes {
-  flex-direction: column;
-  padding: 0 10px;
-  font-size: 0.88rem;
+.prox__cal-mes {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.95rem;
   font-weight: 600;
-  line-height: 1.15;
+  text-align: center;
   color: #fff;
-}
-
-.prox__cal-mes small {
-  font-size: 0.7rem;
-  font-weight: 500;
-  color: var(--camel);
 }
 
 .prox__semana {
@@ -621,7 +641,7 @@
 [data-theme="light"] .prox__servicio-nom b,
 [data-theme="light"] .prox__dia-tit,
 [data-theme="light"] .prox__resumen b,
-[data-theme="light"] .prox__cal-nav .prox__cal-mes {
+[data-theme="light"] .prox__cal-mes {
   color: var(--espresso);
 }
 
@@ -636,9 +656,9 @@
   color: var(--espresso);
 }
 
-[data-theme="light"] .prox__cal-mes small {
-  color: var(--cocoa);
-}
+[data-theme="light"] .prox__vista { background: #EFE9E2; }
+[data-theme="light"] .prox__vista button { color: var(--muted); }
+[data-theme="light"] .prox__vista button.is-on { background: var(--cocoa); color: #fff; }
 
 [data-theme="light"] .busv__caja { border-color: #CDBBA8; color: var(--cocoa); }
 [data-theme="light"] .busv__caja:focus-within,

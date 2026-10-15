@@ -4,7 +4,8 @@ import {
   cambiosDeEquipo, catalogoAgrupado, comoLoHace, conItbis, erroresDelServicio, quienLoHace, usoDeServicios,
 } from '../src/pages/admin/negocio/catalogo.ts';
 import {
-  catalogoDePaquetes, errorDelAbono, erroresDelTipo, filtrarPaquetes, paquetesVendidos, resumenPaquetes,
+  catalogoDePaquetes, errorDelAbono, erroresDelTipo, erroresPaquetePrevio, filtrarPaquetes, paquetesVendidos,
+  resumenPaquetes,
 } from '../src/pages/admin/negocio/paquetes.ts';
 import { hoyDe, mesDe } from '../src/pages/admin/negocio/equipo.ts';
 import {
@@ -214,3 +215,20 @@ test('equipo: qué hace hoy y cómo va su mes', () => {
   assert.equal(hoyDe({ ...ANA, workingDays: ['lunes'] }, citas, HOY).trabaja, false);
   assert.deepEqual(mesDe(ANA, citas, CATALOGO, HOY), { atendidas: 1, ingresos: 2000, comision: 200, proximos: 2 });
 });
+
+test('paquete previo: fecha de compra, sesiones tomadas, precio y lo pagado', () => {
+  const HOY = '2026-10-14';
+  const bien = { fecha: '2026-05-16', tomadas: 3, total: 5, precio: 6395, pagado: 6395 };
+  assert.deepEqual(erroresPaquetePrevio(bien, HOY), {});
+  assert.deepEqual(erroresPaquetePrevio({ ...bien, tomadas: 0, pagado: 0 }, HOY), {});
+  assert.deepEqual(erroresPaquetePrevio({ ...bien, tomadas: 5 }, HOY), {}); // ya terminado: 5 de 5
+  assert.equal(erroresPaquetePrevio({ ...bien, fecha: '' }, HOY).fecha, '¿Cuándo lo compró?');
+  assert.equal(erroresPaquetePrevio({ ...bien, fecha: '2026-10-15' }, HOY).fecha, 'La fecha no puede ser después de hoy');
+  assert.equal(erroresPaquetePrevio({ ...bien, tomadas: 6 }, HOY).tomadas, 'Son 5 sesiones: no pueden ser más');
+  assert.equal(erroresPaquetePrevio({ ...bien, tomadas: -1 }, HOY).tomadas, 'Escribe cuántas sesiones se tomó');
+  assert.equal(erroresPaquetePrevio({ ...bien, tomadas: 2.5 }, HOY).tomadas, 'Escribe cuántas sesiones se tomó');
+  assert.equal(erroresPaquetePrevio({ ...bien, precio: NaN }, HOY).precio, 'Escribe cuánto costó');
+  assert.equal(erroresPaquetePrevio({ ...bien, pagado: 7000 }, HOY).pagado, 'No puede pasar de lo que costó (RD$ 6,395)');
+  assert.equal(erroresPaquetePrevio({ ...bien, pagado: -5 }, HOY).pagado, 'Escribe cuánto ha pagado');
+});
+

@@ -164,6 +164,10 @@
 .ptipo__calculo { font-size: 0.84rem; color: var(--camel-light); }
 
 /* Vender */
+/* Venta nueva · Paquete previo: dos botones del mismo ancho arriba del formulario */
+.vender__modo { display: grid; grid-template-columns: 1fr 1fr; }
+.vender__pista { margin: -6px 0 0; font-size: 0.82rem; line-height: 1.4; color: rgba(255, 255, 255, 0.6); }
+
 .vender__tipos {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
@@ -372,3 +376,4 @@
 [data-theme="light"] .abonos__listo,
 [data-theme="light"] .vender__listo svg { color: #2F6B45; }
 [data-theme="light"] .abonos__lista li + li { border-color: rgba(74, 52, 42, 0.09); }
+[data-theme="light"] .vender__pista { color: var(--muted); }
