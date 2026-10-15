@@ -135,6 +135,24 @@ export function errorDelAbono(monto: number, saldo: number): string | null {
   return null;
 }
 
+/** Un paquete que la clienta compró antes de usar el sistema ("Paquete previo" al vender): cuándo lo compró, cuántas
+ *  sesiones ya se tomó, cuánto costó y cuánto ha pagado. */
+export interface PaquetePrevio { fecha: string; tomadas: number; total: number; precio: number; pagado: number }
+export interface ErroresPrevio { fecha?: string; tomadas?: string; precio?: string; pagado?: string }
+
+/** Lo que se revisa antes de registrar un paquete previo. */
+export function erroresPaquetePrevio(p: PaquetePrevio, hoy: string): ErroresPrevio {
+  const e: ErroresPrevio = {};
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(p.fecha)) e.fecha = '¿Cuándo lo compró?';
+  else if (p.fecha > hoy) e.fecha = 'La fecha no puede ser después de hoy';
+  if (!Number.isInteger(p.tomadas) || p.tomadas < 0) e.tomadas = 'Escribe cuántas sesiones se tomó';
+  else if (p.tomadas > p.total) e.tomadas = `Son ${p.total} sesiones: no pueden ser más`;
+  if (!Number.isFinite(p.precio) || p.precio < 0) e.precio = 'Escribe cuánto costó';
+  else if (!Number.isFinite(p.pagado) || p.pagado < 0) e.pagado = 'Escribe cuánto ha pagado';
+  else if (p.pagado > p.precio) e.pagado = `No puede pasar de lo que costó (RD$ ${p.precio.toLocaleString('es-DO')})`;
+  return e;
+}
+
 export interface ErroresTipo { name?: string; serviceId?: string; sessions?: string; price?: string }
 
 /** Lo que se revisa antes de guardar un tipo de paquete. */
