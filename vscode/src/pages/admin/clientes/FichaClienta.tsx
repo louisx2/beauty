@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  AlertTriangle, ArrowLeft, Cake, CalendarPlus, ChevronDown, Edit2, History, MapPin, MessageCircle, Package, Phone, Plus, ShoppingBag, Trash2,
+  AlertTriangle, ArrowLeft, Award, Cake, CalendarPlus, ChevronDown, Edit2, History, MapPin, MessageCircle, Package, Phone, Plus, ShoppingBag, Trash2, X,
 } from 'lucide-react';
 import { useAgendarStore } from '../../../store/agendarStore';
 import { useAppointmentStore, type Appointment } from '../../../store/appointmentStore';
@@ -18,15 +18,18 @@ import { ICONO_PRINCIPAL, useAccionesCita } from '../citas/useAccionesCita';
 import { primerNombre } from '../citas/proximaCita';
 import { clientaDe } from '../agendar/reglas';
 import HistorialAnterior from './HistorialAnterior';
+import EditarVisitas from './EditarVisitas';
 import {
   citasDeClienta, historialCompleto, iniciales, paquetesDeClienta, proximasCitas, resumenDeClienta, type Renglon,
 } from './ficha';
+import { contarVisitas, recordDeServicios, textoVez, vecesEnHistorial } from './record';
 import { destinoWhatsApp, enlaceWhatsApp } from '../../../lib/enlaces';
 import { cumpleanosProximos, mensajeCumple, textoCumple } from './cumples';
 import './Ficha.css';
 
 type Pestana = 'todo' | 'sistema' | 'antes';
 const HISTORIAL_VISIBLE = 8;
+const RECORD_VISIBLE = 5;
 
 const dinero = (n: number) => `RD$ ${n.toLocaleString('es-DO')}`;
 const fecha = (iso: string, opciones: Intl.DateTimeFormatOptions) =>
@@ -49,13 +52,15 @@ interface Props {
 /**
  * La ficha de la clienta: todo lo suyo en un solo lugar. Arriba quién es (con sus alergias a la vista) y lo que se hace
  * con ella: agendar, escribirle, llamarla. Debajo, sus citas por venir, sus paquetes (lo que le queda y lo que falta
- * pagar), sus notas y su historial completo: lo del sistema y el historial previo.
+ * pagar), sus notas, el récord de cuántas veces se hizo cada servicio y su historial completo: lo del sistema y el
+ * historial previo. Las visitas cuentan las dos cosas, más las de antes sin detalle (se cambian tocando "Visitas").
  */
 export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
   const navigate = useNavigate();
   const abrirAgendar = useAgendarStore((s) => s.abrir);
   const { appointments, updateAppointment } = useAppointmentStore();
   const clientPackages = useServiceStore((s) => s.clientPackages);
+  const catalogo = useServiceStore((s) => s.services);
   const deleteClient = useClientStore((s) => s.deleteClient);
   const { porClienta, fetchHistorial } = useClientHistoryStore();
   const [pestana, setPestana] = useState<Pestana>('todo');
@@ -63,6 +68,11 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
   const [verTerminados, setVerTerminados] = useState(false);
   /** cuántos renglones del historial se ven (los más recientes primero) */
   const [cuantos, setCuantos] = useState(HISTORIAL_VISIBLE);
+  const [editarVisitas, setEditarVisitas] = useState(false);
+  /** el servicio del récord que se está viendo en el historial (su clave), o null para verlo todo */
+  const [servicio, setServicio] = useState<string | null>(null);
+  const [verTodoRecord, setVerTodoRecord] = useState(false);
+  const historialRef = useRef<HTMLElement>(null);
   const hoy = fechaLocal();
 
   useEffect(() => {
@@ -70,13 +80,33 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
   }, [clienta.id, fetchHistorial]);
 
   const suyas = useMemo(() => citasDeClienta(appointments, clienta), [appointments, clienta]);
+  const anteriores = useMemo(() => porClienta[clienta.id] ?? [], [porClienta, clienta.id]);
   const resumen = useMemo(() => resumenDeClienta(suyas, hoy), [suyas, hoy]);
+  const visitas = useMemo(() => contarVisitas(suyas, anteriores, clienta.visitas_previas ?? 0), [suyas, anteriores, clienta.visitas_previas]);
+  const record = useMemo(() => recordDeServicios(suyas, anteriores, catalogo), [suyas, anteriores, catalogo]);
   const proximas = useMemo(() => proximasCitas(suyas, hoy), [suyas, hoy]);
   const paquetes = useMemo(() => paquetesDeClienta(clientPackages, clienta.id), [clientPackages, clienta.id]);
-  const historial = useMemo(() => historialCompleto(suyas, porClienta[clienta.id] ?? [], hoy), [suyas, porClienta, clienta.id, hoy]);
+  const historial = useMemo(() => historialCompleto(suyas, anteriores, hoy), [suyas, anteriores, hoy]);
   const activos = paquetes.filter((p) => p.activo);
   const terminados = paquetes.filter((p) => !p.activo);
-  const renglones = pestana === 'sistema' ? historial.filter((r) => r.tipo === 'cita') : historial;
+  const elegido = servicio ? record.find((r) => r.clave === servicio) : undefined;
+  // con un servicio del récord elegido: solo lo de ese servicio, cada renglón con su número de vez
+  const renglones: { renglon: Renglon; vez?: number }[] = elegido
+    ? vecesEnHistorial(historial, elegido.clave, catalogo)
+    : (pestana === 'sistema' ? historial.filter((r) => r.tipo === 'cita') : historial).map((renglon) => ({ renglon }));
+  const deAntes = visitas.enHistorial + visitas.sinDetalle;
+
+  /** Ver en el historial solo ese servicio (tocarlo otra vez lo quita). En el celular, el historial queda abajo: se
+   *  baja hasta él. */
+  const verServicio = (clave: string) => {
+    const quitar = servicio === clave;
+    setServicio(quitar ? null : clave);
+    setPestana('todo');
+    setAnotarDeAntes(false);
+    setCuantos(HISTORIAL_VISIBLE);
+    const h = historialRef.current;
+    if (!quitar && h && h.getBoundingClientRect().top > window.innerHeight * 0.5) h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const acciones = useAccionesCita({
     editar: (c) => abrirAgendar({ modo: 'editar', cita: c }),
@@ -125,13 +155,14 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
     );
   };
 
-  const renglon = (r: Renglon) => {
+  const renglon = ({ renglon: r, vez }: { renglon: Renglon; vez?: number }) => {
+    const numero = vez ? <span className="ficha__vez"> · {textoVez(vez)}</span> : null;
     if (r.tipo === 'antes') {
       const e = r.entrada;
       return (
         <div key={`antes-${e.id}`} className="history-timeline__item">
           <div className="history-timeline__dot ficha__punto-antes" />
-          <div className="history-timeline__date">{e.fecha ? fechaCorta(e.fecha) : 'Sin fecha'}</div>
+          <div className="history-timeline__date">{e.fecha ? fechaCorta(e.fecha) : 'Sin fecha'}{numero}</div>
           <div className="history-timeline__details">
             <div className="history-timeline__title-row">
               <h5 className="history-timeline__service">{e.servicio}</h5>
@@ -147,7 +178,7 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
     return (
       <div key={c.id} className="history-timeline__item">
         <div className={`history-timeline__dot history-timeline__dot--${c.status}`} />
-        <div className="history-timeline__date">{c.date === hoy ? 'Hoy' : fechaCorta(c.date)}</div>
+        <div className="history-timeline__date">{c.date === hoy ? 'Hoy' : fechaCorta(c.date)}{numero}</div>
         <div className="history-timeline__details">
           <div className="history-timeline__title-row">
             <h5 className="history-timeline__service">{c.service}</h5>
@@ -221,11 +252,23 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
       </header>
 
       <dl className="ficha__numeros">
-        <div><dt>Visitas</dt><dd>{resumen.visitas}</dd></div>
-        <div><dt>Última</dt><dd>{resumen.ultima ? fechaCorta(resumen.ultima.date) : '—'}</dd></div>
+        <div>
+          <dt>Visitas</dt>
+          <dd>
+            {/* toda la casilla se toca: cambia las visitas de antes sin detalle */}
+            <button type="button" className="ficha__visitas" aria-expanded={editarVisitas} onClick={() => setEditarVisitas(!editarVisitas)}
+              aria-label={`${visitas.total} visitas. Cambiar las de antes sin detalle`}>
+              {visitas.total} <Edit2 size={13} aria-hidden="true" />
+            </button>
+          </dd>
+          {deAntes > 0 && <dd className="ficha__desglose">{visitas.enSistema} aquí · {deAntes} antes</dd>}
+        </div>
+        <div><dt>Última</dt><dd>{visitas.ultima ? fechaCorta(visitas.ultima) : '—'}</dd></div>
         <div><dt>Próxima</dt><dd>{resumen.proxima ? (resumen.proxima.date === hoy ? `Hoy ${format12h(resumen.proxima.time)}` : diaCorto(resumen.proxima.date)) : '—'}</dd></div>
         <div><dt>No vino</dt><dd className={resumen.noVino > 0 ? 'ficha__ojo' : ''}>{resumen.noVino}</dd></div>
       </dl>
+
+      {editarVisitas && <EditarVisitas clienta={clienta} visitas={visitas} onCerrar={() => setEditarVisitas(false)} />}
 
       <div className="ficha__cuerpo">
         <div className="ficha__col">
@@ -306,39 +349,76 @@ export default function FichaClienta({ clienta, onVolver, onEditar }: Props) {
           </section>
         </div>
 
-        <section className="ficha__tarjeta ficha__historial" aria-labelledby="ficha-historial">
-          <div className="ficha__tit-fila">
-            <h3 id="ficha-historial" className="ficha__tit"><History size={15} aria-hidden="true" /> Historial</h3>
-            <div className="ficha__pestanas" role="tablist" aria-label="Qué mostrar del historial">
-              {([['todo', 'Todo'], ['sistema', 'En el sistema'], ['antes', 'Previo']] as const).map(([id, nombre]) => (
-                <button key={id} type="button" role="tab" aria-selected={pestana === id} className={pestana === id ? 'is-on' : ''}
-                  onClick={() => { setPestana(id); setAnotarDeAntes(false); }}>
-                  {nombre}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {pestana === 'antes' ? (
-            <HistorialAnterior key={`${clienta.id}-${anotarDeAntes}`} clientId={clienta.id} abrirNueva={anotarDeAntes} />
-          ) : (
-            <>
-              {renglones.length === 0 ? (
-                <p className="ficha__vacio">Todavía no hay nada en su historial.</p>
-              ) : (
-                <div className="history-timeline ficha__linea">{renglones.slice(0, cuantos).map(renglon)}</div>
-              )}
-              {renglones.length > cuantos && (
-                <button type="button" className="ficha__btn ficha__btn--chico ficha__mas" onClick={() => setCuantos(cuantos + 20)}>
-                  Ver más ({renglones.length - cuantos})
-                </button>
-              )}
-              <button type="button" className="ficha__enlace" onClick={() => { setPestana('antes'); setAnotarDeAntes(true); }}>
-                <Plus size={16} aria-hidden="true" /> Agregar historial previo
+        <div className="ficha__col">
+          <section className="ficha__tarjeta" aria-labelledby="ficha-record">
+            <h3 id="ficha-record" className="ficha__tit"><Award size={15} aria-hidden="true" /> Récord de servicios</h3>
+            {record.length === 0 ? (
+              <p className="ficha__vacio">Todavía no tiene servicios hechos. Aquí se cuentan las citas completadas y su historial previo.</p>
+            ) : (
+              <ul className="ficha__record">
+                {(verTodoRecord ? record : record.slice(0, RECORD_VISIBLE)).map((r) => (
+                  <li key={r.clave}>
+                    <button type="button" className={`ficha__record-fila ${servicio === r.clave ? 'is-on' : ''}`} aria-pressed={servicio === r.clave}
+                      onClick={() => verServicio(r.clave)}>
+                      <span className="ficha__record-nombre">{r.nombre}</span>
+                      <span className="ficha__record-ultima">{r.ultima ? `Última: ${fechaCorta(r.ultima)}` : 'Sin fecha'}</span>
+                      <span className="ficha__record-veces"><b>{r.veces}</b> {r.veces === 1 ? 'vez' : 'veces'}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {record.length > RECORD_VISIBLE && (
+              <button type="button" className="ficha__enlace" aria-expanded={verTodoRecord} onClick={() => setVerTodoRecord(!verTodoRecord)}>
+                <ChevronDown size={16} aria-hidden="true" className={verTodoRecord ? 'ficha__girado' : ''} />
+                {verTodoRecord ? 'Ver menos' : `Ver todos (${record.length})`}
               </button>
-            </>
-          )}
-        </section>
+            )}
+          </section>
+
+          <section ref={historialRef} className="ficha__tarjeta ficha__historial" aria-labelledby="ficha-historial">
+            <div className="ficha__tit-fila">
+              <h3 id="ficha-historial" className="ficha__tit"><History size={15} aria-hidden="true" /> Historial</h3>
+              <div className="ficha__pestanas" role="tablist" aria-label="Qué mostrar del historial">
+                {([['todo', 'Todo'], ['sistema', 'En el sistema'], ['antes', 'Previo']] as const).map(([id, nombre]) => (
+                  <button key={id} type="button" role="tab" aria-selected={!elegido && pestana === id} className={!elegido && pestana === id ? 'is-on' : ''}
+                    onClick={() => { setPestana(id); setAnotarDeAntes(false); setServicio(null); }}>
+                    {nombre}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {elegido && (
+              <div className="ficha__filtro">
+                <span>Solo <b>{elegido.nombre}</b> · {elegido.veces} {elegido.veces === 1 ? 'vez' : 'veces'}</span>
+                <button type="button" className="ficha__btn ficha__btn--icono" onClick={() => setServicio(null)} aria-label="Ver todo el historial">
+                  <X size={18} aria-hidden="true" />
+                </button>
+              </div>
+            )}
+
+            {pestana === 'antes' ? (
+              <HistorialAnterior key={`${clienta.id}-${anotarDeAntes}`} clientId={clienta.id} abrirNueva={anotarDeAntes} />
+            ) : (
+              <>
+                {renglones.length === 0 ? (
+                  <p className="ficha__vacio">Todavía no hay nada en su historial.</p>
+                ) : (
+                  <div className="history-timeline ficha__linea">{renglones.slice(0, cuantos).map(renglon)}</div>
+                )}
+                {renglones.length > cuantos && (
+                  <button type="button" className="ficha__btn ficha__btn--chico ficha__mas" onClick={() => setCuantos(cuantos + 20)}>
+                    Ver más ({renglones.length - cuantos})
+                  </button>
+                )}
+                <button type="button" className="ficha__enlace" onClick={() => { setPestana('antes'); setAnotarDeAntes(true); setServicio(null); }}>
+                  <Plus size={16} aria-hidden="true" /> Agregar historial previo
+                </button>
+              </>
+            )}
+          </section>
+        </div>
       </div>
     </article>
   );

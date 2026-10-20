@@ -335,22 +335,25 @@
   flex-wrap: wrap;
 }
 
+/* Días y servicios: apagado con borde y texto que se lee; encendido, relleno de cacao. Ninguno más bajo que 44 px. */
 .staff-day-btn {
-  padding: 8px 12px;
-  border-radius: 8px;
+  min-height: 44px;
+  min-width: 48px;
+  padding: 0 12px;
+  border-radius: 10px;
   font-family: 'Outfit', sans-serif;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.02);
-  color: rgba(255, 255, 255, 0.4);
-  transition: all 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.75);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .staff-day-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.75);
+  border-color: var(--camel);
+  color: #fff;
 }
 
 .staff-day-btn--on {
@@ -364,44 +367,59 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  max-height: 160px;
+  max-height: 260px;
   overflow-y: auto;
-  padding: 2px;
+  padding: 2px 4px 2px 2px;
 }
 
 .staff-services-picker::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 .staff-services-picker::-webkit-scrollbar-thumb {
-  background: rgba(232, 165, 184, 0.12);
+  background: rgba(255, 255, 255, 0.18);
   border-radius: 99px;
 }
 
 .staff-service-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 8px;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
   font-family: 'Outfit', sans-serif;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 500;
+  text-align: left;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.staff-service-btn svg {
+  flex-shrink: 0;
   color: rgba(255, 255, 255, 0.4);
-  transition: all 0.2s;
 }
 
 .staff-service-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.7);
+  border-color: var(--camel);
+  color: #fff;
 }
 
 .staff-service-btn--on {
-  background: rgba(125, 90, 68, 0.3);
+  background: var(--cocoa);
   color: #fff;
   border-color: var(--cocoa);
+}
+
+.staff-service-btn--on svg { color: #fff; }
+
+.staff-day-btn:focus-visible,
+.staff-service-btn:focus-visible {
+  outline: 2px solid var(--camel);
+  outline-offset: 2px;
 }
 
 .staff-commission-input {
@@ -535,6 +553,64 @@
   font-size: 0.8rem;
   color: #fbbf24;
 }
+
+/* La ficha de la persona en el tema claro: lo apagado (días, servicios) se veía blanco sobre blanco */
+[data-theme="light"] .staff-day-btn,
+[data-theme="light"] .staff-service-btn {
+  border-color: rgba(74, 52, 42, 0.2);
+  background: #fff;
+  color: var(--espresso);
+}
+
+[data-theme="light"] .staff-service-btn svg { color: rgba(74, 52, 42, 0.4); }
+
+[data-theme="light"] .staff-day-btn:hover,
+[data-theme="light"] .staff-service-btn:hover {
+  border-color: var(--cocoa);
+  color: var(--espresso);
+}
+
+[data-theme="light"] .staff-day-btn--on,
+[data-theme="light"] .staff-service-btn--on,
+[data-theme="light"] .staff-day-btn--on:hover,
+[data-theme="light"] .staff-service-btn--on:hover {
+  border-color: var(--cocoa);
+  background: var(--cocoa);
+  color: #fff;
+}
+
+[data-theme="light"] .staff-service-btn--on svg { color: #fff; }
+
+[data-theme="light"] .staff-day-btn:focus-visible,
+[data-theme="light"] .staff-service-btn:focus-visible { outline-color: var(--cocoa); }
+
+[data-theme="light"] .staff-services-picker::-webkit-scrollbar-thumb { background: rgba(74, 52, 42, 0.2); }
+
+[data-theme="light"] .staff-modal__hint,
+[data-theme="light"] .staff-commission-input__suffix { color: var(--muted); }
+
+[data-theme="light"] .staff-avatar-upload {
+  background: #F9F6F1;
+  border-color: rgba(74, 52, 42, 0.18);
+}
+
+[data-theme="light"] .staff-avatar-upload__preview {
+  background: #EFE6DD;
+  color: var(--cocoa);
+}
+
+[data-theme="light"] .staff-avatar-upload__label {
+  background: #fff;
+  border-color: var(--cocoa);
+  color: var(--cocoa);
+}
+
+[data-theme="light"] .staff-avatar-upload__label:hover {
+  background: var(--cocoa);
+  color: #fff;
+}
+
+[data-theme="light"] .staff-avatar-upload__remove { color: #B42318; }
 
 [data-theme="light"] .staff-web { border-color: rgba(74, 52, 42, 0.12); }
 [data-theme="light"] .staff-web__titulo,

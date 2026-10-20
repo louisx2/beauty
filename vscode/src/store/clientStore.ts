@@ -22,6 +22,8 @@ export interface Client {
   birthday?: string | null;
   /** dirección (opcional): calle, sector o barrio */
   address?: string | null;
+  /** las veces que vino antes del sistema y no están anotadas en su historial previo (se suman a sus visitas) */
+  visitas_previas?: number;
 }
 
 interface ClientState {

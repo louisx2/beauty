@@ -6,7 +6,7 @@ import { useAppointmentStore } from '../../store/appointmentStore';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
 import {
-  User, UserPlus, Phone, Mail, X, Clock, Shield, Sparkles, CheckCircle2, XCircle, AlertCircle,
+  User, UserPlus, Phone, Mail, X, Clock, Shield, Sparkles, CheckCircle2, Circle, XCircle, AlertCircle,
   Percent, Key, UserCog, Globe, Search, CalendarDays, Pencil, Power, Trash2, MessageCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -728,7 +728,7 @@ export default function Staff() {
                 <div className="staff-day-picker">
                   {WEEKDAYS.map((d) => (
                     <button
-                      key={d.key} type="button"
+                      key={d.key} type="button" aria-pressed={form.workingDays.includes(d.key)}
                       className={`staff-day-btn ${form.workingDays.includes(d.key) ? 'staff-day-btn--on' : ''}`}
                       onClick={() => toggleDay(d.key)}
                     >
@@ -784,16 +784,20 @@ export default function Staff() {
                     </span>
                   </label>
                   <div className="staff-services-picker">
-                    {services.filter((s) => s.active).map((s) => (
-                      <button
-                        key={s.id} type="button"
-                        className={`staff-service-btn ${form.serviceIds.includes(s.id) ? 'staff-service-btn--on' : ''}`}
-                        onClick={() => toggleService(s.id)}
-                      >
-                        {form.serviceIds.includes(s.id) ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                        {s.name}
-                      </button>
-                    ))}
+                    {services.filter((s) => s.active).map((s) => {
+                      const on = form.serviceIds.includes(s.id);
+                      return (
+                        <button
+                          key={s.id} type="button" aria-pressed={on}
+                          className={`staff-service-btn ${on ? 'staff-service-btn--on' : ''}`}
+                          onClick={() => toggleService(s.id)}
+                        >
+                          {/* apagado: un círculo vacío (no una X, que parece un error) */}
+                          {on ? <CheckCircle2 size={16} aria-hidden="true" /> : <Circle size={16} aria-hidden="true" />}
+                          {s.name}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}

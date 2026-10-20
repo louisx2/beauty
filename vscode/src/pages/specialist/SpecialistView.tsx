@@ -6,11 +6,15 @@ import { useAppointmentStore, type Appointment } from '../../store/appointmentSt
 import { useAuthStore } from '../../store/authStore';
 import { useBlockStore } from '../../store/blockStore';
 import { useClientStore } from '../../store/clientStore';
+import { useClientHistoryStore } from '../../store/clientHistoryStore';
+import { useServiceStore } from '../../store/serviceStore';
 import { useStaffStore } from '../../store/staffStore';
 import { format12h } from '../../lib/timeFormat';
 import { notifyStatusChange } from '../../lib/whatsapp';
 import { useAhora } from '../../lib/useAhora';
 import { fechaTitulo } from '../../site/reservar/resumen';
+import { nombreVisible } from '../../site/reservar/servicios';
+import { nombreDeLinea, textoVez, vezDelServicio } from '../admin/clientes/record';
 import HojaCita from '../admin/citas/HojaCita';
 import { primerNombre } from '../admin/citas/proximaCita';
 import { aHora, horasTexto, type Tramo } from '../admin/hoy/dia';
@@ -33,6 +37,8 @@ export default function SpecialistView() {
   const user = useAuthStore((s) => s.user);
   const { staff } = useStaffStore();
   const { clients, fetchClients } = useClientStore();
+  const { porClienta, fetchHistorial } = useClientHistoryStore();
+  const catalogo = useServiceStore((s) => s.services);
   const { blocks, fetchBlocks } = useBlockStore();
   const abrirAgendar = useAgendarStore((s) => s.abrir);
   const ahora = useAhora();
@@ -54,6 +60,15 @@ export default function SpecialistView() {
   const yo = staff.find((m) => m.name.trim().toLowerCase() === nombre.trim().toLowerCase());
   const lineas = useMemo(() => misLineas(appointments, nombre, ahora.hoy), [appointments, nombre, ahora.hoy]);
   const { enSala, siguiente } = enSalaYSiguiente(lineas);
+
+  // el historial previo de la que está en cabina y de la que sigue, para contar sus visitas y qué vez es cada servicio
+  const idEnSala = enSala?.cita.client_id ?? null;
+  const idSiguiente = siguiente?.cita.client_id ?? null;
+  useEffect(() => {
+    for (const id of [idEnSala, idSiguiente]) {
+      if (id) fetchHistorial(id).catch((e) => console.error('[mi día] historial previo:', e));
+    }
+  }, [idEnSala, idSiguiente, fetchHistorial]);
   const porDia = useMemo(() => citasPorDia(appointments), [appointments]);
   const columna = useMemo(
     () => (yo ? cuadriculaDelDia(ahora.hoy, staff, porDia, blocks, ahora, yo.id).columnas[0] : undefined),
@@ -92,17 +107,33 @@ export default function SpecialistView() {
   const agendarEn = (col: ColumnaAgenda, t: Tramo) =>
     abrirAgendar({ modo: 'nueva', fecha: col.fecha, hora: aHora(t.inicio), empleada: col.empleada ?? undefined });
 
-  /** Lo que conviene saber de la clienta antes de atenderla. */
+  /** Lo que conviene saber de la clienta antes de atenderla: con su historial previo, cuántas veces vino y qué vez es
+   *  cada servicio suyo de esta cita. */
   const queSaber = (c: Appointment) => {
-    const a = antesDeAtender(c, clients, appointments);
+    const a = antesDeAtender(c, clients, appointments, c.client_id ? porClienta[c.client_id] : [], catalogo);
+    // la primera vez que viene, todo es primera vez: no hace falta decirlo por servicio
+    const veces = a.visitas === 0 ? [] : [...new Set(servicios(c).map((l) => nombreDeLinea({ serviceId: l.serviceId, serviceName: l.servicio }, catalogo)))];
     return (
       <div className="midia__saber">
         {a.alergias && <p className="midia__alergia"><AlertTriangle size={16} aria-hidden="true" /> Alergias: {a.alergias}</p>}
         <div className="midia__chips">
           {a.piel && <span>Piel {a.piel.toLowerCase()}</span>}
           <span>{a.visitas === 0 ? 'Primera vez' : a.visitas === 1 ? '1 visita antes' : `${a.visitas} visitas antes`}</span>
+          {veces.map((nombre) => {
+            const vez = vezDelServicio(a.record, nombre);
+            return <span key={nombre}>{nombreVisible(nombre)}: {vez === 1 ? 'primera vez' : textoVez(vez)}</span>;
+          })}
         </div>
-        {a.ultima && (
+        {a.ultimaPrevia ? (
+          <p className="midia__ultima">
+            <History size={15} aria-hidden="true" />
+            <span>
+              Última vez (historial previo), {fechaLargaCorta(a.ultimaPrevia.fecha!)}: {a.ultimaPrevia.servicio}
+              {a.ultimaPrevia.especialista && <> con {primerNombre(a.ultimaPrevia.especialista)}</>}
+              {a.ultimaPrevia.notas && <em> · “{a.ultimaPrevia.notas}”</em>}
+            </span>
+          </p>
+        ) : a.ultima && (
           <p className="midia__ultima">
             <History size={15} aria-hidden="true" />
             <span>

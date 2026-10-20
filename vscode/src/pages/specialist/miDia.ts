@@ -3,7 +3,10 @@
 // sea de varios servicios con varias especialistas. Puro: se prueba con node --test.
 import type { Appointment } from '../../store/appointmentStore';
 import type { Client } from '../../store/clientStore';
+import type { Service } from '../../store/serviceStore';
+import type { EntradaHistorial } from '../../lib/historialAnterior';
 import { citasDeClienta } from '../admin/clientes/ficha.ts';
+import { contarVisitas, recordDeServicios, type VecesServicio } from '../admin/clientes/record.ts';
 
 const POR_VENIR = new Set(['pending', 'confirmed']);
 const clave = (s: string | null | undefined) => (s ?? '').trim().toLowerCase();
@@ -13,7 +16,7 @@ const aMinutos = (hhmm: string) => {
 };
 
 /** Un servicio suyo dentro de una cita. */
-export interface LineaMia { cita: Appointment; servicio: string; inicio: number; fin: number }
+export interface LineaMia { cita: Appointment; servicio: string; serviceId: string | null; inicio: number; fin: number }
 
 /** Lo que hace ella ese día: cada servicio suyo (de la cita que sea), en orden. Lo cancelado y lo que no vino, no. */
 export function misLineas(citas: Appointment[], nombre: string, fecha: string): LineaMia[] {
@@ -21,10 +24,10 @@ export function misLineas(citas: Appointment[], nombre: string, fecha: string): 
   return citas
     .filter((c) => c.date === fecha && c.status !== 'cancelled' && c.status !== 'no_show')
     .flatMap((c) => (c.services.length > 0
-      ? c.services.map((l) => ({ empleada: l.employee, hora: l.startTime || c.time, minutos: l.duration || 45, servicio: l.serviceName }))
-      : [{ empleada: c.employee, hora: c.time, minutos: c.duration || 45, servicio: c.service }])
+      ? c.services.map((l) => ({ empleada: l.employee, hora: l.startTime || c.time, minutos: l.duration || 45, servicio: l.serviceName, serviceId: l.serviceId }))
+      : [{ empleada: c.employee, hora: c.time, minutos: c.duration || 45, servicio: c.service, serviceId: null }])
       .filter((l) => clave(l.empleada) === yo)
-      .map((l) => ({ cita: c, servicio: l.servicio, inicio: aMinutos(l.hora), fin: aMinutos(l.hora) + l.minutos })))
+      .map((l) => ({ cita: c, servicio: l.servicio, serviceId: l.serviceId, inicio: aMinutos(l.hora), fin: aMinutos(l.hora) + l.minutos })))
     .sort((a, b) => a.inicio - b.inicio);
 }
 
@@ -42,11 +45,19 @@ export interface AntesDeAtender {
   notas: string | null;
   /** la última vez que vino (antes de esta cita): qué se hizo, con quién y lo que se anotó */
   ultima: Appointment | null;
+  /** lo último del historial previo, solo si es más reciente que `ultima` (o no hay) */
+  ultimaPrevia: EntradaHistorial | null;
+  /** las veces que vino antes: del sistema, del historial previo y las de antes sin detalle */
   visitas: number;
+  /** cuántas veces se ha hecho cada servicio antes de esta cita (para decir "8.ª vez") */
+  record: VecesServicio[];
 }
 
-/** Lo que conviene saber de la clienta antes de atenderla: de su ficha (alergias, piel, notas) y de su última visita. */
-export function antesDeAtender(cita: Appointment, clientas: Client[], citas: Appointment[]): AntesDeAtender {
+/** Lo que conviene saber de la clienta antes de atenderla: de su ficha (alergias, piel, notas), de su última visita y
+ *  cuántas veces vino, contando su historial previo (`anteriores`). */
+export function antesDeAtender(
+  cita: Appointment, clientas: Client[], citas: Appointment[], anteriores: EntradaHistorial[] = [], catalogo: Pick<Service, 'id' | 'name'>[] = [],
+): AntesDeAtender {
   const ficha = cita.client_id ? clientas.find((c) => c.id === cita.client_id) : undefined;
   const suyas = ficha
     ? citasDeClienta(citas, ficha)
@@ -54,12 +65,19 @@ export function antesDeAtender(cita: Appointment, clientas: Client[], citas: App
   const antes = suyas
     .filter((c) => c.id !== cita.id && c.status === 'completed' && `${c.date} ${c.time}` < `${cita.date} ${cita.time}`)
     .sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
+  // lo anotado de antes (sin fecha, o de un día anterior a esta cita); sin ficha no hay historial previo
+  const previos = ficha ? anteriores.filter((e) => !e.fecha || e.fecha < cita.date) : [];
+  const ultimaPrevia = previos
+    .filter((e) => e.fecha && (!antes[0] || e.fecha > antes[0].date))
+    .reduce<EntradaHistorial | null>((u, e) => (!u || e.fecha! > u.fecha! ? e : u), null);
   return {
     alergias: ficha?.allergies?.trim() || null,
     piel: ficha?.skin_type || null,
     notas: ficha?.notes?.trim() || null,
     ultima: antes[0] ?? null,
-    visitas: antes.length,
+    ultimaPrevia,
+    visitas: contarVisitas(antes, previos, ficha?.visitas_previas ?? 0).total,
+    record: recordDeServicios(antes, previos, catalogo),
   };
 }
 
