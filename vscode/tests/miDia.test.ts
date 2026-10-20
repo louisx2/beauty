@@ -4,6 +4,8 @@ import { antesDeAtender, enSalaYSiguiente, misLineas, proximosDias, saludo, tiem
 import { citasParaRecordar, marcasDeHoy, mensajeRecordatorio, resumenRecordatorios, siguienteParaAvisar } from '../src/pages/admin/hoy/avisos.ts';
 import type { Appointment } from '../src/store/appointmentStore.ts';
 import type { Client } from '../src/store/clientStore.ts';
+import type { EntradaHistorial } from '../src/lib/historialAnterior.ts';
+import { vezDelServicio } from '../src/pages/admin/clientes/record.ts';
 
 const HOY = '2026-10-15';
 const MANANA = '2026-10-16';
@@ -60,6 +62,26 @@ test('antes de atender: su ficha y la última vez que vino', () => {
   // sin ficha: nada de la ficha, y la última por su teléfono
   const sinFicha = { ...ahora, client_id: null };
   assert.equal(antesDeAtender(sinFicha, [], [sinFicha, { ...citas[1], client_id: null }]).ultima?.date, '2026-09-01');
+});
+
+test('antes de atender: también cuenta el historial previo y las de antes sin detalle, y qué vez es cada servicio', () => {
+  const ficha: Client = { id: 'c1', name: 'Yokasta Ramírez', phone: '829-555-1074', email: null, cedula: null, skin_type: null, allergies: null, notes: null, source: 'manual', created_at: '', visitas_previas: 3 };
+  const ahora = cita(HOY, '10:00', [['Depilación Láser - Axilas', 'Anabel', 15], ['Depilación Láser - Bikini', 'Anabel', 20]]);
+  const citas = [ahora, cita('2026-09-01', '10:00', [['Depilación Láser - Axilas', 'Anabel', 15]], 'completed')];
+  const previo = (fecha: string | null, servicio: string): EntradaHistorial =>
+    ({ id: `h${fecha}${servicio}`, clientId: 'c1', fecha, servicio, especialista: 'Anabel', notas: 'Sin reacción', creado: '' });
+  const anteriores = [previo('2025-06-14', 'Depilación Láser - Axilas'), previo(null, 'Depilación Láser - Axilas'), previo(HOY, 'Cejas')];
+  const a = antesDeAtender(ahora, [ficha], citas, anteriores);
+  // 1 del sistema + 2 del historial (lo de hoy no es "antes") + 3 sin detalle
+  assert.equal(a.visitas, 6);
+  assert.equal(vezDelServicio(a.record, 'Depilación Láser - Axilas'), 4);
+  assert.equal(vezDelServicio(a.record, 'Depilación Láser - Bikini'), 1);
+  // la última vez es la del sistema; si la del historial previo es más reciente, se dice esa
+  assert.equal(a.ultima?.date, '2026-09-01');
+  assert.equal(a.ultimaPrevia, null);
+  const soloPrevio = antesDeAtender(ahora, [ficha], [ahora], anteriores);
+  assert.equal(soloPrevio.ultima, null);
+  assert.equal(soloPrevio.ultimaPrevia?.fecha, '2025-06-14');
 });
 
 test('próximos días con citas suyas, sin hoy, en orden', () => {

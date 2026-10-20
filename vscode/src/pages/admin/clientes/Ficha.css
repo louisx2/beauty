@@ -220,6 +220,159 @@ a.ficha__chip--cumple { min-height: 32px; }
 
 .ficha__numeros .ficha__ojo { color: #fbbf24; }
 
+/* Visitas: toda la casilla se toca para cambiar las de antes sin detalle */
+.ficha__numeros > div { position: relative; }
+
+.ficha__visitas {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ficha__visitas svg { color: var(--camel); }
+
+.ficha__visitas::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+}
+
+.ficha__visitas:focus-visible { outline: none; }
+.ficha__visitas:focus-visible::after { outline: 2px solid var(--camel); outline-offset: 2px; }
+.ficha__numeros > div:has(.ficha__visitas:hover) { border-color: var(--camel); }
+
+.ficha__numeros .ficha__desglose,
+.ficha__desglose {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* El editor de las visitas de antes */
+.ficha__ayuda {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.ficha__contador {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ficha__contador input {
+  width: 88px;
+  min-height: 46px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font-family: inherit;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.ficha__contador input:focus { outline: none; border-color: var(--camel); }
+.ficha__btn:disabled { opacity: 0.45; cursor: default; }
+.ficha__btn:disabled:hover { border-color: rgba(255, 255, 255, 0.14); }
+
+.ficha__desglose b { color: #fff; font-weight: 600; }
+
+.ficha__fila-botones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Récord de servicios: cuántas veces se hizo cada uno; tocar uno lo muestra en el historial */
+.ficha__record {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ficha__record li + li { border-top: 1px solid rgba(255, 255, 255, 0.07); }
+
+.ficha__record-fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ficha__record-fila:hover { background: rgba(255, 255, 255, 0.04); }
+.ficha__record-fila:focus-visible { outline: 2px solid var(--camel); outline-offset: -2px; }
+.ficha__record-fila.is-on { background: rgba(178, 150, 125, 0.16); }
+
+.ficha__record-nombre {
+  font-size: 0.92rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.ficha__record-ultima {
+  grid-row: 2;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.ficha__record-veces {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+}
+
+.ficha__record-veces b {
+  font-size: 1.25rem;
+  color: var(--camel-light);
+}
+
+/* El historial con un solo servicio: cuál y cómo volver a verlo todo */
+.ficha__filtro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 4px 4px 12px;
+  border-radius: 12px;
+  background: rgba(178, 150, 125, 0.14);
+  font-size: 0.86rem;
+}
+
+.ficha__filtro span { min-width: 0; overflow-wrap: anywhere; }
+
+.ficha__vez { color: var(--camel-light); }
+
+/* el sticky de arriba del panel no tapa el título al bajar hasta el historial */
+.ficha__historial { scroll-margin-top: 84px; }
+
 /* Cuerpo */
 .ficha__cuerpo {
   display: flex;
@@ -601,6 +754,31 @@ a.ficha__chip--cumple { min-height: 32px; }
 [data-theme="light"] .ficha__pestanas { background: #EFE9E2; }
 [data-theme="light"] .ficha__pestanas button { color: var(--espresso); }
 [data-theme="light"] .ficha__pestanas button.is-on { background: var(--cocoa); color: #fff; }
+
+[data-theme="light"] .ficha__desglose,
+[data-theme="light"] .ficha__ayuda,
+[data-theme="light"] .ficha__record-ultima,
+[data-theme="light"] .ficha__record-veces { color: var(--muted); }
+
+[data-theme="light"] .ficha__desglose b { color: var(--espresso); }
+[data-theme="light"] .ficha__visitas svg,
+[data-theme="light"] .ficha__vez,
+[data-theme="light"] .ficha__record-veces b { color: var(--cocoa); }
+[data-theme="light"] .ficha__numeros > div:has(.ficha__visitas:hover) { border-color: var(--cocoa); }
+[data-theme="light"] .ficha__visitas:focus-visible::after,
+[data-theme="light"] .ficha__record-fila:focus-visible { outline-color: var(--cocoa); }
+
+[data-theme="light"] .ficha__contador input {
+  background: #F9F6F1;
+  border-color: rgba(74, 52, 42, 0.16);
+}
+
+[data-theme="light"] .ficha__contador input:focus { border-color: var(--cocoa); }
+[data-theme="light"] .ficha__btn:disabled:hover { border-color: rgba(74, 52, 42, 0.16); }
+[data-theme="light"] .ficha__record li + li { border-color: rgba(74, 52, 42, 0.09); }
+[data-theme="light"] .ficha__record-fila:hover { background: #F9F6F1; }
+[data-theme="light"] .ficha__record-fila.is-on,
+[data-theme="light"] .ficha__filtro { background: #F3EAE1; }
 
 [data-theme="light"] .ficha__punto-antes { background: #fff; border-color: var(--cocoa); }
 [data-theme="light"] .ficha__de-antes { border-color: #CDBBA8; color: var(--cocoa); }

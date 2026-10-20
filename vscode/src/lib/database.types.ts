@@ -249,6 +249,7 @@ export type Database = {
           phone: string
           skin_type: string | null
           source: string
+          visitas_previas: number
         }
         Insert: {
           address?: string | null
@@ -264,6 +265,7 @@ export type Database = {
           phone: string
           skin_type?: string | null
           source?: string
+          visitas_previas?: number
         }
         Update: {
           address?: string | null
@@ -279,6 +281,7 @@ export type Database = {
           phone?: string
           skin_type?: string | null
           source?: string
+          visitas_previas?: number
         }
         Relationships: []
       }
