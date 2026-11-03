@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format12h } from '../../lib/timeFormat';
+import { horarioSalon } from '../../config/site';
 import { destinoWhatsApp, enlaceLlamar, enlaceWhatsApp } from '../../lib/enlaces';
 import { useAhora } from '../../lib/useAhora';
 import { textoONull } from '../../site/landing/equipo';
@@ -46,6 +47,10 @@ const HOURS = Array.from({ length: 15 }, (_, i) => {
 });
 
 const rd = (n: number) => `RD$ ${n.toLocaleString('es-DO')}`;
+
+// el sábado todas trabajan el horario del salón, no el de su ficha (config/site.ts)
+const SABADO = horarioSalon[6]?.paraTodas ? horarioSalon[6] : null;
+const textoSabado = SABADO ? `${format12h(SABADO.abre)} – ${format12h(SABADO.ultimoTurno)}` : '';
 
 const emptyForm: Omit<StaffMember, 'id' | 'createdAt'> = {
   name: '', role: 'specialist', phone: '', email: null,
@@ -516,7 +521,15 @@ export default function Staff() {
                       <span key={d.key} className={m.workingDays.includes(d.key) ? 'is-on' : ''} aria-hidden="true">{d.label.slice(0, 2)}</span>
                     ))}
                   </div>
-                  <span className="persona__horas"><Clock size={14} aria-hidden="true" /> {format12h(m.workingStart)} – {format12h(m.workingEnd)}</span>
+                  <span className="persona__horas">
+                    <Clock size={14} aria-hidden="true" />
+                    <span>
+                      {format12h(m.workingStart)} – {format12h(m.workingEnd)}
+                      {SABADO && m.workingDays.includes('sabado') && (m.workingStart !== SABADO.abre || m.workingEnd !== SABADO.ultimoTurno) && (
+                        <><br />Sáb: {textoSabado}</>
+                      )}
+                    </span>
+                  </span>
                 </div>
 
                 <p className="persona__servicios">
@@ -736,6 +749,9 @@ export default function Staff() {
                     </button>
                   ))}
                 </div>
+                {SABADO && form.workingDays.includes('sabado') && (
+                  <span className="staff-modal__hint">El sábado todas trabajan de {textoSabado}, el horario del salón.</span>
+                )}
                 {errors.workingDays && <span className="field-error"><AlertCircle size={12} /> {errors.workingDays}</span>}
               </div>
 

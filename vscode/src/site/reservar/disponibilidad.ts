@@ -1,7 +1,7 @@
 // Disponibilidad de la reserva: quién puede, quién está libre y a qué horas cabe la visita completa.
 // Es la lógica de siempre de Booking.tsx, sacada tal cual a funciones puras (spec §6.1: cambia la forma, no el
 // cálculo), más el horario del salón. Sin React ni base de datos: se prueba con Node.
-import { tramoDelSalon } from '../../lib/horarioSalon.ts';
+import { horarioDeTrabajo, tramoDelSalon } from '../../lib/horarioSalon.ts';
 import { puedeHacer } from '../../lib/quienAtiende.ts';
 
 /** Días como se guardan en staff.working_days (sin tildes). */
@@ -70,8 +70,9 @@ export function estaLibre(
 ): boolean {
   const dayName = WEEKDAYS[new Date(`${dia}T12:00:00`).getDay()];
   if (!(m.working_days ?? []).includes(dayName)) return false;
-  if (desde < timeToMinutes(m.working_start)) return false;
-  if (inicioVisita > timeToMinutes(m.working_end)) return false;
+  const horario = horarioDeTrabajo(dia, m.working_start, m.working_end);
+  if (desde < horario.entra) return false;
+  if (inicioVisita > horario.sale) return false;
 
   const ocupada = (agenda.ocupados[m.id] ?? []).some((a) => {
     const ini = timeToMinutes(String(a.time).slice(0, 5));

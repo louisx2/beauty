@@ -4,7 +4,7 @@ import type { Appointment } from '../../../store/appointmentStore';
 import type { ScheduleBlock } from '../../../store/blockStore';
 import type { StaffMember } from '../../../store/staffStore';
 import { atiendeClientas } from '../../../lib/quienAtiende.ts';
-import { tramoDelSalon } from '../../../lib/horarioSalon.ts';
+import { horarioDeTrabajo, tramoDelSalon } from '../../../lib/horarioSalon.ts';
 
 /** Días como se guardan en staff.working_days (sin tildes). */
 const DIAS = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
@@ -78,10 +78,11 @@ export function diaDelSalon(
     .filter((m) => m.active && atiendeClientas(m))
     .map((m) => {
       const trabaja = !!salon && (m.workingDays ?? []).includes(nombreDia);
+      const horario = horarioDeTrabajo(fecha, m.workingStart, m.workingEnd);
       return {
         id: m.id, nombre: m.name, trabaja,
-        desde: Math.max(aMinutos(m.workingStart), salon?.abre ?? 0),
-        hasta: aMinutos(m.workingEnd),
+        desde: Math.max(horario.entra, salon?.abre ?? 0),
+        hasta: horario.sale,
         bloques: [], bloqueos: [], libres: [], minutosLibres: 0,
       };
     });

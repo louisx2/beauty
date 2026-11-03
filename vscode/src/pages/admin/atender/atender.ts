@@ -5,6 +5,7 @@ import type { Appointment } from '../../../store/appointmentStore';
 import type { ScheduleBlock } from '../../../store/blockStore';
 import type { Client } from '../../../store/clientStore';
 import type { ClientPackage } from '../../../store/serviceStore';
+import { horarioDeTrabajo } from '../../../lib/horarioSalon.ts';
 import { repartirDesde, type Elegido, type Especialista, type LineaPlan } from '../../../site/reservar/disponibilidad.ts';
 import { sinTildes } from '../../../site/reservar/servicios.ts';
 import { agendaDelDia } from '../citas/proximaCita.ts';
@@ -84,8 +85,7 @@ export function disponibilidadAhora(
   m: Especialista, citas: Appointment[], bloqueos: ScheduleBlock[], hoy: string, minutos: number,
 ): Disponibilidad {
   if (!(m.working_days ?? []).includes(DIAS[new Date(`${hoy}T12:00:00`).getDay()])) return { tipo: 'no_trabaja' };
-  const entra = aMinutos(m.working_start);
-  const sale = aMinutos(m.working_end);
+  const { entra, sale } = horarioDeTrabajo(hoy, m.working_start, m.working_end);
   if (minutos < entra) return { tipo: 'entra', a: entra };
   if (minutos >= sale) return { tipo: 'termino' };
 

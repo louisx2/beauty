@@ -85,6 +85,11 @@ test('libre hasta su próxima cita; ocupada (con quién) mientras atiende, conta
   assert.deepEqual(disponibilidadAhora(ANA, [], [], JUEVES, h('8:30')), { tipo: 'entra', a: h('9:00') });
   assert.deepEqual(disponibilidadAhora(ANA, [], [], JUEVES, h('18:00')), { tipo: 'termino' });
   assert.deepEqual(disponibilidadAhora(ANA, [], [], JUEVES, h('16:00')), { tipo: 'libre', hasta: h('18:00') });
+  // el sábado todas entran a las 9:00, aunque su ficha diga otra hora
+  const tarde = { ...ANA, working_start: '16:00' };
+  assert.deepEqual(disponibilidadAhora(tarde, [], [], JUEVES, h('10:00')), { tipo: 'entra', a: h('16:00') });
+  assert.deepEqual(disponibilidadAhora(tarde, [], [], '2026-10-17', h('8:30')), { tipo: 'entra', a: h('9:00') });
+  assert.deepEqual(disponibilidadAhora(tarde, [], [], '2026-10-17', h('10:00')), { tipo: 'libre', hasta: h('18:00') });
 });
 
 test('una cita en curso que se pasó de su hora la sigue ocupando', () => {
