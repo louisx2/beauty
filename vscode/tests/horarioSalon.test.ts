@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { horasDelSalon, horasParaAgendar, textoSinHora, tramoDelSalon } from '../src/lib/horarioSalon.ts';
+import { horarioDeTrabajo, horasDelSalon, horasParaAgendar, textoSinHora, tramoDelSalon } from '../src/lib/horarioSalon.ts';
 import { site } from '../src/config/site.ts';
 
 const JUEVES = '2026-10-01';
@@ -8,10 +8,10 @@ const SABADO = '2026-10-03';
 const DOMINGO = '2026-10-04';
 const OTRO_DIA = { hoy: '2026-09-29', minutos: 0 };
 
-test('turnos: de lunes a sábado de 8:00 a 6:00 y el domingo cerrado', () => {
+test('turnos: de lunes a viernes de 8:00 a 6:00, el sábado de 9:00 a 6:00 y el domingo cerrado', () => {
   assert.deepEqual(tramoDelSalon(JUEVES), { abre: 480, ultimoTurno: 1080 });
   assert.deepEqual(tramoDelSalon('2026-10-05'), { abre: 480, ultimoTurno: 1080 });
-  assert.deepEqual(tramoDelSalon(SABADO), { abre: 480, ultimoTurno: 1080 });
+  assert.deepEqual(tramoDelSalon(SABADO), { abre: 540, ultimoTurno: 1080 });
   assert.equal(tramoDelSalon(DOMINGO), null);
 });
 
@@ -25,7 +25,8 @@ test('horas del panel: cada media hora de 8:00 a 6:00; la de las 6:00 también s
   assert.equal(jueves[0], '08:00');
   assert.equal(jueves.at(-1), '18:00');
   assert.equal(jueves.length, 21);
-  assert.deepEqual(horasDelSalon(SABADO, OTRO_DIA), jueves);
+  // el sábado empieza a las 9:00
+  assert.deepEqual(horasDelSalon(SABADO, OTRO_DIA), jueves.slice(2));
 });
 
 test('horas del panel: el domingo y sin fecha no hay', () => {
@@ -48,8 +49,15 @@ test('lista sin hora elegida: dice si ese día el salón está cerrado', () => {
   assert.equal(textoSinHora(''), 'Elegir hora');
 });
 
-test('el texto del horario en la página: de lunes a sábado de 8 a 6', () => {
-  assert.deepEqual(site.hours, ['Lun - Sáb: 8:00 AM - 6:00 PM']);
+test('el texto del horario en la página: de lunes a viernes de 8 a 6 y el sábado de 9 a 6', () => {
+  assert.deepEqual(site.hours, ['Lun - Vie: 8:00 AM - 6:00 PM', 'Sáb: 9:00 AM - 6:00 PM']);
+});
+
+test('horario de cada una: entre semana el de su ficha; el sábado, de 9:00 a 6:00 para todas', () => {
+  assert.deepEqual(horarioDeTrabajo(JUEVES, '16:00', '18:00'), { entra: 960, sale: 1080 });
+  assert.deepEqual(horarioDeTrabajo(JUEVES, '08:00:00', '18:00:00'), { entra: 480, sale: 1080 });
+  assert.deepEqual(horarioDeTrabajo(SABADO, '16:00', '18:00'), { entra: 540, sale: 1080 });
+  assert.deepEqual(horarioDeTrabajo(SABADO, '08:00', '16:00'), { entra: 540, sale: 1080 });
 });
 
 test('la hora que ya tiene la cita sale aunque quede fuera del horario, sin repetirse', () => {

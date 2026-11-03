@@ -118,6 +118,19 @@ test('horarios: la última visita empieza a las 6:00 aunque termine después, ta
   assert.deepEqual(quienes(h.at(-1)!.plan), ['Limpieza@ana', 'Cejas@bea']);
 });
 
+test('horarios: el sábado todas atienden de 9:00 a 6:00, aunque su ficha diga otra hora', () => {
+  const tarde = { ...ana, working_start: '16:00:00' };
+  const temprano = { ...bea, working_start: '08:00:00' };
+  // entre semana se respeta la ficha: la de la tarde, desde las 4:00
+  assert.equal(estaLibre(tarde, timeToMinutes('09:00'), 60, JUEVES, agenda({ staff: [tarde] })), false);
+  assert.equal(estaLibre(tarde, timeToMinutes('16:00'), 60, JUEVES, agenda({ staff: [tarde] })), true);
+  // el sábado, desde las 9:00
+  assert.equal(estaLibre(tarde, timeToMinutes('09:00'), 60, SABADO, agenda({ staff: [tarde] })), true);
+  const h = horariosDelDia([cejas], SABADO, agenda({ staff: [temprano] }), OTRO_DIA);
+  assert.equal(h[0].hora, '09:00');
+  assert.equal(h.at(-1)?.hora, '18:00');
+});
+
 test('horarios: el domingo el salón no abre, aunque alguien tenga marcado el domingo', () => {
   const a = agenda({ staff: [{ ...sinlista, working_days: [...L_S, 'domingo'] }] });
   assert.deepEqual(horariosDelDia([limpieza], DOMINGO, a, OTRO_DIA), []);

@@ -13,20 +13,22 @@ export const site = {
   whatsapp: '18293224014',
   instagram: 'anadsllbeautyesthetic.rd',
   // un renglón por grupo de días, para que en el teléfono no se corte a la mitad de una hora
-  hours: ['Lun - Sáb: 8:00 AM - 6:00 PM'],
+  hours: ['Lun - Vie: 8:00 AM - 6:00 PM', 'Sáb: 9:00 AM - 6:00 PM'],
 };
 
 // Turnos del salón por día (0 = domingo … 6 = sábado); null = cerrado. La reserva en línea y el panel solo
 // ofrecen horas dentro de ellos. `ultimoTurno` es la última hora a la que puede empezar una cita, aunque termine
-// después (Anabel, 2026-10-03). Si cambia, cambia también `hours`, que es lo que se lee en la página.
-export const horarioSalon: readonly ({ abre: string; ultimoTurno: string } | null)[] = [
+// después (Anabel, 2026-10-03). Si cambia, cambia también `hours`, que es lo que se lee en la página, y el
+// horario de index.html (el que lee Google). `paraTodas`: ese día todas trabajan este horario, no el de su ficha
+// (Louis, 2026-11-03: el sábado es de 9 a 6 para todas las colaboradoras).
+export const horarioSalon: readonly ({ abre: string; ultimoTurno: string; paraTodas?: boolean } | null)[] = [
   null, // domingo
   { abre: '08:00', ultimoTurno: '18:00' }, // lunes
   { abre: '08:00', ultimoTurno: '18:00' }, // martes
   { abre: '08:00', ultimoTurno: '18:00' }, // miércoles
   { abre: '08:00', ultimoTurno: '18:00' }, // jueves
   { abre: '08:00', ultimoTurno: '18:00' }, // viernes
-  { abre: '08:00', ultimoTurno: '18:00' }, // sábado
+  { abre: '09:00', ultimoTurno: '18:00', paraTodas: true }, // sábado
 ];
 
 const q = encodeURIComponent(`${site.address} ${site.name}`);

@@ -65,6 +65,13 @@ test('una cita con dos servicios va a la columna de cada especialista, a su hora
   assert.deepEqual(dia.columnas[1].libres, [{ inicio: h('10:00'), fin: h('11:00') }, { inicio: h('11:30'), fin: h('17:00') }]);
 });
 
+test('el sábado todas trabajan de 9:00 a 6:00, aunque su ficha diga otra hora', () => {
+  // la doctora tiene de 10:00 a 5:00 en su ficha
+  const dia = diaDelSalon('2026-10-17', STAFF, [], [], null);
+  assert.deepEqual(dia.columnas.map((c) => [c.id, c.desde, c.hasta]), [['anabel', h('09:00'), h('18:00')], ['melissa', h('09:00'), h('18:00')]]);
+  assert.deepEqual(dia.columnas[1].libres, [{ inicio: h('09:00'), fin: h('18:00') }]);
+});
+
 test('hoy, lo que ya pasó no se ofrece como libre (se redondea al cuarto de hora)', () => {
   const dia = diaDelSalon(MIERCOLES, STAFF, [], [], h('10:50'));
   assert.deepEqual(dia.columnas[0].libres, [{ inicio: h('11:00'), fin: h('18:00') }]);
